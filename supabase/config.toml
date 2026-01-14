@@ -1,0 +1,13 @@
+project_id = "jcribtonvxrwhoixoioo"
+
+[functions.scrape-url]
+verify_jwt = false
+
+[functions.fetch-news]
+verify_jwt = false
+
+[functions.analyze-emphasis]
+verify_jwt = false
+
+[functions.analyze-rhythm]
+verify_jwt = false
