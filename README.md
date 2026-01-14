@@ -1,8 +1,24 @@
-# Welcome to your Lovable project
+# Kinetext - Kinetic Reading App
 
-## Project info
+A revolutionary reading application with AI-powered text analysis, emphasis detection, and kinetic reading features.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+## 🚀 Live Demo
+
+**URL**: https://dynamic-llama-64adc4.netlify.app/  
+**GitHub**: https://github.com/pauljrad/kin-txt
+
+---
+
+## Features
+
+- ✨ AI-powered emphasis detection
+- 📚 Ebook library with EPUB support
+- 📰 News article reader
+- 🎯 Kinetic reading player
+- 💾 Document history with progress tracking
+- 🌙 Dark/Light mode
+- 📱 PWA support (works offline!)
+
 
 ## How can I edit this code?
 
