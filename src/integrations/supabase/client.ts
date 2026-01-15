@@ -2,19 +2,59 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
-const SUPABASE_URL =
-  import.meta.env.VITE_SUPABASE_URL || "https://jcribtonvxrwhoixoioo.supabase.co";
-const SUPABASE_PUBLISHABLE_KEY =
-  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
+const EXPECTED_SUPABASE_REF = "jcribtonvxrwhoixoioo";
+const FALLBACK_SUPABASE_URL = `https://${EXPECTED_SUPABASE_REF}.supabase.co`;
+const FALLBACK_SUPABASE_PUBLISHABLE_KEY =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpjcmlidG9udnhyd2hvaXhvaW9vIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjcwODY3MDcsImV4cCI6MjA4MjY2MjcwN30.Hi6FUnBoZp7QwgwPE34otWUBD4yAn3USqqdMANxoCeg";
 
-if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY) {
-  // This commonly happens in Netlify builds when env vars weren't configured in the Netlify UI.
-  console.warn(
-    "[supabase] Missing VITE_SUPABASE_URL and/or VITE_SUPABASE_PUBLISHABLE_KEY at build time; using fallback configuration. " +
-      "For production, set these environment variables in your hosting provider."
-  );
+function safeDecodeJwtPayload(jwt: string): Record<string, unknown> | null {
+  // JWT = header.payload.signature (base64url)
+  const parts = jwt.split(".");
+  if (parts.length < 2) return null;
+  try {
+    const base64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+    // Pad base64 string
+    const padded = base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), "=");
+    const json = atob(padded);
+    return JSON.parse(json);
+  } catch {
+    return null;
+  }
 }
+
+function resolveSupabaseConfig() {
+  const envUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
+  const envKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string | undefined;
+
+  // Treat missing OR empty values as not configured
+  const hasUrl = !!envUrl;
+  const hasKey = !!envKey;
+
+  // Validate that any provided env vars match the expected Supabase project.
+  const urlLooksRight = hasUrl && envUrl.includes(EXPECTED_SUPABASE_REF);
+  const payload = envKey ? safeDecodeJwtPayload(envKey) : null;
+  const keyLooksRight = hasKey && (payload?.ref === EXPECTED_SUPABASE_REF || envKey.includes(EXPECTED_SUPABASE_REF));
+
+  if (!hasUrl || !hasKey) {
+    console.warn(
+      "[supabase] Missing VITE_SUPABASE_URL and/or VITE_SUPABASE_PUBLISHABLE_KEY; using fallback configuration. " +
+        "For production, set these environment variables in your hosting provider."
+    );
+    return { url: FALLBACK_SUPABASE_URL, key: FALLBACK_SUPABASE_PUBLISHABLE_KEY };
+  }
+
+  if (!urlLooksRight || !keyLooksRight) {
+    console.warn(
+      "[supabase] VITE_SUPABASE_URL and/or VITE_SUPABASE_PUBLISHABLE_KEY do not match the expected project; using fallback configuration. " +
+        `Expected ref: ${EXPECTED_SUPABASE_REF}`
+    );
+    return { url: FALLBACK_SUPABASE_URL, key: FALLBACK_SUPABASE_PUBLISHABLE_KEY };
+  }
+
+  return { url: envUrl, key: envKey };
+}
+
+const { url: SUPABASE_URL, key: SUPABASE_PUBLISHABLE_KEY } = resolveSupabaseConfig();
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
