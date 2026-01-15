@@ -961,7 +961,7 @@ export function KineticPlayer({
               style={{
                 // Keep chapter/section titles readable but not gigantic.
                 // Match the reader's base word size (respects the user's text size multiplier) and scale it by 3x.
-                fontSize: `calc(3rem * 3 * var(--text-size-multiplier, 1))`,
+                fontSize: `calc(3rem * 1.5 * var(--text-size-multiplier, 1))`,
               }}
             >
               {showingChapterTitle}
