@@ -1,0 +1,60 @@
+═══════════════════════════════════════════════════════════════
+  KiN-TXT EMAIL NOTIFICATIONS - QUICK START
+═══════════════════════════════════════════════════════════════
+
+📋 CHECKLIST - Follow in order:
+
+□ 1. Get Resend API Key
+   → Go to: https://resend.com
+   → Sign up (free)
+   → Create API key
+   → Copy the key (starts with "re_")
+
+□ 2. Add Secrets to Supabase
+   → Go to: https://supabase.com/dashboard/project/jcribtonvxrwhoixoioo
+   → Click: Edge Functions → Manage secrets
+   → Add: RESEND_API_KEY = (your key from step 1)
+   → Add: ADMIN_EMAIL = (your email address)
+
+□ 3. Deploy Functions
+   EASY WAY (Dashboard):
+   → Supabase Dashboard → Edge Functions → Deploy new function
+   → Create "notify-admin-signup" (copy code from supabase/functions/notify-admin-signup/index.ts)
+   → Create "send-welcome-email" (copy code from supabase/functions/send-welcome-email/index.ts)
+   
+   OR COMMAND LINE:
+   → npm install -g supabase
+   → cd reading-app
+   → supabase link --project-ref jcribtonvxrwhoixoioo
+   → supabase functions deploy notify-admin-signup
+   → supabase functions deploy send-welcome-email
+
+□ 4. Enable Email Verification
+   → Supabase Dashboard → Authentication → Settings
+   → Turn ON "Enable email confirmations"
+   → Set Site URL: https://marvelous-cendol-1331d6.netlify.app
+   → Save
+
+□ 5. Test It!
+   → Go to: https://marvelous-cendol-1331d6.netlify.app
+   → Sign up with a real email
+   → Check both inboxes (user email + admin email)
+
+═══════════════════════════════════════════════════════════════
+
+✅ WHEN IT'S WORKING:
+   - New user gets welcome email with verification link
+   - You get notification email with user details
+   - Both emails have beautiful HTML designs
+
+❌ TROUBLESHOOTING:
+   - No emails? Check Resend dashboard: https://resend.com/emails
+   - Check Supabase logs: Dashboard → Edge Functions → Logs
+   - Verify secrets are set correctly
+   - Check spam folder
+
+═══════════════════════════════════════════════════════════════
+
+📚 FULL DETAILS: See SETUP_GUIDE.md
+
+═══════════════════════════════════════════════════════════════
