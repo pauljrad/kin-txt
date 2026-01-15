@@ -228,13 +228,13 @@ export function KineticPlayer({
     let baseMultiplier: number;
     switch (rhythmPreset) {
       case 'slower':
-        baseMultiplier = 0.75; // ~150 WPM peak (after ramp)
+        baseMultiplier = 0.50; // ~100 WPM peak (after ramp) - reduced by 1.5x
         break;
       case 'faster':
-        baseMultiplier = 1.05; // ~210 WPM peak (after ramp)
+        baseMultiplier = 0.70; // ~140 WPM peak (after ramp) - reduced by 1.5x
         break;
       default:
-        baseMultiplier = 0.90; // ~180 WPM peak (after ramp)
+        baseMultiplier = 0.60; // ~120 WPM peak (after ramp) - reduced by 1.5x
     }
     
     return baseMultiplier * adaptiveMultiplier;
