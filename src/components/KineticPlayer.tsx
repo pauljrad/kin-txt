@@ -207,31 +207,34 @@ export function KineticPlayer({
   const adaptiveMultiplier = useMemo(() => {
     if (!adaptiveSpeed) return 1.0;
     
-    // Ramp from 0.75 (150 WPM) to 1.0 (200 WPM) over first 100 words
-    // Then continue to target over next 100 words
-    const rampWords = 100;
+    // Start a bit slower for comfort, then ramp up.
+    // Ramp from ~0.80 to 1.0 over the first ~120 words.
+    const rampWords = 120;
     const progress = Math.min(1, wordsReadInSession / rampWords);
     
     // Ease-out curve for natural acceleration
     const easeOut = 1 - Math.pow(1 - progress, 2);
     
-    // Start at 0.75, ramp to 1.0
-    return 0.75 + (0.25 * easeOut);
+    // Start at 0.80, ramp to 1.0
+    return 0.80 + (0.20 * easeOut);
   }, [adaptiveSpeed, wordsReadInSession]);
   
   const rhythmMultiplier = useMemo(() => {
     // Base multipliers (lower = slower, more comfortable)
-    // These target: slower ~150 WPM, normal ~180 WPM, faster ~220 WPM (after ramp-up)
+    // Empirically, sustained comprehension for RSVP-style word presentation tends to drop as you push above ~220–250 WPM.
+    // Many adult silent reading speeds cluster around ~200–250 WPM for comfortable prose, but RSVP often needs a bit slower.
+    // These presets aim for a more comfortable default range.
+    // (Reminder: speed=1.0 corresponds to ~200 WPM given our 300ms baseline.)
     let baseMultiplier: number;
     switch (rhythmPreset) {
-      case 'slower': 
-        baseMultiplier = 0.6;  // ~120 WPM base, ramps to ~150 WPM
+      case 'slower':
+        baseMultiplier = 0.85; // ~170 WPM peak (after ramp), ~135 WPM at start
         break;
-      case 'faster': 
-        baseMultiplier = 0.9;  // ~180 WPM base, ramps to ~220 WPM  
+      case 'faster':
+        baseMultiplier = 1.15; // ~230 WPM peak (after ramp), ~185 WPM at start
         break;
-      default: 
-        baseMultiplier = 0.75; // ~150 WPM base, ramps to ~180 WPM
+      default:
+        baseMultiplier = 1.00; // ~200 WPM peak (after ramp), ~160 WPM at start
     }
     
     return baseMultiplier * adaptiveMultiplier;
@@ -263,8 +266,8 @@ export function KineticPlayer({
       const word = words[i];
       const cleanWord = word.toLowerCase().replace(/[.,!?;:'"—–\-()[\]]/g, '');
       
-      // Base speed - slightly faster baseline for better flow
-      let speed = 1.1;
+      // Base speed: keep around 1.0 (≈200 WPM baseline) and let the preset handle global scaling.
+      let speed = 1.0;
 
       // After sentence end, slow down significantly for the next word (new thought)
       if (prevEndedSentence) {
@@ -277,11 +280,11 @@ export function KineticPlayer({
         prevHadComma = false;
       }
 
-      // Quick function words - speed up moderately (not too fast)
+      // Quick function words: modest speed-up, but avoid a "machine-gun" feel.
       if (quickWords.has(cleanWord) && cleanWord.length <= 4) {
-        speed = Math.min(speed + 0.25, 1.4);
+        speed = Math.min(speed + 0.18, 1.35);
       } else if (quickWords.has(cleanWord)) {
-        speed = Math.min(speed + 0.15, 1.3);
+        speed = Math.min(speed + 0.12, 1.28);
       }
 
       // Slow words - always read slower
@@ -334,7 +337,8 @@ export function KineticPlayer({
       }
 
       // Clamp to reasonable range - tighter range for more consistent flow
-      speed = Math.max(0.65, Math.min(1.45, speed));
+      // Clamp per-word local speed range.
+      speed = Math.max(0.60, Math.min(1.45, speed));
       results.push({ word, speed });
     }
 
