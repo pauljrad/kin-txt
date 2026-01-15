@@ -442,7 +442,7 @@ export const AnimatedTitle = forwardRef<HTMLDivElement, AnimatedTitleProps>(
             <motion.span
               ref={hyphenRef}
               animate={hyphenControls}
-              className="inline-block"
+              className="inline-block text-yellow-500"
               style={{ display: "inline-block" }}
             >
               -
