@@ -3,9 +3,9 @@ import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
 const SUPABASE_URL =
-  import.meta.env.VITE_SUPABASE_URL ?? "https://jcribtonvxrwhoixoioo.supabase.co";
+  import.meta.env.VITE_SUPABASE_URL || "https://jcribtonvxrwhoixoioo.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY =
-  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ??
+  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpjcmlidG9udnhyd2hvaXhvaW9vIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjcwODY3MDcsImV4cCI6MjA4MjY2MjcwN30.Hi6FUnBoZp7QwgwPE34otWUBD4yAn3USqqdMANxoCeg";
 
 if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY) {
