@@ -215,8 +215,8 @@ export function KineticPlayer({
     // Ease-out curve for natural acceleration
     const easeOut = 1 - Math.pow(1 - progress, 2);
     
-    // Start at 0.80, ramp to 1.0
-    return 0.80 + (0.20 * easeOut);
+    // Start at 0.75, ramp to 1.0
+    return 0.75 + (0.25 * easeOut);
   }, [adaptiveSpeed, wordsReadInSession]);
   
   const rhythmMultiplier = useMemo(() => {
@@ -228,13 +228,13 @@ export function KineticPlayer({
     let baseMultiplier: number;
     switch (rhythmPreset) {
       case 'slower':
-        baseMultiplier = 0.85; // ~170 WPM peak (after ramp), ~135 WPM at start
+        baseMultiplier = 0.75; // ~150 WPM peak (after ramp)
         break;
       case 'faster':
-        baseMultiplier = 1.15; // ~230 WPM peak (after ramp), ~185 WPM at start
+        baseMultiplier = 1.05; // ~210 WPM peak (after ramp)
         break;
       default:
-        baseMultiplier = 1.00; // ~200 WPM peak (after ramp), ~160 WPM at start
+        baseMultiplier = 0.90; // ~180 WPM peak (after ramp)
     }
     
     return baseMultiplier * adaptiveMultiplier;
@@ -280,11 +280,11 @@ export function KineticPlayer({
         prevHadComma = false;
       }
 
-      // Quick function words: modest speed-up, but avoid a "machine-gun" feel.
+      // Quick function words: small speed-up only.
       if (quickWords.has(cleanWord) && cleanWord.length <= 4) {
-        speed = Math.min(speed + 0.18, 1.35);
+        speed = Math.min(speed + 0.12, 1.25);
       } else if (quickWords.has(cleanWord)) {
-        speed = Math.min(speed + 0.12, 1.28);
+        speed = Math.min(speed + 0.08, 1.18);
       }
 
       // Slow words - always read slower
