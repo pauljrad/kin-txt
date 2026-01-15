@@ -12,6 +12,7 @@ const corsHeaders = {
 interface WelcomeEmailRequest {
   email: string;
   displayName?: string;
+  verificationUrl?: string;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -20,13 +21,14 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { email, displayName }: WelcomeEmailRequest = await req.json();
+    const { email, displayName, verificationUrl }: WelcomeEmailRequest = await req.json();
 
     if (!email) {
       throw new Error("Email is required");
     }
 
     const name = displayName || "Reader";
+    const hasVerification = !!verificationUrl;
 
     const emailResponse = await resend.emails.send({
       from: "KiN-TXT <onboarding@resend.dev>",
@@ -71,14 +73,92 @@ const handler = async (req: Request): Promise<Response> => {
                   <tr>
                     <td style="padding: 40px; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); border-radius: 16px; border: 1px solid #333333;">
                       <h2 style="margin: 0 0 20px 0; font-size: 28px; font-weight: 600; color: #ffffff; text-align: center;">
-                        Welcome, ${name}!
+                        Welcome to KiN-TXT, ${name}!
                       </h2>
                       <p style="margin: 0 0 20px 0; font-size: 16px; line-height: 1.7; color: #cccccc; text-align: center;">
-                        Thank you for joining <strong style="color: #ffffff;">KiN-TXT</strong>. You're about to experience reading in a completely new way.
+                        Thank you for joining <strong style="color: #ffffff;">KiN-TXT</strong> – the future of reading is here! 🚀
                       </p>
-                      <p style="margin: 0; font-size: 16px; line-height: 1.7; color: #cccccc; text-align: center;">
-                        Kinetic typography brings your texts to life, word by word, helping you focus and absorb content like never before.
+                      <p style="margin: 0 0 30px 0; font-size: 16px; line-height: 1.7; color: #cccccc; text-align: center;">
+                        Experience kinetic typography that brings your texts to life, word by word, helping you focus and absorb content like never before. Read faster, comprehend better, and enjoy a completely new way of consuming content.
                       </p>
+                      ${hasVerification ? `
+                      <!-- Verification Button -->
+                      <div style="text-align: center; margin: 30px 0;">
+                        <a href="${verificationUrl}" style="display: inline-block; padding: 16px 40px; background: linear-gradient(135deg, #a855f7 0%, #8b5cf6 100%); color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 12px rgba(168, 85, 247, 0.3);">
+                          ✓ Verify Your Email
+                        </a>
+                      </div>
+                      <p style="margin: 20px 0 0 0; font-size: 14px; color: #888888; text-align: center;">
+                        Please verify your email address to get started and unlock all features.
+                      </p>
+                      ` : ''}
+                    </td>
+                  </tr>
+                  
+                  <!-- Features -->
+                  <tr>
+                    <td style="padding: 40px 40px 20px 40px;">
+                      <h3 style="margin: 0 0 20px 0; font-size: 20px; font-weight: 600; color: #ffffff; text-align: center;">
+                        What You Can Do
+                      </h3>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 0 40px 40px 40px;">
+                      <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+                        <tr>
+                          <td style="padding: 15px 0;">
+                            <div style="display: flex; align-items: flex-start;">
+                              <span style="font-size: 24px; margin-right: 15px;">📚</span>
+                              <div>
+                                <strong style="color: #ffffff; font-size: 16px;">Upload & Read</strong>
+                                <p style="margin: 5px 0 0 0; color: #cccccc; font-size: 14px; line-height: 1.6;">
+                                  Import EPUB, PDF, DOCX files or paste text directly
+                                </p>
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                        <tr>
+                          <td style="padding: 15px 0;">
+                            <div style="display: flex; align-items: flex-start;">
+                              <span style="font-size: 24px; margin-right: 15px;">⚡</span>
+                              <div>
+                                <strong style="color: #ffffff; font-size: 16px;">Kinetic Reading</strong>
+                                <p style="margin: 5px 0 0 0; color: #cccccc; font-size: 14px; line-height: 1.6;">
+                                  Watch words flow with customizable speed and rhythm
+                                </p>
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                        <tr>
+                          <td style="padding: 15px 0;">
+                            <div style="display: flex; align-items: flex-start;">
+                              <span style="font-size: 24px; margin-right: 15px;">🤖</span>
+                              <div>
+                                <strong style="color: #ffffff; font-size: 16px;">AI-Powered Emphasis</strong>
+                                <p style="margin: 5px 0 0 0; color: #cccccc; font-size: 14px; line-height: 1.6;">
+                                  Smart highlighting of important words and phrases
+                                </p>
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                        <tr>
+                          <td style="padding: 15px 0;">
+                            <div style="display: flex; align-items: flex-start;">
+                              <span style="font-size: 24px; margin-right: 15px;">📱</span>
+                              <div>
+                                <strong style="color: #ffffff; font-size: 16px;">Read Anywhere</strong>
+                                <p style="margin: 5px 0 0 0; color: #cccccc; font-size: 14px; line-height: 1.6;">
+                                  Works on all devices with offline PWA support
+                                </p>
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      </table>
                     </td>
                   </tr>
                   

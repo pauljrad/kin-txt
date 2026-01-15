@@ -61,7 +61,7 @@ const Login = forwardRef<HTMLDivElement>((_, ref) => {
 
     try {
       if (isSignUp) {
-        const { error } = await signUp(email, password, displayName || undefined);
+        const { error, data } = await signUp(email, password, displayName || undefined);
         if (error) {
           if (error.message.includes('already registered')) {
             toast.error('This email is already registered. Please sign in instead.');
@@ -72,12 +72,30 @@ const Login = forwardRef<HTMLDivElement>((_, ref) => {
           return;
         }
         
+        // Get user info for notifications
+        const { data: { user: newUser } } = await supabase.auth.getUser();
+        
         // Send welcome email (fire and forget - don't block signup)
         supabase.functions.invoke('send-welcome-email', {
-          body: { email, displayName: displayName || undefined }
+          body: { 
+            email, 
+            displayName: displayName || undefined
+          }
         }).catch(err => console.error('Welcome email failed:', err));
         
-        toast.success('Account created! Welcome to Kin-TXT');
+        // Send admin notification (fire and forget - don't block signup)
+        if (newUser) {
+          supabase.functions.invoke('notify-admin-signup', {
+            body: { 
+              email, 
+              displayName: displayName || undefined,
+              userId: newUser.id,
+              createdAt: newUser.created_at
+            }
+          }).catch(err => console.error('Admin notification failed:', err));
+        }
+        
+        toast.success('Account created! Please check your email to verify your account.');
         navigate('/home');
       } else {
         const { error } = await signIn(email, password);
