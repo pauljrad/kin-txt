@@ -6,19 +6,25 @@
       .accent { fill: #eab308; } /* Tailwind yellow-500 */
     </style>
   </defs>
-  <rect class="bg" x="0" y="0" width="256" height="256" rx="56"/>
 
-  <!-- KiN -->
-  <g transform="translate(34 54)">
+  <!-- Rounded square background -->
+  <rect class="bg" x="0" y="0" width="256" height="256" rx="64"/>
+
+  <!-- Simplified KiN mark for small sizes (thicker strokes, fewer details) -->
+  <g transform="translate(34 52)">
     <!-- K -->
-    <path class="fg" d="M0 0h22v148H0z"/>
-    <path class="fg" d="M22 74 86 0h30L56 74l60 74H86z"/>
+    <rect class="fg" x="0" y="0" width="28" height="152" rx="4"/>
+    <path class="fg" d="M28 76 L100 0 H138 L66 76 L138 152 H100 Z"/>
 
     <!-- i -->
-    <rect class="fg" x="120" y="44" width="22" height="104" rx="6"/>
-    <circle class="accent" cx="131" cy="18" r="12"/>
+    <rect class="fg" x="146" y="44" width="28" height="108" rx="6"/>
+    <circle class="accent" cx="160" cy="18" r="14"/>
 
     <!-- N -->
-    <path class="fg" d="M162 148V0h22l54 96V0h22v148h-22l-54-96v96z"/>
+    <rect class="fg" x="190" y="0" width="26" height="152" rx="4"/>
+    <rect class="fg" x="230" y="0" width="26" height="152" rx="4"/>
+    <path class="fg" d="M216 0 L230 0 L230 26 L216 26 Z"/>
+    <path class="fg" d="M216 26 L230 26 L230 152 L216 152 Z"/>
+    <path class="fg" d="M216 0 L230 0 L190 152 L176 152 Z"/>
   </g>
 </svg>
