@@ -2,8 +2,19 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+const SUPABASE_URL =
+  import.meta.env.VITE_SUPABASE_URL ?? "https://jcribtonvxrwhoixoioo.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY =
+  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ??
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpjcmlidG9udnhyd2hvaXhvaW9vIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjcwODY3MDcsImV4cCI6MjA4MjY2MjcwN30.Hi6FUnBoZp7QwgwPE34otWUBD4yAn3USqqdMANxoCeg";
+
+if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY) {
+  // This commonly happens in Netlify builds when env vars weren't configured in the Netlify UI.
+  console.warn(
+    "[supabase] Missing VITE_SUPABASE_URL and/or VITE_SUPABASE_PUBLISHABLE_KEY at build time; using fallback configuration. " +
+      "For production, set these environment variables in your hosting provider."
+  );
+}
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
