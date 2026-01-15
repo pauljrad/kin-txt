@@ -955,9 +955,14 @@ export function KineticPlayer({
             <motion.h1
               initial={{ y: 20, filter: 'blur(10px)' }}
               animate={{ y: 0, filter: 'blur(0px)' }}
-              className={`text-6xl sm:text-7xl md:text-8xl lg:text-9xl xl:[font-size:12rem] font-display text-center leading-tight max-w-5xl px-4 ${
+              className={`font-display text-center leading-tight max-w-5xl px-4 ${
                 focusMode ? 'text-white focus-word-glow' : 'text-foreground'
               }`}
+              style={{
+                // Keep chapter/section titles readable but not gigantic.
+                // Match the reader's base word size (respects the user's text size multiplier) and scale it by 3x.
+                fontSize: `calc(3rem * 3 * var(--text-size-multiplier, 1))`,
+              }}
             >
               {showingChapterTitle}
             </motion.h1>
