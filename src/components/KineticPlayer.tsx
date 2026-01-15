@@ -3,7 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Play, Pause, RotateCcw, ChevronLeft, Rewind, BookOpen, Clock, Music, Settings, Focus, Eye, Type } from 'lucide-react';
 import { ParsedText, getWordDelay } from '@/lib/textParser';
 import { detectChapters, findSentenceBoundaries, getRewindPosition, Chapter } from '@/lib/chapterParser';
-import { updateDocumentReadingTime } from '@/lib/documentStorage';
+import { updateDocumentReadingTime as updateLocalReadingTime } from '@/lib/documentStorage';
+import { updateDocumentReadingTime as updateDbReadingTime } from '@/lib/documentDatabase';
 import { ChapterNavigation } from './ChapterNavigation';
 import { FullTextView } from './FullTextView';
 import { supabase } from '@/integrations/supabase/client';
@@ -71,6 +72,34 @@ export function KineticPlayer({
   const sessionTimerRef = useRef<NodeJS.Timeout | null>(null);
   const chapterTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastSaveTimeRef = useRef<number>(0);
+  const totalReadingTimeRef = useRef<number>(initialTotalReadingTime);
+
+  // Keep a ref updated so we can persist the latest value on exit/unmount without stale closures.
+  useEffect(() => {
+    totalReadingTimeRef.current = totalReadingTime;
+  }, [totalReadingTime]);
+
+  const persistReadingTime = useCallback(
+    async (force: boolean = false) => {
+      if (!documentId) return;
+      const current = totalReadingTimeRef.current;
+      if (current <= 0) return;
+
+      // Only persist if enough time has elapsed, unless forced.
+      if (!force && current - lastSaveTimeRef.current < 10) return;
+
+      // Save locally (offline) and to the database (when logged in).
+      updateLocalReadingTime(documentId, current);
+      try {
+        await updateDbReadingTime(documentId, current);
+      } catch {
+        // ignore; local storage still keeps the time
+      }
+
+      lastSaveTimeRef.current = current;
+    },
+    [documentId]
+  );
   const progressBarRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   
@@ -346,22 +375,18 @@ export function KineticPlayer({
     };
   }, [isPlaying, isComplete]);
 
-  // Save total reading time periodically (every 10 seconds)
+  // Persist total reading time periodically (every 10 seconds)
   useEffect(() => {
-    if (documentId && totalReadingTime > 0 && totalReadingTime - lastSaveTimeRef.current >= 10) {
-      updateDocumentReadingTime(documentId, totalReadingTime);
-      lastSaveTimeRef.current = totalReadingTime;
-    }
-  }, [documentId, totalReadingTime]);
+    // Fire-and-forget; we also flush on exit/unmount.
+    void persistReadingTime(false);
+  }, [totalReadingTime, persistReadingTime]);
 
-  // Save remaining time on unmount
+  // Flush remaining time on unmount
   useEffect(() => {
     return () => {
-      if (documentId && totalReadingTime > lastSaveTimeRef.current) {
-        updateDocumentReadingTime(documentId, totalReadingTime);
-      }
+      void persistReadingTime(true);
     };
-  }, [documentId, totalReadingTime]);
+  }, [persistReadingTime]);
 
   // Check if a word ends a sentence
   const isSentenceEnd = (word: string) => {
@@ -875,7 +900,13 @@ export function KineticPlayer({
       <div className="fixed inset-0 bg-background flex items-center justify-center">
         <div className="text-center p-8">
           <p className="text-lg text-destructive mb-4">Unable to load text</p>
-          <button onClick={onBack} className="control-button">
+          <button
+            onClick={() => {
+              void persistReadingTime(true);
+              onBack();
+            }}
+            className="control-button"
+          >
             Go Back
           </button>
         </div>
@@ -1108,6 +1139,7 @@ export function KineticPlayer({
               <button
                 onClick={(e) => {
                   e.stopPropagation();
+                  void persistReadingTime(true);
                   onBack();
                 }}
                 className="p-2 sm:p-3 glass-panel hover:bg-card/90 transition-colors"
@@ -1482,6 +1514,7 @@ export function KineticPlayer({
             <button
               onClick={(e) => {
                 e.stopPropagation();
+                void persistReadingTime(true);
                 onBack();
               }}
               className="p-2 sm:p-3 glass-panel hover:bg-card/90 transition-colors"
@@ -1527,7 +1560,13 @@ export function KineticPlayer({
                   <RotateCcw className="w-3 h-3 sm:w-4 sm:h-4 inline mr-1 sm:mr-2" />
                   Replay
                 </button>
-                <button onClick={onBack} className="control-button text-sm sm:text-base">
+                <button
+                  onClick={() => {
+                    void persistReadingTime(true);
+                    onBack();
+                  }}
+                  className="control-button text-sm sm:text-base"
+                >
                   New Text
                 </button>
               </div>
