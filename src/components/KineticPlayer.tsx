@@ -54,6 +54,7 @@ export function KineticPlayer({
   const [showFullText, setShowFullText] = useState(false);
   const [sessionTime, setSessionTime] = useState(0);
   const [totalReadingTime, setTotalReadingTime] = useState(initialTotalReadingTime);
+  const [currentWordDelayMs, setCurrentWordDelayMs] = useState(300);
   const [rhythmMode, setRhythmMode] = useState(true); // Start enabled by default
   const [rhythmSpeeds, setRhythmSpeeds] = useState<WordSpeed[]>([]);
   const [rhythmPreset, setRhythmPreset] = useState<'slower' | 'normal' | 'faster'>('normal');
@@ -634,7 +635,7 @@ export function KineticPlayer({
     const currentSpeed = getCurrentSpeed();
     
     // Calculate delay with current speed - ensure it's valid
-    let delay = getWordDelay(word, currentSpeed);
+    let delay = getWordDelay(word, currentSpeed, rhythmMode ? 'rhythm' : 'normal');
     
     // Sanity check: delay must be a positive finite number
     if (!Number.isFinite(delay) || delay <= 0) {
@@ -652,9 +653,13 @@ export function KineticPlayer({
       delay = delay * 1.5;
     }
     
-    // Cap maximum delay to prevent freezing
-    delay = Math.min(delay, 3000);
-    
+    // Cap maximum delay to prevent freezing / stalling
+    delay = Math.min(delay, 2500);
+
+    // Keep the animation duration in sync with the scheduling delay.
+    // This prevents the word feeling "late" (long delay but quick animation) or "rushed".
+    setCurrentWordDelayMs(delay);
+
     timeoutRef.current = setTimeout(advanceWord, delay);
     
     return () => {
@@ -981,8 +986,15 @@ export function KineticPlayer({
                 y: -30,
                 filter: 'blur(4px)'
               }}
-              transition={{ 
-                duration: isEmphasisWord ? 0.25 : isWhisperedWord ? 0.18 : 0.15,
+              transition={{
+                // Drive animation duration from the actual per-word delay.
+                // Use a fraction of the delay so there's still time for the word to "sit" on screen.
+                duration: (() => {
+                  const base = Math.max(0.12, Math.min(0.32, (currentWordDelayMs / 1000) * 0.35));
+                  if (isEmphasisWord) return Math.min(0.4, base * 1.25);
+                  if (isWhisperedWord) return Math.max(0.14, base * 0.9);
+                  return base;
+                })(),
                 ease: [0.34, 1.56, 0.64, 1],
                 filter: { duration: 0.2 }
               }}

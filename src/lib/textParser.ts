@@ -99,7 +99,9 @@ export function parseTextContent(text: string): ParsedText {
   return { paragraphs };
 }
 
-export function getWordDelay(word: string, baseSpeed: number): number {
+export type WordDelayMode = 'normal' | 'rhythm';
+
+export function getWordDelay(word: string, baseSpeed: number, mode: WordDelayMode = 'normal'): number {
   // Guard against invalid speeds causing Infinity/NaN delays
   const safeSpeed = Number.isFinite(baseSpeed) && baseSpeed > 0 ? baseSpeed : 1;
 
@@ -119,19 +121,26 @@ export function getWordDelay(word: string, baseSpeed: number): number {
     return Number.isFinite(result) ? result : 300;
   };
 
+  // Punctuation weighting:
+  // In rhythm mode we already slow down around punctuation via per-word speed heuristics,
+  // so we keep these multipliers lighter to avoid a "double penalty" that can feel like stalling.
+  const sentenceEndMult = mode === 'rhythm' ? 1.7 : 3;
+  const clauseMult = mode === 'rhythm' ? 1.3 : 1.8;
+  const dashMult = mode === 'rhythm' ? 1.2 : 1.5;
+
   // Longer pause for sentence-ending punctuation
   if (['.', '!', '?'].includes(lastChar)) {
-    return clamp(baseDelay * 3);
+    return clamp(baseDelay * sentenceEndMult);
   }
 
   // Medium pause for commas, semicolons, colons
   if ([',', ';', ':'].includes(lastChar)) {
-    return clamp(baseDelay * 1.8);
+    return clamp(baseDelay * clauseMult);
   }
 
   // Slight pause for dashes and other punctuation
   if (['—', '–', '-', '...', '…'].some((p) => word.includes(p))) {
-    return clamp(baseDelay * 1.5);
+    return clamp(baseDelay * dashMult);
   }
 
   return clamp(baseDelay);
