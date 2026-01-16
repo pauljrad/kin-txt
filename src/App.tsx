@@ -12,7 +12,43 @@ import Index from "./pages/Index";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 
+import { useState, useEffect } from "react";
+import { SplashScreen } from "@/components/SplashScreen";
+import { AnimatePresence } from "framer-motion";
+
 const queryClient = new QueryClient();
+
+const AppContent = () => {
+  const [showSplash, setShowSplash] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowSplash(false);
+    }, 3000);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  return (
+    <>
+      <AnimatePresence>
+        {showSplash && <SplashScreen />}
+      </AnimatePresence>
+      <Routes>
+        <Route path="/" element={<Login />} />
+        <Route
+          path="/home"
+          element={
+            <ProtectedRoute>
+              <Index />
+            </ProtectedRoute>
+          }
+        />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </>
+  );
+};
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -24,18 +60,7 @@ const App = () => (
               <PWAPrompt />
               <Toaster />
               <Sonner />
-              <Routes>
-                <Route path="/" element={<Login />} />
-                <Route 
-                  path="/home" 
-                  element={
-                    <ProtectedRoute>
-                      <Index />
-                    </ProtectedRoute>
-                  } 
-                />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
+              <AppContent />
             </AuthProvider>
           </BrowserRouter>
         </TooltipProvider>
@@ -43,5 +68,6 @@ const App = () => (
     </ThemeProvider>
   </QueryClientProvider>
 );
+
 
 export default App;
