@@ -1654,7 +1654,7 @@ export function KineticPlayer({
 
       <audio
         ref={atmosphereAudioRef}
-        src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3"
+        src="/atmosphere-jazz.mp3"
         loop
         preload="auto"
       />
