@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 export const SplashScreen = ({ onComplete }: { onComplete?: () => void }) => {
     return (
         <motion.div
-            className="fixed inset-0 bg-background flex items-center justify-center overflow-hidden touch-none !z-[9999] !opacity-100"
+            className="fixed inset-0 bg-background flex items-center justify-center overflow-hidden touch-none"
             style={{ zIndex: 9999 }}
             initial={{ opacity: 1 }}
             exit={{ opacity: 0 }}
