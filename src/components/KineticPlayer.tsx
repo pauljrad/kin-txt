@@ -1074,26 +1074,20 @@ export function KineticPlayer({
                 ease: [0.34, 1.56, 0.64, 1],
                 filter: { duration: 0.2 }
               }}
-              className={`kinetic-word font-display text-center select-none ${cleanWord.includes('kin-txt')
+              className={`kinetic-word text-center select-none ${cleanWord.includes('kin-txt')
                   ? 'text-foreground' // Ensure it's not faded/colored weirdly
-                  : isWhisperedWord
-                    ? 'text-muted-foreground/60 italic'
-                    : focusMode
-                      ? 'text-white focus-word-glow'
-                      : ''
+                  : `font-display ${isWhisperedWord ? 'text-muted-foreground/60 italic' : focusMode ? 'text-white focus-word-glow' : ''}`
                 } ${isEmphasisWord && focusMode ? 'focus-word-glow' : ''}`}
               style={{
-                fontSize: `calc(${cleanWord.includes('kin-txt') ? '4rem' : // FORCE large size for KiN-TXT
+                fontSize: `calc(${cleanWord.includes('kin-txt') ? '5rem' : // FORCE VERY large size for KiN-TXT
                     isEmphasisWord ? '4rem' :
                       isWhisperedWord ? '1.5rem' : '3rem'
                   } * var(--text-size-multiplier, 1))`,
-                // Force specific font logic if needed, but for now we trust font-display accepts lowercase
-                // If font-display is small-caps only, we might need to override fontFamily here.
               }}
             >
               {cleanWord.includes('kin-txt') ? (
-                // Force explicit casing rendering
-                <span>K<span className="lowercase">i</span>N-TXT</span>
+                // Force explicit casing rendering with standard font to avoid small-caps issues
+                <span className="font-sans font-black tracking-tight">K<span style={{ fontSize: '0.8em', textTransform: 'lowercase' }}>i</span>N-TXT</span>
               ) : (
                 currentDisplayWord
               )}

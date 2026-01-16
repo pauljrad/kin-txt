@@ -157,52 +157,60 @@ export function processTextStyles(parsed: ParsedText): ProcessedTextResult {
   const detectedEmphasis: string[] = [];
 
   const cleanedParagraphs = parsed.paragraphs.map(paragraph => {
+    // Track italics state across words in the same paragraph
+    let inItalics = false;
+
     return paragraph.map(word => {
       let cleanWord = word;
       let lowerWord = cleanWord.toLowerCase();
 
       // 1. Handle KiN-TXT branding (case insensitive, robust to punctuation)
       if (lowerWord.includes('kin-txt')) {
-        // Replace 'kin-txt' with 'KiN-TXT' preserving surrounding chars
-        // We use a regex with 'ig' to catch all occurrences in the token
         cleanWord = cleanWord.replace(/kin-txt/gi, 'KiN-TXT');
-
-        // Add to emphasis (strip common punctuation for the set key)
-        // We push the "clean" version (KiN-TXT) lowercased -> 'kin-txt'
-        // KineticPlayer strips [.,!?;:] so 'kin-txt' matches 'kin-txt'
         detectedEmphasis.push('kin-txt');
-
-        // Recalculate lowerWord for subsequent checks (though we usually skip them)
+        // Update lowerWord in case we fall through (unlikely to matter for KiN-TXT)
         lowerWord = cleanWord.toLowerCase();
       }
 
-      // 2. Handle Italics/Whisper (*word* or _word_)
-      // Refunded logic: handle punctuation wrapping like (*word*), *word*, etc.
-      // Regex explanation:
-      // ^([^\w]*)   -> Group 1: Leading non-word chars (punctuation)
-      // ([*_])      -> Group 2: The marker (* or _)
-      // (.+?)       -> Group 3: The actual content (non-greedy)
-      // \2          -> Match the same marker as Group 2
-      // ([^\w]*)$   -> Group 4: Trailing non-word chars
+      // 2. Handle Italics/Whisper
+      // Check for simple single-word wrapper first: *word*
+      const singleWordMatch = cleanWord.match(/^([^\w\s]*)([*_])(.+?)(\2)([^\w\s]*)$/);
 
-      const italicMatch = cleanWord.match(/^([^\w\s]*)([*_])(.+?)(\2)([^\w\s]*)$/);
-
-      if (italicMatch) {
-        const prefix = italicMatch[1];  // e.g. "("
-        const content = italicMatch[3]; // e.g. "whisper"
-        const suffix = italicMatch[5];  // e.g. "),"
-
-        // Reconstruct word without markers
+      if (singleWordMatch) {
+        const prefix = singleWordMatch[1];
+        const content = singleWordMatch[3];
+        const suffix = singleWordMatch[5];
         cleanWord = prefix + content + suffix;
-
-        // Add core content to whispered set
-        // textParser/KineticPlayer logic relies on stripping punctuation from the lookup key
         const contentClean = content.toLowerCase().replace(/[.,!?;:]/g, '');
         detectedWhispered.push(contentClean);
       }
-      else if (!lowerWord.includes('kin-txt')) {
-        // 3. Handle ALL CAPS (Emphasis) - only if not KiN-TXT
-        // Must be >= 3 chars, all caps, and have at least one letter
+      else {
+        // Multi-word handling
+        // Check start: *word (and not inside italics already)
+        if (!inItalics && /^([^\w\s]*)([*_])/.test(cleanWord)) {
+          // It starts with * or _
+          inItalics = true;
+          // Strip the leading marker
+          cleanWord = cleanWord.replace(/^([^\w\s]*)([*_])/, '$1');
+        }
+
+        // Processing if in italics (newly started or continuing)
+        if (inItalics) {
+          // Check for end: word* (trailing marker)
+          if (/([*_])([^\w\s]*)$/.test(cleanWord)) {
+            inItalics = false;
+            // Strip trailing marker
+            cleanWord = cleanWord.replace(/([*_])([^\w\s]*)$/, '$2');
+          }
+
+          // Register this word as whispered
+          const contentClean = cleanWord.toLowerCase().replace(/[.,!?;:]/g, '');
+          detectedWhispered.push(contentClean);
+        }
+      }
+
+      // 3. Handle ALL CAPS (Emphasis) - only if not KiN-TXT
+      if (!lowerWord.includes('kin-txt')) {
         const wordNoPunct = cleanWord.replace(/[.,!?;:'"()[\]]/g, '');
         if (
           wordNoPunct.length >= 3 &&
