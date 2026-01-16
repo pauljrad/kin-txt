@@ -120,6 +120,17 @@ export function KineticPlayer({
     [whisperedWords]
   );
 
+  // Create a set for words that are in ALL CAPS (for direct case-sensitive matching)
+  const allCapsSet = useMemo(
+    () => new Set(
+      parsedText.paragraphs.flat().filter((word) => {
+        const cleanWord = word.replace(/[.,!?;:""'""']/g, '');
+        return cleanWord.length >= 3 && /^[A-Z]+$/.test(cleanWord);
+      }).map((w) => w.toLowerCase().replace(/[.,!?;:]/g, ''))
+    ),
+    [parsedText.paragraphs]
+  );
+
   // Create a map for rhythm speeds lookup
   const rhythmSpeedMap = useMemo(() => {
     const map = new Map<number, number>();
@@ -148,7 +159,7 @@ export function KineticPlayer({
   
   // Check if current word should be emphasized or whispered
   const cleanWord = currentDisplayWord.toLowerCase().replace(/[.,!?;:]/g, '');
-  const isEmphasisWord = emphasisSet.has(cleanWord);
+  const isEmphasisWord = emphasisSet.has(cleanWord) || allCapsSet.has(cleanWord);
   const isWhisperedWord = whisperedSet.has(cleanWord);
 
   // Calculate horizontal squash for emphasis words that might overflow
