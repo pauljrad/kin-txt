@@ -160,8 +160,11 @@ export function KineticPlayer({
   // Check if current word should be emphasized or whispered
   // Use robust regex matching textParser to ensure punctuation/brackets/quotes don't break lookup
   const cleanWord = currentDisplayWord.toLowerCase().replace(/[.,!?;:'"()[\]]/g, '');
-  const isEmphasisWord = emphasisSet.has(cleanWord) || allCapsSet.has(cleanWord);
   const isWhisperedWord = whisperedSet.has(cleanWord);
+
+  // CRITICAL FIX: Whisper trumps emphasis. If it's whispered, it CANNOT be emphasized.
+  // This solves the issue where "Mouse" (AI detected emphasis) stayed big instead of shrinking.
+  const isEmphasisWord = !isWhisperedWord && (emphasisSet.has(cleanWord) || allCapsSet.has(cleanWord));
 
   // Calculate horizontal squash for emphasis words that might overflow
   const wordRef = useRef<HTMLSpanElement>(null);
@@ -1061,14 +1064,13 @@ export function KineticPlayer({
                 scaleX: 0.9,
                 scaleY: 0.9,
                 y: -10, // Subtle exit movement
-                filter: 'blur(4px)'
+                filter: 'blur(4px)',
+                transition: { duration: 0.05 } // CRITICAL FIX: Near-instant exit prevents "wait" mode from slowing down reading speed
               }}
               transition={{
                 // Use a standard easeOut for natural feeling without slowness
-                // Duration dynamic but slightly cushioned
-                duration: Math.min(0.4, (currentWordDelayMs / 1000) * 0.5),
+                duration: Math.min(0.2, (currentWordDelayMs / 1000) * 0.4), // Faster transition
                 ease: "easeOut",
-                filter: { duration: 0.15 }
               }}
               className={`kinetic-word text-center select-none ${cleanWord.includes('kin-txt')
                 ? 'text-foreground' // Ensure it's not faded/colored weirdly
