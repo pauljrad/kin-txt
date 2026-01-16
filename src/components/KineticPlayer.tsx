@@ -1501,14 +1501,17 @@ export function KineticPlayer({
                     <Popover open={showAtmosphere} onOpenChange={setShowAtmosphere}>
                       <PopoverTrigger asChild>
                         <button
-                          className={`hud-icon-button transition-colors ${showAtmosphere ? 'bg-primary text-primary-foreground' : ''}`}
-                          title="Ambient music & sounds"
+                          className="hud-icon-button transition-all duration-300"
+                          title="Jazz Atmosphere"
                           onClick={(e) => {
                             e.stopPropagation();
                             setShowAtmosphere(!showAtmosphere);
                           }}
                         >
-                          <Music className={`w-5 h-5 sm:w-6 sm:h-6 ${showAtmosphere ? 'text-primary-foreground text-indigo-400' : 'text-indigo-400'}`} />
+                          <Music
+                            className="w-5 h-5 sm:w-6 sm:h-6 text-foreground transition-all duration-300"
+                            strokeWidth={showAtmosphere ? 3 : 1.5}
+                          />
                         </button>
                       </PopoverTrigger>
                       <PopoverContent side="top" align="center" className="p-0 border-none bg-transparent shadow-none w-auto mb-4 z-[60]">
