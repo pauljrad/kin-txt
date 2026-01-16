@@ -28,7 +28,7 @@ const AppContent = () => {
     }, 3000);
 
     // Handle bfcache (Back-Forward Cache) restoration
-    const handlePageShow = (event: PageTransitionEvent) => {
+    const handlePageShow = (event: any) => {
       if (event.persisted) {
         setShowSplash(true);
         setTimeout(() => setShowSplash(false), 3000);

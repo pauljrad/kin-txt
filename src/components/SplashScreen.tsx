@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 export const SplashScreen = ({ onComplete }: { onComplete?: () => void }) => {
     return (
         <motion.div
-            className="fixed inset-0 z-[9999] bg-background flex items-center justify-center overflow-hidden"
+            className="fixed inset-0 z-[9999] bg-background flex items-center justify-center overflow-hidden touch-none"
             initial={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.5, ease: "easeInOut" }}
