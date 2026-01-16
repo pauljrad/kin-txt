@@ -192,30 +192,17 @@ const Index = () => {
     // Use provided initial progress (from Chapter 1) or default to start
     const startProgress = initialProgress || { paragraph: 0, word: 0 };
 
-    // Save the document to database with ebook file type
-    const saved = await saveDocument({
-      title,
-      source: 'file',
-      parsedText: parsed,
-      progress: startProgress,
-      fileType: 'epub',
-    });
-
-    if (!saved) {
-      toast.error('Failed to save document');
-      setIsAnalyzing(false);
-      return;
-    }
-
     // Process styles deterministically (italics, caps, !, KiN-TXT branding)
     const { cleanedText, detectedWhispered, detectedEmphasis } = processTextStyles(parsed);
 
-    // Update document in database with CLEANED text
-    if (saved.id) {
-      // ... (wait, I need to update the saved document in DB? No, saveDocument already saved it.)
-      // But I want to save the CLEANED text.
-      // I should have called processTextStyles BEFORE saveDocument.
-    }
+    // Save the document to database with ebook file type and CLEANED text
+    const saved = await saveDocument({
+      title,
+      source: 'file',
+      parsedText: cleanedText,
+      progress: startProgress,
+      fileType: 'epub',
+    });
 
     if (!saved) {
       toast.error('Failed to save document');
@@ -233,7 +220,7 @@ const Index = () => {
       rawEmphasis.filter(w => !finalWhisperedWords.includes(w))
     )));
 
-    // Update document with emphasis data
+    // Update document with final emphasis data
     if (saved.id) {
       await updateDocumentEmphasis(saved.id, finalEmphasisWords, finalWhisperedWords);
     }
