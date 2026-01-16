@@ -400,7 +400,7 @@ export const AnimatedTitle = forwardRef<HTMLDivElement, AnimatedTitleProps>(
               <motion.span
                 ref={dotRef}
                 animate={dotControls}
-                className="absolute block rounded-full bg-yellow-500 transition-[filter] duration-150"
+                className="absolute block rounded-full bg-white transition-[filter] duration-150"
                 style={{
                   width: "0.12em",
                   height: "0.12em",
@@ -442,7 +442,7 @@ export const AnimatedTitle = forwardRef<HTMLDivElement, AnimatedTitleProps>(
             <motion.span
               ref={hyphenRef}
               animate={hyphenControls}
-              className="inline-block text-yellow-500"
+              className="inline-block text-white"
               style={{ display: "inline-block" }}
             >
               -

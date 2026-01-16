@@ -91,7 +91,7 @@ export const PongGame = forwardRef<HTMLDivElement, PongGameProps>(
         const target = paddleTargetRef.current.x;
         const current = paddleCurrentRef.current.x;
         const diff = target - current;
-        
+
         // Faster interpolation with threshold for snappy feel
         if (Math.abs(diff) < 1) {
           paddleCurrentRef.current.x = target;
@@ -99,7 +99,7 @@ export const PongGame = forwardRef<HTMLDivElement, PongGameProps>(
           paddleCurrentRef.current.x = current + diff * smoothing;
         }
         setPaddleX(paddleCurrentRef.current.x);
-        
+
         animFrame = requestAnimationFrame(interpolate);
       };
 
@@ -200,13 +200,13 @@ export const PongGame = forwardRef<HTMLDivElement, PongGameProps>(
         if (ball.vy > 0) {
           const ballBottom = ball.y + ballSize;
           const withinX = ball.x + ballSize >= currentPaddleX && ball.x <= currentPaddleX + paddleWidth;
-          
+
           if (withinX && ballBottom >= paddleTop && ball.y <= paddleBottom) {
             ball.y = paddleTop - ballSize;
-            
+
             // Normal bounce for first hit
             ball.vy = -0.35;
-            
+
             // Gentle angle based on hit position
             const hitPos = (ball.x + ballSize / 2 - currentPaddleX) / paddleWidth;
             const angle = (hitPos - 0.5) * 2;
@@ -280,10 +280,10 @@ export const PongGame = forwardRef<HTMLDivElement, PongGameProps>(
         if (ball.vy > 0) {
           const ballBottom = ball.y + ballSize;
           const withinX = ball.x + ballSize >= currentPaddleX && ball.x <= currentPaddleX + paddleWidth;
-          
+
           if (withinX && ballBottom >= paddleTop && ball.y <= paddleBottom) {
             ball.y = paddleTop - ballSize;
-            
+
             // Higher bounce - increased multiplier
             ball.vy = -Math.abs(ball.vy) * 1.1;
             if (ball.vy < -0.45) ball.vy = -0.45; // higher cap for bouncier feel
@@ -366,7 +366,7 @@ export const PongGame = forwardRef<HTMLDivElement, PongGameProps>(
 
         {/* Ball */}
         <motion.div
-          className="absolute rounded-full bg-yellow-500"
+          className="absolute rounded-full bg-white"
           style={{
             width: ballSize,
             height: ballSize,
@@ -374,26 +374,26 @@ export const PongGame = forwardRef<HTMLDivElement, PongGameProps>(
             top: ballPos.y,
           }}
           initial={{ opacity: 0 }}
-          animate={{ 
-            opacity: gameState === 'ending' || gameState === 'waiting' ? 0 : 1 
+          animate={{
+            opacity: gameState === 'ending' || gameState === 'waiting' ? 0 : 1
           }}
           transition={{ duration: 0.2 }}
         />
 
         {/* Paddle (enlarged hyphen) */}
         <motion.div
-          className="absolute text-yellow-500 flex items-center justify-center"
-          initial={{ 
-            left: initialPaddlePos.x, 
+          className="absolute text-white flex items-center justify-center"
+          initial={{
+            left: initialPaddlePos.x,
             width: initialPaddleWidth,
             opacity: 0,
           }}
-          animate={{ 
-            left: paddleX, 
+          animate={{
+            left: paddleX,
             width: paddleWidth,
             opacity: gameState === 'waiting' ? 0 : 1,
           }}
-          transition={{ 
+          transition={{
             left: { type: 'tween', duration: 0, ease: 'linear' },
             width: { duration: 0.15, ease: 'easeOut' },
             opacity: { duration: 0.1 },
