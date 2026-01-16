@@ -28,15 +28,15 @@ interface KineticPlayerProps {
   onProgressChange?: (paragraph: number, word: number) => void;
 }
 
-export function KineticPlayer({ 
-  parsedText, 
+export function KineticPlayer({
+  parsedText,
   documentId,
   initialProgress,
   emphasisWords = [],
   whisperedWords = [],
   initialTotalReadingTime = 0,
-  onBack, 
-  onProgressChange 
+  onBack,
+  onProgressChange
 }: KineticPlayerProps) {
   const { textSize, setTextSize } = useTextSize();
   const [isPlaying, setIsPlaying] = useState(false);
@@ -102,14 +102,14 @@ export function KineticPlayer({
   );
   const progressBarRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  
+
   const allWords = parsedText.paragraphs.flat();
   const totalWords = allWords.length;
-  
+
   // Detect chapters and sentence boundaries
   const chapters = useMemo(() => detectChapters(parsedText), [parsedText]);
   const sentenceBoundaries = useMemo(() => findSentenceBoundaries(parsedText), [parsedText]);
-  
+
   // Create sets for quick lookup (lowercase for comparison)
   const emphasisSet = useMemo(
     () => new Set(emphasisWords.map((w) => w.toLowerCase().replace(/[.,!?;:]/g, ''))),
@@ -139,7 +139,7 @@ export function KineticPlayer({
     });
     return map;
   }, [rhythmSpeeds]);
-  
+
   // Calculate current word index across all paragraphs
   const getCurrentWordIndex = useCallback(() => {
     let index = 0;
@@ -148,15 +148,15 @@ export function KineticPlayer({
     }
     return index + currentWord;
   }, [currentParagraph, currentWord, parsedText.paragraphs]);
-  
+
   const progress = totalWords > 0 ? (getCurrentWordIndex() / totalWords) * 100 : 0;
-  
+
   // Safely get current word with fallback
   const currentDisplayWord = parsedText.paragraphs[currentParagraph]?.[currentWord] ?? '';
-  
+
   // Early return check if parsedText is invalid
   const isValidText = parsedText?.paragraphs?.length > 0;
-  
+
   // Check if current word should be emphasized or whispered
   const cleanWord = currentDisplayWord.toLowerCase().replace(/[.,!?;:]/g, '');
   const isEmphasisWord = emphasisSet.has(cleanWord) || allCapsSet.has(cleanWord);
@@ -165,24 +165,24 @@ export function KineticPlayer({
   // Calculate horizontal squash for emphasis words that might overflow
   const wordRef = useRef<HTMLSpanElement>(null);
   const [emphasisScaleX, setEmphasisScaleX] = useState(1);
-  
+
   // Measure word and calculate squash factor when emphasis word changes
   useEffect(() => {
     if (isEmphasisWord && wordRef.current) {
       // Get viewport width with some padding
       const viewportWidth = window.innerWidth - 32; // 16px padding on each side
-      
+
       // Get the base font size for emphasis words
       const textSizeMultiplier = parseFloat(
         getComputedStyle(document.documentElement).getPropertyValue('--text-size-multiplier') || '1'
       );
       const baseFontSize = 4 * 16 * textSizeMultiplier; // 4rem in pixels
       const emphasisScale = 2.5;
-      
+
       // Estimate word width (approximate: each char is ~0.6x font size for display fonts)
       const estimatedCharWidth = baseFontSize * 0.55;
       const estimatedWordWidth = currentDisplayWord.length * estimatedCharWidth * emphasisScale;
-      
+
       if (estimatedWordWidth > viewportWidth) {
         // Calculate squash factor to fit, with a minimum of 0.3 to keep readable
         const squashFactor = Math.max(0.3, viewportWidth / estimatedWordWidth);
@@ -200,7 +200,7 @@ export function KineticPlayer({
     const hrs = Math.floor(seconds / 3600);
     const mins = Math.floor((seconds % 3600) / 60);
     const secs = seconds % 60;
-    
+
     if (hrs > 0) {
       return `${hrs}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     }
@@ -213,23 +213,23 @@ export function KineticPlayer({
   // - Comfortable: 200-250 WPM with good comprehension  
   // - Experienced: 250-300 WPM optimal balance
   // Base delay is 300ms at speed 1.0 = 200 WPM
-  
+
   // Adaptive ramp: starts at ~150 WPM, reaches target after ~100 words
   const adaptiveMultiplier = useMemo(() => {
     if (!adaptiveSpeed) return 1.0;
-    
+
     // Start a bit slower for comfort, then ramp up.
     // Ramp from ~0.80 to 1.0 over the first ~120 words.
     const rampWords = 120;
     const progress = Math.min(1, wordsReadInSession / rampWords);
-    
+
     // Ease-out curve for natural acceleration
     const easeOut = 1 - Math.pow(1 - progress, 2);
-    
+
     // Start at 0.75, ramp to 1.0
     return 0.75 + (0.25 * easeOut);
   }, [adaptiveSpeed, wordsReadInSession]);
-  
+
   const rhythmMultiplier = useMemo(() => {
     // Base multipliers (lower = slower, more comfortable)
     // Empirically, sustained comprehension for RSVP-style word presentation tends to drop as you push above ~220–250 WPM.
@@ -247,27 +247,27 @@ export function KineticPlayer({
       default:
         baseMultiplier = 0.90; // ~180 WPM peak (after ramp) - original speed
     }
-    
+
     return baseMultiplier * adaptiveMultiplier;
   }, [rhythmPreset, adaptiveMultiplier]);
 
   // Generate rhythm speeds synchronously using local heuristics (instant, no API call)
   const generateLocalRhythm = useCallback((words: string[]): WordSpeed[] => {
     const results: WordSpeed[] = [];
-    
+
     // Quick function words - read faster (articles, prepositions, pronouns, auxiliaries)
     const quickWords = new Set([
-      'the','a','an','and','or','but','in','on','at','to','for','of','with','by','is','it','as','be',
-      'was','were','been','are','have','has','had','do','does','did','will','would','could','should',
-      'may','might','must','shall','can','that','this','these','those','i','you','he','she','we','they',
-      'my','your','his','her','its','our','their','me','him','us','them','so','if','then','than','just',
-      'not','no','yes','all','any','some','each','every','into','onto','from','about','through'
+      'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'is', 'it', 'as', 'be',
+      'was', 'were', 'been', 'are', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should',
+      'may', 'might', 'must', 'shall', 'can', 'that', 'this', 'these', 'those', 'i', 'you', 'he', 'she', 'we', 'they',
+      'my', 'your', 'his', 'her', 'its', 'our', 'their', 'me', 'him', 'us', 'them', 'so', 'if', 'then', 'than', 'just',
+      'not', 'no', 'yes', 'all', 'any', 'some', 'each', 'every', 'into', 'onto', 'from', 'about', 'through'
     ]);
-    
+
     // Slow down for important/heavy words
     const slowWords = new Set([
-      'however','therefore','nevertheless','furthermore','consequently','meanwhile','although',
-      'because','suddenly','immediately','finally','always','never','perhaps','probably'
+      'however', 'therefore', 'nevertheless', 'furthermore', 'consequently', 'meanwhile', 'although',
+      'because', 'suddenly', 'immediately', 'finally', 'always', 'never', 'perhaps', 'probably'
     ]);
 
     let prevEndedSentence = false;
@@ -276,7 +276,7 @@ export function KineticPlayer({
     for (let i = 0; i < words.length; i++) {
       const word = words[i];
       const cleanWord = word.toLowerCase().replace(/[.,!?;:'"—–\-()[\]]/g, '');
-      
+
       // Base speed: keep around 1.0 (≈200 WPM baseline) and let the preset handle global scaling.
       let speed = 1.0;
 
@@ -341,7 +341,7 @@ export function KineticPlayer({
       if (/!$/.test(word)) {
         speed -= 0.1;
       }
-      
+
       // Quoted text start - slight pause
       if (/^["']/.test(word)) {
         speed -= 0.05;
@@ -382,7 +382,7 @@ export function KineticPlayer({
         clearInterval(sessionTimerRef.current);
       }
     }
-    
+
     return () => {
       if (sessionTimerRef.current) {
         clearInterval(sessionTimerRef.current);
@@ -412,7 +412,7 @@ export function KineticPlayer({
   const getCurrentSpeed = useCallback(() => {
     // Default safe speed
     const DEFAULT_SPEED = 1.0;
-    
+
     if (rhythmMode && rhythmSpeeds.length > 0) {
       const currentIndex = getCurrentWordIndex();
       const rhythmSpeed = rhythmSpeedMap.get(currentIndex);
@@ -423,7 +423,7 @@ export function KineticPlayer({
       // Fall back to default if beyond analyzed range
       return DEFAULT_SPEED * rhythmMultiplier;
     }
-    
+
     if (accelerationMode) {
       if (chunkLength <= 1) {
         return Number.isFinite(startSpeed) && startSpeed > 0 ? startSpeed : DEFAULT_SPEED;
@@ -433,7 +433,7 @@ export function KineticPlayer({
       const speed = startSpeed + (endSpeed - startSpeed) * progressInChunk;
       return Number.isFinite(speed) && speed > 0 ? speed : DEFAULT_SPEED;
     }
-    
+
     // Default static speed (use startSpeed as the base)
     return Number.isFinite(startSpeed) && startSpeed > 0 ? startSpeed : DEFAULT_SPEED;
   }, [rhythmMode, rhythmSpeeds.length, rhythmSpeedMap, getCurrentWordIndex, rhythmMultiplier, accelerationMode, wordInChunk, chunkLength, startSpeed, endSpeed]);
@@ -450,7 +450,7 @@ export function KineticPlayer({
     let remaining = targetIndex;
     let para = 0;
     let word = 0;
-    
+
     for (let i = 0; i < parsedText.paragraphs.length; i++) {
       const paraLength = parsedText.paragraphs[i].length;
       if (remaining < paraLength) {
@@ -462,13 +462,13 @@ export function KineticPlayer({
       para = i;
       word = parsedText.paragraphs[i].length - 1;
     }
-    
+
     setCurrentParagraph(para);
     setCurrentWord(word);
     setSentenceCount(0);
     setWordInChunk(0);
     setIsComplete(false);
-    
+
     // Recalculate chunk length for current position
     const currentPara = parsedText.paragraphs[para];
     let count = 0;
@@ -486,12 +486,12 @@ export function KineticPlayer({
   // Handle progress bar click/drag
   const handleProgressBarInteraction = useCallback((e: React.MouseEvent | React.TouchEvent) => {
     if (!progressBarRef.current) return;
-    
+
     const rect = progressBarRef.current.getBoundingClientRect();
     const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
     const percentage = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
     const targetIndex = Math.floor(percentage * (totalWords - 1));
-    
+
     seekToIndex(targetIndex);
   }, [totalWords, seekToIndex]);
 
@@ -531,25 +531,25 @@ export function KineticPlayer({
   const advanceWord = useCallback(() => {
     // Safety checks: ensure we have valid data before advancing
     if (!parsedText?.paragraphs?.length) return;
-    
+
     const paragraphsLength = parsedText.paragraphs.length;
     if (currentParagraph >= paragraphsLength) return;
-    
+
     const currentParagraphWords = parsedText.paragraphs[currentParagraph];
     if (!currentParagraphWords?.length) return;
-    
+
     const currentParagraphLength = currentParagraphWords.length;
     if (currentWord >= currentParagraphLength) return;
-    
+
     const word = currentParagraphWords[currentWord];
     if (!word) return;
-    
+
     // Check if this word ends a sentence
     let newSentenceCount = sentenceCount;
     if (isSentenceEnd(word)) {
       newSentenceCount = sentenceCount + 1;
     }
-    
+
     // Determine reset count based on interval setting
     // 'start' = never reset (always start speed), 'end' = never reset (always accelerate), 'paragraph' = infinite
     let resetCount = Infinity;
@@ -560,7 +560,7 @@ export function KineticPlayer({
     } else if (resetInterval !== 'paragraph') {
       resetCount = parseInt(resetInterval);
     }
-    
+
     if (currentWord < currentParagraphLength - 1) {
       // Reset speed after configured number of sentences
       if (accelerationMode && newSentenceCount >= resetCount && isSentenceEnd(word)) {
@@ -587,7 +587,7 @@ export function KineticPlayer({
     } else if (currentParagraph < paragraphsLength - 1) {
       // Move to next paragraph
       const nextPara = currentParagraph + 1;
-      
+
       // Check if entering a new chapter - find any chapter that starts at nextPara
       // and that we haven't shown yet (index > lastChapterIndex)
       let enteringChapterIndex = -1;
@@ -689,32 +689,32 @@ export function KineticPlayer({
 
     const para = parsedText.paragraphs[currentParagraph];
     if (!para) return;
-    
+
     const word = para[currentWord];
     if (!word) return;
-    
+
     // Get current speed based on paragraph progress or rhythm
     const currentSpeed = getCurrentSpeed();
-    
+
     // Calculate delay with current speed - ensure it's valid
     let delay = getWordDelay(word, currentSpeed, rhythmMode ? 'rhythm' : 'normal');
-    
+
     // Sanity check: delay must be a positive finite number
     if (!Number.isFinite(delay) || delay <= 0) {
       delay = 300; // fallback to 300ms
     }
-    
+
     // Slightly longer pause at paragraph start (only if not rhythm mode)
     if (currentWord === 0 && !rhythmMode) {
       delay = delay * 1.3;
     }
-    
+
     // Extra pause for emphasis words (only if not rhythm mode)
     const wordClean = word.toLowerCase().replace(/[.,!?;:]/g, '');
     if (!rhythmMode && emphasisSet.has(wordClean)) {
       delay = delay * 1.5;
     }
-    
+
     // Cap maximum delay to prevent freezing / stalling
     delay = Math.min(delay, 2500);
 
@@ -723,7 +723,7 @@ export function KineticPlayer({
     setCurrentWordDelayMs(delay);
 
     timeoutRef.current = setTimeout(advanceWord, delay);
-    
+
     return () => {
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
@@ -734,11 +734,11 @@ export function KineticPlayer({
 
   const handleMouseMove = useCallback(() => {
     setShowControls(true);
-    
+
     if (controlsTimeoutRef.current) {
       clearTimeout(controlsTimeoutRef.current);
     }
-    
+
     if (isPlaying) {
       controlsTimeoutRef.current = setTimeout(() => {
         setShowControls(false);
@@ -814,15 +814,15 @@ export function KineticPlayer({
     if (target.closest('.controls-panel') || target.closest('.progress-bar-container')) {
       return;
     }
-    
+
     if (isComplete) {
       handleRestart();
       return;
     }
-    
+
     const newPlaying = !isPlaying;
     setIsPlaying(newPlaying);
-    
+
     // Enter fullscreen when starting to play
     if (newPlaying && !isFullscreen) {
       await enterFullscreen();
@@ -837,7 +837,7 @@ export function KineticPlayer({
     }
     const newPlaying = !isPlaying;
     setIsPlaying(newPlaying);
-    
+
     // Enter fullscreen when starting to play
     if (newPlaying && !isFullscreen) {
       await enterFullscreen();
@@ -881,7 +881,7 @@ export function KineticPlayer({
   useEffect(() => {
     // Safety check: ensure parsedText is valid
     if (!parsedText?.paragraphs?.length) return;
-    
+
     // Calculate initial chunk length on mount (only if no initial progress)
     if (!initialProgress) {
       const firstParagraph = parsedText.paragraphs[0];
@@ -906,7 +906,7 @@ export function KineticPlayer({
         setChunkLength(count);
       }
     }
-    
+
     // Start playing automatically after a short delay (rhythm is already analyzed synchronously)
     let isMounted = true;
     const timer = setTimeout(() => {
@@ -964,11 +964,10 @@ export function KineticPlayer({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className={`fixed inset-0 flex items-center justify-center overflow-hidden cursor-pointer transition-all duration-700 ${
-        focusMode 
-          ? 'focus-mode-bg' 
+      className={`fixed inset-0 flex items-center justify-center overflow-hidden cursor-pointer transition-all duration-700 ${focusMode
+          ? 'focus-mode-bg'
           : 'bg-background'
-      }`}
+        }`}
       onMouseMove={handleMouseMove}
       onClick={handleScreenTap}
     >
@@ -992,16 +991,14 @@ export function KineticPlayer({
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 1.1 }}
             transition={{ duration: 0.5, ease: [0.34, 1.56, 0.64, 1] }}
-            className={`absolute inset-0 z-50 flex items-center justify-center px-8 ${
-              focusMode ? 'focus-mode-bg' : 'bg-background'
-            }`}
+            className={`absolute inset-0 z-50 flex items-center justify-center px-8 ${focusMode ? 'focus-mode-bg' : 'bg-background'
+              }`}
           >
             <motion.h1
               initial={{ y: 20, filter: 'blur(10px)' }}
               animate={{ y: 0, filter: 'blur(0px)' }}
-              className={`font-display text-center leading-tight max-w-5xl px-4 ${
-                focusMode ? 'text-white focus-word-glow' : 'text-foreground'
-              }`}
+              className={`font-display text-center leading-tight max-w-5xl px-4 ${focusMode ? 'text-white focus-word-glow' : 'text-foreground'
+                }`}
               style={{
                 // Keep chapter/section titles readable but not gigantic.
                 // Match the reader's base word size (respects the user's text size multiplier) and scale it by 3x.
@@ -1023,12 +1020,11 @@ export function KineticPlayer({
             exit={{ opacity: 0, scale: 0.9 }}
             className="absolute inset-0 flex items-center justify-center z-5 pointer-events-none"
           >
-            <motion.div 
-              className={`w-20 h-20 rounded-full flex items-center justify-center backdrop-blur-sm ${
-                focusMode 
-                  ? 'bg-white/20 border border-white/30' 
+            <motion.div
+              className={`w-20 h-20 rounded-full flex items-center justify-center backdrop-blur-sm ${focusMode
+                  ? 'bg-white/20 border border-white/30'
                   : 'bg-muted/60 border border-border/50'
-              }`}
+                }`}
               animate={{ scale: [1, 1.05, 1] }}
               transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
             >
@@ -1045,24 +1041,24 @@ export function KineticPlayer({
             <motion.span
               ref={wordRef}
               key={`${currentParagraph}-${currentWord}`}
-              initial={{ 
-                opacity: 0, 
+              initial={{
+                opacity: 0,
                 scaleX: isEmphasisWord ? 0.5 * emphasisScaleX : isWhisperedWord ? 1.0 : 0.8,
-                scaleY: isEmphasisWord ? 0.5 : isWhisperedWord ? 1.0 : 0.8, 
+                scaleY: isEmphasisWord ? 0.5 : isWhisperedWord ? 1.0 : 0.8,
                 y: 30,
                 filter: 'blur(8px)'
               }}
-              animate={{ 
-                opacity: isWhisperedWord ? 0.5 : 1, 
+              animate={{
+                opacity: isWhisperedWord ? 0.5 : 1,
                 scaleX: isEmphasisWord ? 2.5 * emphasisScaleX : isWhisperedWord ? 0.85 : 1,
-                scaleY: isEmphasisWord ? 2.5 : isWhisperedWord ? 0.85 : 1, 
+                scaleY: isEmphasisWord ? 2.5 : isWhisperedWord ? 0.85 : 1,
                 y: 0,
                 filter: 'blur(0px)'
               }}
-              exit={{ 
-                opacity: 0, 
+              exit={{
+                opacity: 0,
                 scaleX: 0.9,
-                scaleY: 0.9, 
+                scaleY: 0.9,
                 y: -30,
                 filter: 'blur(4px)'
               }}
@@ -1078,15 +1074,14 @@ export function KineticPlayer({
                 ease: [0.34, 1.56, 0.64, 1],
                 filter: { duration: 0.2 }
               }}
-              className={`kinetic-word font-display text-center select-none ${
-                isWhisperedWord 
-                  ? 'text-muted-foreground/60 italic' 
-                  : focusMode 
-                    ? 'text-white focus-word-glow' 
+              className={`kinetic-word font-display text-center select-none ${isWhisperedWord
+                  ? 'text-muted-foreground/60 italic'
+                  : focusMode
+                    ? 'text-white focus-word-glow'
                     : ''
-              } ${isEmphasisWord && focusMode ? 'focus-word-glow' : ''}`}
+                } ${isEmphasisWord && focusMode ? 'focus-word-glow' : ''}`}
               style={{
-                fontSize: `calc(${isEmphasisWord ? '4rem' : isWhisperedWord ? '2.5rem' : '3rem'} * var(--text-size-multiplier, 1))`,
+                fontSize: `calc(${isEmphasisWord ? '4rem' : isWhisperedWord ? '1.5rem' : '3rem'} * var(--text-size-multiplier, 1))`,
               }}
             >
               {currentDisplayWord}
@@ -1244,9 +1239,8 @@ export function KineticPlayer({
                   e.stopPropagation();
                   setFocusMode(!focusMode);
                 }}
-                className={`p-2 sm:p-3 glass-panel hover:bg-card/90 transition-all duration-300 ${
-                  focusMode ? "ring-2 ring-primary" : ""
-                }`}
+                className={`p-2 sm:p-3 glass-panel hover:bg-card/90 transition-all duration-300 ${focusMode ? "ring-2 ring-primary" : ""
+                  }`}
                 title={focusMode ? "Exit focus mode" : "Focus mode: hide controls for immersive reading"}
               >
                 <Eye className={`w-5 h-5 sm:w-6 sm:h-6 ${focusMode ? "text-primary" : ""}`} />
@@ -1327,11 +1321,10 @@ export function KineticPlayer({
                               setRhythmMode(true);
                             }
                           }}
-                          className={`px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg text-[0.7em] sm:text-[0.8em] font-medium transition-colors capitalize ${
-                            rhythmMode && rhythmPreset === preset
+                          className={`px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg text-[0.7em] sm:text-[0.8em] font-medium transition-colors capitalize ${rhythmMode && rhythmPreset === preset
                               ? 'bg-primary text-primary-foreground'
                               : 'hover:bg-secondary text-muted-foreground'
-                          }`}
+                            }`}
                         >
                           {preset}
                         </button>
@@ -1343,9 +1336,8 @@ export function KineticPlayer({
                       <PopoverTrigger asChild>
                         <button
                           onClick={(e) => e.stopPropagation()}
-                          className={`p-2 sm:p-3 rounded-xl transition-colors ${
-                            showSettingsPopover ? 'bg-secondary' : 'hover:bg-secondary'
-                          }`}
+                          className={`p-2 sm:p-3 rounded-xl transition-colors ${showSettingsPopover ? 'bg-secondary' : 'hover:bg-secondary'
+                            }`}
                           title="Speed settings"
                         >
                           <Settings className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -1369,11 +1361,10 @@ export function KineticPlayer({
                                   setRhythmMode(true);
                                   setAccelerationMode(false);
                                 }}
-                                className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-colors flex items-center justify-center gap-1.5 ${
-                                  rhythmMode
+                                className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-colors flex items-center justify-center gap-1.5 ${rhythmMode
                                     ? 'bg-primary text-primary-foreground'
                                     : 'bg-secondary hover:bg-secondary/80'
-                                }`}
+                                  }`}
                               >
                                 <Music className="w-3 h-3" />
                                 Rhythm
@@ -1383,11 +1374,10 @@ export function KineticPlayer({
                                   setRhythmMode(false);
                                   setAccelerationMode(true);
                                 }}
-                                className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
-                                  !rhythmMode && accelerationMode
+                                className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-colors ${!rhythmMode && accelerationMode
                                     ? 'bg-primary text-primary-foreground'
                                     : 'bg-secondary hover:bg-secondary/80'
-                                }`}
+                                  }`}
                               >
                                 Accelerate
                               </button>
@@ -1396,11 +1386,10 @@ export function KineticPlayer({
                                   setRhythmMode(false);
                                   setAccelerationMode(false);
                                 }}
-                                className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
-                                  !rhythmMode && !accelerationMode
+                                className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-colors ${!rhythmMode && !accelerationMode
                                     ? 'bg-primary text-primary-foreground'
                                     : 'bg-secondary hover:bg-secondary/80'
-                                }`}
+                                  }`}
                               >
                                 Static
                               </button>
@@ -1453,19 +1442,18 @@ export function KineticPlayer({
                                     <button
                                       key={interval}
                                       onClick={() => setResetInterval(interval)}
-                                      className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
-                                        resetInterval === interval
+                                      className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${resetInterval === interval
                                           ? 'bg-primary text-primary-foreground'
                                           : 'bg-secondary hover:bg-secondary/80'
-                                      }`}
+                                        }`}
                                     >
                                       {interval === 'paragraph'
                                         ? 'Paragraph'
                                         : interval === 'start'
-                                        ? 'Start'
-                                        : interval === 'end'
-                                        ? 'End'
-                                        : `${interval} sentence${interval !== '1' ? 's' : ''}`}
+                                          ? 'Start'
+                                          : interval === 'end'
+                                            ? 'End'
+                                            : `${interval} sentence${interval !== '1' ? 's' : ''}`}
                                     </button>
                                   ))}
                                 </div>
@@ -1511,11 +1499,10 @@ export function KineticPlayer({
                                 <button
                                   key={size}
                                   onClick={() => setTextSize(size)}
-                                  className={`flex-1 px-2 py-1.5 rounded-lg text-xs font-medium transition-colors capitalize ${
-                                    textSize === size
+                                  className={`flex-1 px-2 py-1.5 rounded-lg text-xs font-medium transition-colors capitalize ${textSize === size
                                       ? 'bg-primary text-primary-foreground'
                                       : 'bg-secondary hover:bg-secondary/80'
-                                  }`}
+                                    }`}
                                 >
                                   {size.charAt(0).toUpperCase() + size.slice(1)}
                                 </button>
