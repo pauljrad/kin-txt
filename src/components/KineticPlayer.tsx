@@ -112,11 +112,11 @@ export function KineticPlayer({
 
   // Create sets for quick lookup (lowercase for comparison)
   const emphasisSet = useMemo(
-    () => new Set(emphasisWords.map((w) => w.toLowerCase().replace(/[.,!?;:]/g, ''))),
+    () => new Set(emphasisWords.map((w) => w.toLowerCase().replace(/[.,!?;:'"()[\]]/g, ''))),
     [emphasisWords]
   );
   const whisperedSet = useMemo(
-    () => new Set(whisperedWords.map((w) => w.toLowerCase().replace(/[.,!?;:]/g, ''))),
+    () => new Set(whisperedWords.map((w) => w.toLowerCase().replace(/[.,!?;:'"()[\]]/g, ''))),
     [whisperedWords]
   );
 
@@ -124,9 +124,9 @@ export function KineticPlayer({
   const allCapsSet = useMemo(
     () => new Set(
       parsedText.paragraphs.flat().filter((word) => {
-        const cleanWord = word.replace(/[.,!?;:""'""']/g, '');
+        const cleanWord = word.replace(/[.,!?;:'"()[\]]/g, '');
         return cleanWord.length >= 3 && /^[A-Z]+$/.test(cleanWord);
-      }).map((w) => w.toLowerCase().replace(/[.,!?;:]/g, ''))
+      }).map((w) => w.toLowerCase().replace(/[.,!?;:'"()[\]]/g, ''))
     ),
     [parsedText.paragraphs]
   );
@@ -1069,15 +1069,15 @@ export function KineticPlayer({
                 ease: [0.32, 0.72, 0, 1], // "easeOutQuart" - very smooth deceleration
               }}
               className={`kinetic-word text-center select-none absolute ${cleanWord.includes('kin-txt')
-                  ? 'text-foreground'
-                  : `font-display ${isWhisperedWord ? 'text-muted-foreground/60 italic' : focusMode ? 'text-white focus-word-glow' : ''}`
+                ? 'text-foreground'
+                : `font-display ${isWhisperedWord ? 'text-muted-foreground/60 italic' : focusMode ? 'text-white focus-word-glow' : ''}`
                 } ${isEmphasisWord && focusMode ? 'focus-word-glow' : ''}`}
               style={{
                 // Use transform-origin to make scaling feel grounded
                 transformOrigin: 'center center',
                 fontSize: `calc(${cleanWord.includes('kin-txt') ? '5rem' :
-                    isEmphasisWord ? '4rem' :
-                      isWhisperedWord ? '1.5rem' : '3rem'
+                  isEmphasisWord ? '4rem' :
+                    isWhisperedWord ? '1.5rem' : '3rem'
                   } * var(--text-size-multiplier, 1))`,
               }}
             >
