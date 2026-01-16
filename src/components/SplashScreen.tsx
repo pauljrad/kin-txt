@@ -13,7 +13,7 @@ export const SplashScreen = ({ onComplete }: { onComplete?: () => void }) => {
             <div className="select-none">
                 {/* Massive KiN-TXT Logo - using standard text classes for maximum stability */}
                 <h1 className="text-8xl sm:text-9xl font-display text-foreground tracking-wide flex items-baseline justify-center leading-none">
-                    <span>K</span>
+                    <span className="opacity-0">K</span>
 
                     {/* Animated "i" */}
                     <span className="relative inline-flex flex-col items-center mx-[0.05em]" style={{ width: "0.36em" }}>
@@ -44,7 +44,7 @@ export const SplashScreen = ({ onComplete }: { onComplete?: () => void }) => {
                         />
                     </span>
 
-                    <span>n</span>
+                    <span className="opacity-0">n</span>
 
                     {/* Bouncing Hyphen */}
                     <motion.span
@@ -59,7 +59,7 @@ export const SplashScreen = ({ onComplete }: { onComplete?: () => void }) => {
                         -
                     </motion.span>
 
-                    <span>TXT</span>
+                    <span className="opacity-0">TXT</span>
                 </h1>
             </div>
         </motion.div>
