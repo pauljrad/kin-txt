@@ -1035,8 +1035,12 @@ export function KineticPlayer({
         )}
       </AnimatePresence>
 
-      {/* Word Display */}
-      <div className="relative z-10 flex items-center justify-center px-4 sm:px-8">
+      {/* Word Display with fixed min-height to prevent layout jumps */}
+      <div
+        className="relative z-10 flex items-center justify-center px-4 sm:px-8"
+        // Ensure container is tall enough for the largest possible word (KiN-TXT 5rem) to prevent page jumping
+        style={{ minHeight: 'calc(6rem * var(--text-size-multiplier, 1))' }}
+      >
         <AnimatePresence mode="wait">
           {!showingChapterTitle && (
             <motion.span
@@ -1044,50 +1048,40 @@ export function KineticPlayer({
               key={`${currentParagraph}-${currentWord}`}
               initial={{
                 opacity: 0,
-                scaleX: isEmphasisWord ? 0.5 * emphasisScaleX : isWhisperedWord ? 1.0 : 0.8,
-                scaleY: isEmphasisWord ? 0.5 : isWhisperedWord ? 1.0 : 0.8,
-                y: 30,
-                filter: 'blur(8px)'
+                // Start slightly smaller for "zoom in" effect, but less dramatic than before
+                scale: isWhisperedWord ? 0.9 : 0.95,
+                y: 10,
+                filter: 'blur(5px)' // Softer blur
               }}
               animate={{
-                opacity: isWhisperedWord ? 0.5 : 1,
-                scaleX: isEmphasisWord ? 2.5 * emphasisScaleX : isWhisperedWord ? 0.85 : 1,
-                scaleY: isEmphasisWord ? 2.5 : isWhisperedWord ? 0.85 : 1,
+                opacity: isWhisperedWord ? 0.6 : 1,
+                scale: 1,
                 y: 0,
                 filter: 'blur(0px)'
               }}
               exit={{
                 opacity: 0,
-                scaleX: 0.9,
-                scaleY: 0.9,
-                y: -30,
-                filter: 'blur(4px)'
+                scale: 1.1, // Slight zoom out on exit for "moving forward" feel
+                y: -10,
+                filter: 'blur(5px)'
               }}
               transition={{
-                // Drive animation duration from the actual per-word delay.
-                // Use a fraction of the delay so there's still time for the word to "sit" on screen.
-                duration: (() => {
-                  const base = Math.max(0.12, Math.min(0.32, (currentWordDelayMs / 1000) * 0.35));
-                  if (isEmphasisWord) return Math.min(0.4, base * 1.25);
-                  if (isWhisperedWord) return Math.max(0.14, base * 0.9);
-                  return base;
-                })(),
-                ease: [0.34, 1.56, 0.64, 1],
-                filter: { duration: 0.2 }
+                // Slightly longer duration for smoothness, but not "slow"
+                duration: Math.min(0.35, (currentWordDelayMs / 1000) * 0.6),
+                ease: "easeOut", // Standard easing is smoother than custom bezier sometimes
               }}
-              className={`kinetic-word text-center select-none ${cleanWord.includes('kin-txt')
-                ? 'text-foreground' // Ensure it's not faded/colored weirdly
-                : `font-display ${isWhisperedWord ? 'text-muted-foreground/60 italic' : focusMode ? 'text-white focus-word-glow' : ''}`
+              className={`kinetic-word text-center select-none absolute ${cleanWord.includes('kin-txt')
+                  ? 'text-foreground'
+                  : `font-display ${isWhisperedWord ? 'text-muted-foreground/60 italic' : focusMode ? 'text-white focus-word-glow' : ''}`
                 } ${isEmphasisWord && focusMode ? 'focus-word-glow' : ''}`}
               style={{
-                fontSize: `calc(${cleanWord.includes('kin-txt') ? '5rem' : // FORCE VERY large size for KiN-TXT
-                  isEmphasisWord ? '4rem' :
-                    isWhisperedWord ? '1.5rem' : '3rem'
+                fontSize: `calc(${cleanWord.includes('kin-txt') ? '5rem' :
+                    isEmphasisWord ? '4rem' :
+                      isWhisperedWord ? '1.5rem' : '3rem'
                   } * var(--text-size-multiplier, 1))`,
               }}
             >
               {cleanWord.includes('kin-txt') ? (
-                // Force explicit casing rendering with standard font to avoid small-caps issues
                 <span className="font-sans font-black tracking-tight">K<span style={{ fontSize: '0.8em', textTransform: 'lowercase' }}>i</span>N-TXT</span>
               ) : (
                 currentDisplayWord
