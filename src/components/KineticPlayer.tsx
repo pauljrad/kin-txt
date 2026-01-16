@@ -70,7 +70,7 @@ export function KineticPlayer({
   const [lastChapterIndex, setLastChapterIndex] = useState(-1);
   const [focusMode, setFocusMode] = useState(false);
   const [atmospherePlaying, setAtmospherePlaying] = useState(false);
-  const atmosphereAudioRef = useRef<HTMLAudioElement | null>(null);
+  const atmosphereAudioRef = useRef<HTMLAudioElement>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const sessionTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -1340,6 +1340,7 @@ export function KineticPlayer({
                         side="top"
                         align="end"
                         onClick={(e) => e.stopPropagation()}
+                        container={containerRef.current}
                       >
                         <div className="space-y-4">
                           <div className="font-medium text-sm">Speed Settings</div>
@@ -1511,25 +1512,21 @@ export function KineticPlayer({
                       title={atmospherePlaying ? "Turn off Jazz Atmosphere" : "Turn on Jazz Atmosphere"}
                       onClick={(e) => {
                         e.stopPropagation();
-                        // Direct toggle logic to avoid autoplay blocks
-                        if (!atmosphereAudioRef.current) {
-                          atmosphereAudioRef.current = new Audio('https://www.chosic.com/wp-content/uploads/2021/04/Warm-Jazz.mp3');
-                          atmosphereAudioRef.current.loop = true;
-                          atmosphereAudioRef.current.crossOrigin = "anonymous";
-                        }
+                        const audio = atmosphereAudioRef.current;
+                        if (!audio) return;
 
                         if (atmospherePlaying) {
-                          atmosphereAudioRef.current.pause();
+                          audio.pause();
+                          setAtmospherePlaying(false);
                         } else {
-                          const playPromise = atmosphereAudioRef.current.play();
-                          if (playPromise !== undefined) {
-                            playPromise.catch(err => {
-                              console.error("Audio block:", err);
-                              toast.error("Please click again to play");
-                            });
-                          }
+                          audio.play().then(() => {
+                            setAtmospherePlaying(true);
+                          }).catch(err => {
+                            console.error("Audio block:", err);
+                            toast.error("Please click again to play (Browser blocked sound)");
+                            setAtmospherePlaying(false);
+                          });
                         }
-                        setAtmospherePlaying(!atmospherePlaying);
                       }}
                     >
                       <Music
@@ -1654,6 +1651,13 @@ export function KineticPlayer({
           />
         )}
       </AnimatePresence>
+
+      <audio
+        ref={atmosphereAudioRef}
+        src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3"
+        loop
+        preload="auto"
+      />
     </motion.div>
   );
 }
