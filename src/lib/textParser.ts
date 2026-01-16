@@ -105,8 +105,8 @@ export function getWordDelay(word: string, baseSpeed: number, mode: WordDelayMod
   // Guard against invalid speeds causing Infinity/NaN delays
   const safeSpeed = Number.isFinite(baseSpeed) && baseSpeed > 0 ? baseSpeed : 1;
 
-  // Base delay in milliseconds (300ms for comfortable reading)
-  const baseDelay = 300 / safeSpeed;
+  // Base delay in milliseconds (250ms for faster 1.2x pace per user request)
+  const baseDelay = 250 / safeSpeed;
 
   // Ensure baseDelay is valid
   if (!Number.isFinite(baseDelay) || baseDelay <= 0) {
