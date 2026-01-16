@@ -11,7 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useTextSize } from '@/hooks/useTextSize';
-
+import { AtmospherePlayer } from './AtmospherePlayer';
 interface WordSpeed {
   word: string;
   speed: number;
@@ -69,6 +69,7 @@ export function KineticPlayer({
   const [showingChapterTitle, setShowingChapterTitle] = useState<string | null>(null);
   const [lastChapterIndex, setLastChapterIndex] = useState(-1);
   const [focusMode, setFocusMode] = useState(false);
+  const [showAtmosphere, setShowAtmosphere] = useState(false);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const sessionTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -1493,6 +1494,25 @@ export function KineticPlayer({
                             </div>
                           </div>
                         </div>
+                      </PopoverContent>
+                    </Popover>
+
+                    {/* Atmosphere Music button */}
+                    <Popover open={showAtmosphere} onOpenChange={setShowAtmosphere}>
+                      <PopoverTrigger asChild>
+                        <button
+                          className={`hud-icon-button transition-colors ${showAtmosphere ? 'bg-primary text-primary-foreground' : ''}`}
+                          title="Ambient music & sounds"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setShowAtmosphere(!showAtmosphere);
+                          }}
+                        >
+                          <Music className={`w-5 h-5 sm:w-6 sm:h-6 ${showAtmosphere ? 'text-primary-foreground text-indigo-400' : 'text-indigo-400'}`} />
+                        </button>
+                      </PopoverTrigger>
+                      <PopoverContent side="top" align="center" className="p-0 border-none bg-transparent shadow-none w-auto mb-4 z-[60]">
+                        <AtmospherePlayer onClose={() => setShowAtmosphere(false)} />
                       </PopoverContent>
                     </Popover>
 
