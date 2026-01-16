@@ -26,6 +26,7 @@ interface KineticPlayerProps {
   initialTotalReadingTime?: number;
   onBack: () => void;
   onProgressChange?: (paragraph: number, word: number) => void;
+  isEbook?: boolean;
 }
 
 export function KineticPlayer({
@@ -36,7 +37,8 @@ export function KineticPlayer({
   whisperedWords = [],
   initialTotalReadingTime = 0,
   onBack,
-  onProgressChange
+  onProgressChange,
+  isEbook = false
 }: KineticPlayerProps) {
   const { textSize, setTextSize } = useTextSize();
   const [isPlaying, setIsPlaying] = useState(false);
@@ -597,11 +599,15 @@ export function KineticPlayer({
 
       // Check if entering a new chapter - find any chapter that starts at nextPara
       // and that we haven't shown yet (index > lastChapterIndex)
+      // Only check for chapters if this is an ebook (per user request)
       let enteringChapterIndex = -1;
-      for (let i = 0; i < chapters.length; i++) {
-        if (chapters[i].startParagraph === nextPara && i > lastChapterIndex) {
-          enteringChapterIndex = i;
-          break;
+
+      if (isEbook) {
+        for (let i = 0; i < chapters.length; i++) {
+          if (chapters[i].startParagraph === nextPara && i > lastChapterIndex) {
+            enteringChapterIndex = i;
+            break;
+          }
         }
       }
 

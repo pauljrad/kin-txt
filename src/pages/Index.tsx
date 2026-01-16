@@ -27,6 +27,7 @@ interface ActiveDocument {
   emphasisWords?: string[];
   whisperedWords?: string[];
   totalReadingTime?: number;
+  isEbook?: boolean;
 }
 
 interface EmphasisAnalysis {
@@ -175,6 +176,7 @@ const Index = () => {
       emphasisWords: filteredEmphasisWords,
       whisperedWords,
       totalReadingTime: 0,
+      isEbook: false, // Pasted text is never an ebook
     });
   }, []);
 
@@ -228,6 +230,7 @@ const Index = () => {
       whisperedWords,
       totalReadingTime: 0,
       initialProgress: startProgress,
+      isEbook: true,
     });
   }, []);
 
@@ -291,6 +294,7 @@ const Index = () => {
       emphasisWords: finalEmphasisWords,
       whisperedWords: finalWhisperedWords,
       totalReadingTime: 0,
+      isEbook: false,
     });
   }, []);
 
@@ -336,6 +340,7 @@ const Index = () => {
       emphasisWords: finalEmphasisWords,
       whisperedWords: finalWhisperedWords,
       totalReadingTime: doc.totalReadingTime || 0,
+      isEbook: doc.fileType === 'epub',
     });
   }, []);
 
@@ -559,6 +564,7 @@ const Index = () => {
               initialTotalReadingTime={activeDocument.totalReadingTime}
               onBack={handleBack}
               onProgressChange={handleProgressChange}
+              isEbook={activeDocument.isEbook}
             />
           </motion.div>
         )}

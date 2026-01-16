@@ -39,6 +39,7 @@ export interface SavedDocument {
   updatedAt: number;
   emphasisWords?: string[];
   whisperedWords?: string[];
+  fileType?: string;
 }
 
 // Detect category based on source, file type, and content characteristics
@@ -47,31 +48,31 @@ export function detectCategory(source: 'file' | 'paste' | 'url', title: string, 
   if (fileType === 'epub' || fileType === 'mobi' || fileType === 'azw') {
     return 'book';
   }
-  
+
   if (source === 'url') {
     return 'article';
   }
-  
+
   // Check title for ebook extensions
   const bookIndicators = /\.(epub|mobi|azw)$/i;
   if (bookIndicators.test(title)) {
     return 'book';
   }
-  
+
   // Check for common book-related title patterns
   const bookTitlePatterns = /^(strange case|the |a |an |dr\.|mr\.|mrs\.|ms\.)/i;
   if (source === 'file' && (wordCount > 8000 || bookTitlePatterns.test(title))) {
     return 'book';
   }
-  
+
   if (source === 'paste') {
     return wordCount > 5000 ? 'document' : 'article';
   }
-  
+
   if (/\.(pdf|docx?)$/i.test(title)) {
     return 'document';
   }
-  
+
   if (wordCount > 10000) return 'book';
   if (wordCount < 2000) return 'article';
   return 'document';
@@ -83,12 +84,12 @@ function dbToSavedDocument(doc: DatabaseDocument & { source?: string; file_type?
   const wordCount = parsedText.paragraphs?.flat()?.length || doc.word_count;
   const source = (doc.source as 'file' | 'paste' | 'url') || 'paste';
   const fileType = doc.file_type;
-  
+
   // Calculate paragraph and word from current_word_index
   let paragraph = 0;
   let word = 0;
   let count = 0;
-  
+
   if (parsedText.paragraphs && doc.current_word_index > 0) {
     for (let p = 0; p < parsedText.paragraphs.length; p++) {
       const paragraphLength = parsedText.paragraphs[p].length;
@@ -100,7 +101,7 @@ function dbToSavedDocument(doc: DatabaseDocument & { source?: string; file_type?
       count += paragraphLength;
     }
   }
-  
+
   return {
     id: doc.id,
     title: doc.title,
@@ -237,7 +238,7 @@ export async function updateDocumentEmphasis(id: string, emphasisWords: string[]
 
   const { error } = await supabase
     .from('documents')
-    .update({ 
+    .update({
       emphasis_words: emphasisWords,
       whispered_words: whisperedWords,
     })
@@ -285,7 +286,7 @@ export async function markDocumentCompleted(id: string, completed: boolean = tru
 
   const { error } = await supabase
     .from('documents')
-    .update({ 
+    .update({
       is_completed: completed,
       completed_at: completed ? new Date().toISOString() : null,
     })
