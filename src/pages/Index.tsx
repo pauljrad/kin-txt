@@ -10,7 +10,7 @@ import { NewsLibrary } from '@/components/NewsLibrary';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { AnimatedTitle } from '@/components/AnimatedTitle';
 import { usePullGesture } from '@/hooks/usePullGesture';
-import { ParsedText, processTextStyles } from '@/lib/textParser';
+import { ParsedText, processTextStyles, filterEmphasis } from '@/lib/textParser';
 import { SavedDocument, saveDocument, updateDocumentProgress, updateDocumentEmphasis } from '@/lib/documentDatabase';
 import { migrateLocalDocumentsToAccount } from '@/lib/documentMigration';
 import { supabase } from '@/integrations/supabase/client';
@@ -164,7 +164,8 @@ const Index = () => {
 
     // Ensure whisper trumps emphasis if there's a collision
     // (e.g. if AI says "mouse" is emphasis but it's in our auto-whisper list)
-    const filteredEmphasisWords = emphasisWords.filter(w => !whisperedWords.includes(w));
+    // AND apply stop-word filtering to remove common words like "the", "with"
+    const filteredEmphasisWords = filterEmphasis(emphasisWords.filter(w => !whisperedWords.includes(w)));
 
     if (totalFound > 0) {
       toast.success(`Found ${filteredEmphasisWords.length} emphasis and ${whisperedWords.length} whispered words`);
@@ -212,7 +213,7 @@ const Index = () => {
 
     // Update document with emphasis data
     if (saved.id) {
-      await updateDocumentEmphasis(saved.id, emphasisWords, whisperedWords);
+      await updateDocumentEmphasis(saved.id, filterEmphasis(emphasisWords), whisperedWords);
     }
 
     setIsAnalyzing(false);
@@ -226,7 +227,7 @@ const Index = () => {
     setActiveDocument({
       parsedText: parsed,
       id: saved.id,
-      emphasisWords,
+      emphasisWords: filterEmphasis(emphasisWords),
       whisperedWords,
       totalReadingTime: 0,
       initialProgress: startProgress,
@@ -271,9 +272,9 @@ const Index = () => {
     // Filter emphasis to EXCLUDE any detected whispers (Deterministic whisper > AI emphasis)
     // This ensures words like "mouse" or "whisper" don't get blown up if AI marks them as emphatic
     const rawEmphasis = [...detectedEmphasis, ...aiEmphasis];
-    const finalEmphasisWords = Array.from(new Set(
+    const finalEmphasisWords = filterEmphasis(Array.from(new Set(
       rawEmphasis.filter(w => !finalWhisperedWords.includes(w))
-    ));
+    )));
 
     // Update document with emphasis data
     if (saved.id) {
@@ -322,9 +323,9 @@ const Index = () => {
       finalWhisperedWords = Array.from(new Set([...detectedWhispered, ...aiWhispered]));
 
       const rawEmphasis = [...detectedEmphasis, ...aiEmphasis];
-      finalEmphasisWords = Array.from(new Set(
+      finalEmphasisWords = filterEmphasis(Array.from(new Set(
         rawEmphasis.filter(w => !finalWhisperedWords.includes(w))
-      ));
+      )));
 
       // Save this new data back to the document
       if (doc.id) {
