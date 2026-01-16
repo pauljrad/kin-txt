@@ -154,10 +154,11 @@ export interface ProcessedTextResult {
 
 const STOP_WORDS = new Set([
   'the', 'and', 'or', 'but', 'if', 'of', 'in', 'on', 'at', 'to', 'for', 'by', 'with', 'from',
-  'is', 'are', 'was', 'were', 'be', 'been', 'am',
-  'it', 'he', 'she', 'they', 'we', 'i', 'you',
-  'a', 'an', 'this', 'that', 'these', 'those',
-  'not', 'no', 'yes', 'so', 'as', 'do', 'did', 'does', 'can', 'could', 'would', 'should'
+  'is', 'are', 'was', 'were', 'be', 'been', 'am', 'has', 'have', 'had',
+  'it', 'he', 'she', 'they', 'we', 'i', 'you', 'my', 'your', 'his', 'her', 'their', 'our',
+  'a', 'an', 'this', 'that', 'these', 'those', 'which', 'who', 'whom', 'whose',
+  'not', 'no', 'yes', 'so', 'as', 'do', 'did', 'does', 'can', 'could', 'would', 'should',
+  'very', 'too', 'just', 'more', 'some', 'any', 'all'
 ]);
 
 export function filterEmphasis(words: string[]): string[] {

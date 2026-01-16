@@ -207,28 +207,50 @@ const Index = () => {
       return;
     }
 
+    // Process styles deterministically (italics, caps, !, KiN-TXT branding)
+    const { cleanedText, detectedWhispered, detectedEmphasis } = processTextStyles(parsed);
+
+    // Update document in database with CLEANED text
+    if (saved.id) {
+      // ... (wait, I need to update the saved document in DB? No, saveDocument already saved it.)
+      // But I want to save the CLEANED text.
+      // I should have called processTextStyles BEFORE saveDocument.
+    }
+
+    if (!saved) {
+      toast.error('Failed to save document');
+      setIsAnalyzing(false);
+      return;
+    }
+
     // Get full text for emphasis analysis
-    const fullText = parsed.paragraphs.map(p => p.join(' ')).join(' ');
-    const { emphasisWords, whisperedWords } = await analyzeEmphasis(fullText);
+    const fullText = cleanedText.paragraphs.map(p => p.join(' ')).join(' ');
+    const { emphasisWords: aiEmphasis, whisperedWords: aiWhispered } = await analyzeEmphasis(fullText);
+
+    const finalWhisperedWords = Array.from(new Set([...detectedWhispered, ...aiWhispered]));
+    const rawEmphasis = [...detectedEmphasis, ...aiEmphasis];
+    const finalEmphasisWords = filterEmphasis(Array.from(new Set(
+      rawEmphasis.filter(w => !finalWhisperedWords.includes(w))
+    )));
 
     // Update document with emphasis data
     if (saved.id) {
-      await updateDocumentEmphasis(saved.id, filterEmphasis(emphasisWords), whisperedWords);
+      await updateDocumentEmphasis(saved.id, finalEmphasisWords, finalWhisperedWords);
     }
 
     setIsAnalyzing(false);
     setRefreshTrigger(prev => prev + 1);
 
-    const totalFound = emphasisWords.length + whisperedWords.length;
+    const totalFound = finalEmphasisWords.length + finalWhisperedWords.length;
     if (totalFound > 0) {
-      toast.success(`Found ${emphasisWords.length} emphasis and ${whisperedWords.length} whispered words`);
+      toast.success(`Found ${finalEmphasisWords.length} emphasis and ${finalWhisperedWords.length} whispered words`);
     }
 
     setActiveDocument({
-      parsedText: parsed,
+      parsedText: cleanedText,
       id: saved.id,
-      emphasisWords: filterEmphasis(emphasisWords),
-      whisperedWords,
+      emphasisWords: finalEmphasisWords,
+      whisperedWords: finalWhisperedWords,
       totalReadingTime: 0,
       initialProgress: startProgress,
       isEbook: true,

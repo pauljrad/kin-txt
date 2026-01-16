@@ -122,17 +122,6 @@ export function KineticPlayer({
     [whisperedWords]
   );
 
-  // Create a set for words that are in ALL CAPS (for direct case-sensitive matching)
-  const allCapsSet = useMemo(
-    () => new Set(
-      parsedText.paragraphs.flat().filter((word) => {
-        const cleanWord = word.replace(/[.,!?;:'"()[\]]/g, '');
-        return cleanWord.length >= 3 && /^[A-Z]+$/.test(cleanWord);
-      }).map((w) => w.toLowerCase().replace(/[.,!?;:'"()[\]]/g, ''))
-    ),
-    [parsedText.paragraphs]
-  );
-
   // Create a map for rhythm speeds lookup
   const rhythmSpeedMap = useMemo(() => {
     const map = new Map<number, number>();
@@ -169,7 +158,25 @@ export function KineticPlayer({
 
   // CRITICAL FIX: Whisper trumps emphasis. If it's whispered, it CANNOT be emphasized.
   // This solves the issue where "Mouse" (AI detected emphasis) stayed big instead of shrinking.
-  const isEmphasisWord = !isWhisperedWord && (emphasisSet.has(cleanWord) || allCapsSet.has(cleanWord));
+  // Determine if the *current specific instance* has visual emphasis markers
+  const wordNoPunct = currentDisplayWord.replace(/[.,!?;:'"()[\]]/g, '');
+  const isAllCaps =
+    wordNoPunct.length >= 3 &&
+    wordNoPunct === wordNoPunct.toUpperCase() &&
+    /[A-Z]/.test(wordNoPunct);
+
+  const hasExclamation = currentDisplayWord.includes('!');
+
+  // CRITICAL FIX: Whisper trumps emphasis. 
+  // Emphasis triggers:
+  // 1. AI suggested word (already filtered by STOP_WORDS in emphasisSet)
+  // 2. Word is in ALL CAPS (Intent)
+  // 3. Word has an exclamation mark (Intent)
+  const isEmphasisWord = !isWhisperedWord && (
+    emphasisSet.has(cleanWord) ||
+    isAllCaps ||
+    hasExclamation
+  );
 
   // Calculate horizontal squash for emphasis words that might overflow
   const wordRef = useRef<HTMLSpanElement>(null);
