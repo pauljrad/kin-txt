@@ -158,15 +158,21 @@ const Index = () => {
     setIsAnalyzing(false);
     setRefreshTrigger(prev => prev + 1);
 
+    // Merge findings
     const totalFound = emphasisWords.length + whisperedWords.length;
+
+    // Ensure whisper trumps emphasis if there's a collision
+    // (e.g. if AI says "mouse" is emphasis but it's in our auto-whisper list)
+    const filteredEmphasisWords = emphasisWords.filter(w => !whisperedWords.includes(w));
+
     if (totalFound > 0) {
-      toast.success(`Found ${emphasisWords.length} emphasis and ${whisperedWords.length} whispered words`);
+      toast.success(`Found ${filteredEmphasisWords.length} emphasis and ${whisperedWords.length} whispered words`);
     }
 
     setActiveDocument({
       parsedText: parsed,
       id: saved.id,
-      emphasisWords,
+      emphasisWords: filteredEmphasisWords,
       whisperedWords,
       totalReadingTime: 0,
     });
@@ -257,8 +263,14 @@ const Index = () => {
     const { emphasisWords: aiEmphasis, whisperedWords: aiWhispered } = await analyzeEmphasis(fullText);
 
     // Merge findings
-    const finalEmphasisWords = Array.from(new Set([...detectedEmphasis, ...aiEmphasis]));
     const finalWhisperedWords = Array.from(new Set([...detectedWhispered, ...aiWhispered]));
+
+    // Filter emphasis to EXCLUDE any detected whispers (Deterministic whisper > AI emphasis)
+    // This ensures words like "mouse" or "whisper" don't get blown up if AI marks them as emphatic
+    const rawEmphasis = [...detectedEmphasis, ...aiEmphasis];
+    const finalEmphasisWords = Array.from(new Set(
+      rawEmphasis.filter(w => !finalWhisperedWords.includes(w))
+    ));
 
     // Update document with emphasis data
     if (saved.id) {
@@ -303,8 +315,12 @@ const Index = () => {
       const fullText = cleanedText.paragraphs.map(p => p.join(' ')).join(' ');
       const { emphasisWords: aiEmphasis, whisperedWords: aiWhispered } = await analyzeEmphasis(fullText);
 
-      finalEmphasisWords = Array.from(new Set([...detectedEmphasis, ...aiEmphasis]));
       finalWhisperedWords = Array.from(new Set([...detectedWhispered, ...aiWhispered]));
+
+      const rawEmphasis = [...detectedEmphasis, ...aiEmphasis];
+      finalEmphasisWords = Array.from(new Set(
+        rawEmphasis.filter(w => !finalWhisperedWords.includes(w))
+      ));
 
       // Save this new data back to the document
       if (doc.id) {
