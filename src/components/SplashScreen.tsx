@@ -12,7 +12,7 @@ export const SplashScreen = ({ onComplete }: { onComplete?: () => void }) => {
         >
             <div className="select-none">
                 {/* Massive KiN-TXT Logo - using standard text classes for maximum stability */}
-                <h1 className="text-8xl sm:text-9xl font-display text-foreground tracking-wide flex items-baseline justify-center leading-none">
+                <h1 className="text-7xl sm:text-8xl font-display text-foreground tracking-wide flex items-baseline justify-center leading-none">
                     <span className="opacity-0">K</span>
 
                     {/* Animated "i" */}
