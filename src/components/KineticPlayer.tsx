@@ -1060,8 +1060,8 @@ export function KineticPlayer({
                 : `font-display ${isWhisperedWord ? 'text-muted-foreground/60 italic' : focusMode ? 'text-white focus-word-glow' : ''}`
                 } ${isEmphasisWord && focusMode ? 'focus-word-glow' : ''}`}
               style={{
-                fontSize: `calc(${cleanWord.includes('kin-txt') || cleanWord === 'kin-txt' ? '5rem' : // FORCE VERY large size for KiN-TXT
-                  isEmphasisWord ? '4rem' :
+                fontSize: `calc(${cleanWord.includes('kin-txt') || cleanWord === 'kin-txt' ? '8rem' : // Increase KiN-TXT to match new emphasis scale
+                  isEmphasisWord ? '8rem' : // Boost emphasis to ~2.6x normal (3rem -> 8rem)
                     isWhisperedWord ? '1.5rem' : '3rem'
                   } * var(--text-size-multiplier, 1))`,
               }}
