@@ -10,12 +10,12 @@ export const SplashScreen = ({ onComplete }: { onComplete?: () => void }) => {
             onAnimationComplete={() => onComplete?.()}
         >
             <div className="select-none">
-                {/* Massive KiN-TXT Logo - 3x bigger than usual */}
-                <h1 className="text-[15svh] sm:text-[20svh] font-display text-foreground tracking-wide flex items-baseline justify-center leading-none">
+                {/* Massive KiN-TXT Logo - reduced by 1.5x */}
+                <h1 className="text-[10svh] sm:text-[13svh] font-display text-foreground tracking-wide flex items-baseline justify-center leading-none">
                     <span>K</span>
 
                     {/* Animated "i" */}
-                    <span className="relative inline-flex flex-col items-center mx-[0.05em]" style={{ width: "0.52em" }}>
+                    <span className="relative inline-flex flex-col items-center mx-[0.05em]" style={{ width: "0.36em" }}>
                         {/* Bouncing Dot */}
                         <motion.span
                             animate={{ y: [0, -40, 0] }}
@@ -27,8 +27,8 @@ export const SplashScreen = ({ onComplete }: { onComplete?: () => void }) => {
                             }}
                             className="absolute block rounded-full bg-foreground"
                             style={{
-                                width: "0.22em",
-                                height: "0.22em",
+                                width: "0.15em",
+                                height: "0.15em",
                                 top: "0.05em",
                             }}
                         />
@@ -36,7 +36,7 @@ export const SplashScreen = ({ onComplete }: { onComplete?: () => void }) => {
                         <span
                             className="block bg-foreground rounded-sm"
                             style={{
-                                width: "0.22em",
+                                width: "0.15em",
                                 height: "0.55em",
                                 marginTop: "0.38em",
                             }}
