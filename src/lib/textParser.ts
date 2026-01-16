@@ -161,30 +161,33 @@ export function processTextStyles(parsed: ParsedText): ProcessedTextResult {
       let cleanWord = word;
 
       // Check for italics (*word* or _word_) - map to whisper
-      // We look for words that start AND end with * or _
-      // Note: This is a simple per-word check. It won't handle multi-word italics like *hello world* 
-      // where "hello" has start-* and "world" has end-*, but typical simple parsing often splits these.
-      // For this implementation, we focused on token-level styles which fits the KineticPlayer model.
       if (
         (cleanWord.startsWith('*') && cleanWord.endsWith('*') && cleanWord.length > 2) ||
         (cleanWord.startsWith('_') && cleanWord.endsWith('_') && cleanWord.length > 2)
       ) {
-        // Strip the markers
         cleanWord = cleanWord.slice(1, -1);
-        // Add cleaned word to whispered set
         detectedWhispered.push(cleanWord.toLowerCase().replace(/[.,!?;:]/g, ''));
       }
 
-      // Check for ALL CAPS (Emphasis)
-      // Must be at least 3 chars long to avoid "A", "I", "OK" etc being emphasized too aggressively
-      // Must contain only uppercase letters and punctuation
-      const wordNoPunct = cleanWord.replace(/[.,!?;:'"()[\]]/g, '');
-      if (
-        wordNoPunct.length >= 3 &&
-        wordNoPunct === wordNoPunct.toUpperCase() &&
-        /[A-Z]/.test(wordNoPunct)
-      ) {
-        detectedEmphasis.push(cleanWord.toLowerCase().replace(/[.,!?;:]/g, ''));
+      // Check for 'kin-txt' case-insensitive
+      const lowerWord = cleanWord.toLowerCase();
+      if (lowerWord.includes('kin-txt')) {
+        // preserve punctuation around 'kin-txt'
+        // Regex to replace 'kin-txt' (case insensitive) with 'KiN-TXT'
+        cleanWord = cleanWord.replace(/kin-txt/i, 'KiN-TXT');
+        // Add valid word part to emphasis
+        const wordNoPunct = cleanWord.replace(/[.,!?;:'"()[\]]/g, '');
+        detectedEmphasis.push(wordNoPunct.toLowerCase());
+      } else {
+        // Check for ALL CAPS (only if not KiN-TXT to avoid double processing)
+        const wordNoPunct = cleanWord.replace(/[.,!?;:'"()[\]]/g, '');
+        if (
+          wordNoPunct.length >= 3 &&
+          wordNoPunct === wordNoPunct.toUpperCase() &&
+          /[A-Z]/.test(wordNoPunct)
+        ) {
+          detectedEmphasis.push(cleanWord.toLowerCase().replace(/[.,!?;:]/g, ''));
+        }
       }
 
       return cleanWord;
