@@ -3,15 +3,19 @@ import { motion } from 'framer-motion';
 export const SplashScreen = ({ onComplete }: { onComplete?: () => void }) => {
     return (
         <motion.div
-            className="fixed inset-0 z-[9999] bg-background flex items-center justify-center overflow-hidden touch-none"
+            className="fixed inset-0 bg-background flex items-center justify-center overflow-hidden touch-none"
+            style={{ zIndex: 9999 }}
             initial={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.5, ease: "easeInOut" }}
             onAnimationComplete={() => onComplete?.()}
         >
             <div className="select-none">
-                {/* Massive KiN-TXT Logo - reduced by 1.5x */}
-                <h1 className="text-[10svh] sm:text-[13svh] font-display text-foreground tracking-wide flex items-baseline justify-center leading-none">
+                {/* Massive KiN-TXT Logo - reduced by 1.5x - using inline styles for safety */}
+                <h1
+                    className="font-display text-foreground tracking-wide flex items-baseline justify-center leading-none"
+                    style={{ fontSize: '13vh' }}
+                >
                     <span>K</span>
 
                     {/* Animated "i" */}
