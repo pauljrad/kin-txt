@@ -965,8 +965,8 @@ export function KineticPlayer({
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       className={`fixed inset-0 flex items-center justify-center overflow-hidden cursor-pointer transition-all duration-700 ${focusMode
-          ? 'focus-mode-bg'
-          : 'bg-background'
+        ? 'focus-mode-bg'
+        : 'bg-background'
         }`}
       onMouseMove={handleMouseMove}
       onClick={handleScreenTap}
@@ -1022,8 +1022,8 @@ export function KineticPlayer({
           >
             <motion.div
               className={`w-20 h-20 rounded-full flex items-center justify-center backdrop-blur-sm ${focusMode
-                  ? 'bg-white/20 border border-white/30'
-                  : 'bg-muted/60 border border-border/50'
+                ? 'bg-white/20 border border-white/30'
+                : 'bg-muted/60 border border-border/50'
                 }`}
               animate={{ scale: [1, 1.05, 1] }}
               transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
@@ -1074,17 +1074,29 @@ export function KineticPlayer({
                 ease: [0.34, 1.56, 0.64, 1],
                 filter: { duration: 0.2 }
               }}
-              className={`kinetic-word font-display text-center select-none ${isWhisperedWord
-                  ? 'text-muted-foreground/60 italic'
-                  : focusMode
-                    ? 'text-white focus-word-glow'
-                    : ''
+              className={`kinetic-word font-display text-center select-none ${cleanWord.includes('kin-txt')
+                  ? 'text-foreground' // Ensure it's not faded/colored weirdly
+                  : isWhisperedWord
+                    ? 'text-muted-foreground/60 italic'
+                    : focusMode
+                      ? 'text-white focus-word-glow'
+                      : ''
                 } ${isEmphasisWord && focusMode ? 'focus-word-glow' : ''}`}
               style={{
-                fontSize: `calc(${isEmphasisWord ? '4rem' : isWhisperedWord ? '1.5rem' : '3rem'} * var(--text-size-multiplier, 1))`,
+                fontSize: `calc(${cleanWord.includes('kin-txt') ? '4rem' : // FORCE large size for KiN-TXT
+                    isEmphasisWord ? '4rem' :
+                      isWhisperedWord ? '1.5rem' : '3rem'
+                  } * var(--text-size-multiplier, 1))`,
+                // Force specific font logic if needed, but for now we trust font-display accepts lowercase
+                // If font-display is small-caps only, we might need to override fontFamily here.
               }}
             >
-              {currentDisplayWord}
+              {cleanWord.includes('kin-txt') ? (
+                // Force explicit casing rendering
+                <span>K<span className="lowercase">i</span>N-TXT</span>
+              ) : (
+                currentDisplayWord
+              )}
             </motion.span>
           )}
         </AnimatePresence>
@@ -1322,8 +1334,8 @@ export function KineticPlayer({
                             }
                           }}
                           className={`px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg text-[0.7em] sm:text-[0.8em] font-medium transition-colors capitalize ${rhythmMode && rhythmPreset === preset
-                              ? 'bg-primary text-primary-foreground'
-                              : 'hover:bg-secondary text-muted-foreground'
+                            ? 'bg-primary text-primary-foreground'
+                            : 'hover:bg-secondary text-muted-foreground'
                             }`}
                         >
                           {preset}
@@ -1362,8 +1374,8 @@ export function KineticPlayer({
                                   setAccelerationMode(false);
                                 }}
                                 className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-colors flex items-center justify-center gap-1.5 ${rhythmMode
-                                    ? 'bg-primary text-primary-foreground'
-                                    : 'bg-secondary hover:bg-secondary/80'
+                                  ? 'bg-primary text-primary-foreground'
+                                  : 'bg-secondary hover:bg-secondary/80'
                                   }`}
                               >
                                 <Music className="w-3 h-3" />
@@ -1375,8 +1387,8 @@ export function KineticPlayer({
                                   setAccelerationMode(true);
                                 }}
                                 className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-colors ${!rhythmMode && accelerationMode
-                                    ? 'bg-primary text-primary-foreground'
-                                    : 'bg-secondary hover:bg-secondary/80'
+                                  ? 'bg-primary text-primary-foreground'
+                                  : 'bg-secondary hover:bg-secondary/80'
                                   }`}
                               >
                                 Accelerate
@@ -1387,8 +1399,8 @@ export function KineticPlayer({
                                   setAccelerationMode(false);
                                 }}
                                 className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-colors ${!rhythmMode && !accelerationMode
-                                    ? 'bg-primary text-primary-foreground'
-                                    : 'bg-secondary hover:bg-secondary/80'
+                                  ? 'bg-primary text-primary-foreground'
+                                  : 'bg-secondary hover:bg-secondary/80'
                                   }`}
                               >
                                 Static
@@ -1443,8 +1455,8 @@ export function KineticPlayer({
                                       key={interval}
                                       onClick={() => setResetInterval(interval)}
                                       className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${resetInterval === interval
-                                          ? 'bg-primary text-primary-foreground'
-                                          : 'bg-secondary hover:bg-secondary/80'
+                                        ? 'bg-primary text-primary-foreground'
+                                        : 'bg-secondary hover:bg-secondary/80'
                                         }`}
                                     >
                                       {interval === 'paragraph'
@@ -1500,8 +1512,8 @@ export function KineticPlayer({
                                   key={size}
                                   onClick={() => setTextSize(size)}
                                   className={`flex-1 px-2 py-1.5 rounded-lg text-xs font-medium transition-colors capitalize ${textSize === size
-                                      ? 'bg-primary text-primary-foreground'
-                                      : 'bg-secondary hover:bg-secondary/80'
+                                    ? 'bg-primary text-primary-foreground'
+                                    : 'bg-secondary hover:bg-secondary/80'
                                     }`}
                                 >
                                   {size.charAt(0).toUpperCase() + size.slice(1)}

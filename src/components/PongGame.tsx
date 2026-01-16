@@ -366,7 +366,7 @@ export const PongGame = forwardRef<HTMLDivElement, PongGameProps>(
 
         {/* Ball */}
         <motion.div
-          className="absolute rounded-full bg-white"
+          className="absolute rounded-full bg-foreground"
           style={{
             width: ballSize,
             height: ballSize,
@@ -382,7 +382,7 @@ export const PongGame = forwardRef<HTMLDivElement, PongGameProps>(
 
         {/* Paddle (enlarged hyphen) */}
         <motion.div
-          className="absolute text-white flex items-center justify-center"
+          className="absolute text-foreground flex items-center justify-center"
           initial={{
             left: initialPaddlePos.x,
             width: initialPaddleWidth,

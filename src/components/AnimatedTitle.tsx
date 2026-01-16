@@ -368,18 +368,18 @@ export const AnimatedTitle = forwardRef<HTMLDivElement, AnimatedTitleProps>(
         {/* Pong Game Overlay */}
         {showPongGame && typeof document !== "undefined"
           ? createPortal(
-              <PongGame
-                key="pong-game"
-                onGameEnd={handleGameEnd}
-                initialBallPos={gameInitialPos.ball}
-                initialPaddlePos={gameInitialPos.paddle}
-                ballSize={gameInitialPos.ballSize}
-                paddleWidth={gameInitialPos.paddleWidth}
-                paddleFontSize={gameInitialPos.paddleFontSize}
-                paddleFontFamily={gameInitialPos.paddleFontFamily}
-              />,
-              document.body
-            )
+            <PongGame
+              key="pong-game"
+              onGameEnd={handleGameEnd}
+              initialBallPos={gameInitialPos.ball}
+              initialPaddlePos={gameInitialPos.paddle}
+              ballSize={gameInitialPos.ballSize}
+              paddleWidth={gameInitialPos.paddleWidth}
+              paddleFontSize={gameInitialPos.paddleFontSize}
+              paddleFontFamily={gameInitialPos.paddleFontFamily}
+            />,
+            document.body
+          )
           : null}
 
         {/* Main Title */}
@@ -400,7 +400,7 @@ export const AnimatedTitle = forwardRef<HTMLDivElement, AnimatedTitleProps>(
               <motion.span
                 ref={dotRef}
                 animate={dotControls}
-                className="absolute block rounded-full bg-white transition-[filter] duration-150"
+                className="absolute block rounded-full bg-foreground transition-[filter] duration-150"
                 style={{
                   width: "0.12em",
                   height: "0.12em",
@@ -442,7 +442,7 @@ export const AnimatedTitle = forwardRef<HTMLDivElement, AnimatedTitleProps>(
             <motion.span
               ref={hyphenRef}
               animate={hyphenControls}
-              className="inline-block text-white"
+              className="inline-block text-foreground"
               style={{ display: "inline-block" }}
             >
               -
