@@ -1062,7 +1062,7 @@ export function KineticPlayer({
               style={{
                 fontSize: `calc(${cleanWord.includes('kin-txt') || cleanWord === 'kin-txt' ? '6rem' : // Reduced to 6rem (~1.3x smaller)
                   isEmphasisWord ? '6rem' : // Reduced to 6rem (~1.3x smaller)
-                    isWhisperedWord ? '1.5rem' : '3rem'
+                    isWhisperedWord ? '1.5rem' : '3.6rem' // Normal text increased to 3.6rem (1.2x)
                   } * var(--text-size-multiplier, 1))`,
               }}
             >
