@@ -11,7 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useTextSize } from '@/hooks/useTextSize';
-import { AtmospherePlayer } from './AtmospherePlayer';
+
 interface WordSpeed {
   word: string;
   speed: number;
@@ -69,7 +69,8 @@ export function KineticPlayer({
   const [showingChapterTitle, setShowingChapterTitle] = useState<string | null>(null);
   const [lastChapterIndex, setLastChapterIndex] = useState(-1);
   const [focusMode, setFocusMode] = useState(false);
-  const [showAtmosphere, setShowAtmosphere] = useState(false);
+  const [atmospherePlaying, setAtmospherePlaying] = useState(false);
+  const atmosphereAudioRef = useRef<HTMLAudioElement | null>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const sessionTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -802,7 +803,14 @@ export function KineticPlayer({
     };
 
     document.addEventListener('fullscreenchange', handleFullscreenChange);
-    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      // Stop atmosphere on cleanup
+      if (atmosphereAudioRef.current) {
+        atmosphereAudioRef.current.pause();
+        atmosphereAudioRef.current = null;
+      }
+    };
   }, []);
 
   // Hide controls after 3 seconds when playing
@@ -1497,27 +1505,38 @@ export function KineticPlayer({
                       </PopoverContent>
                     </Popover>
 
-                    {/* Atmosphere Music button */}
-                    <Popover open={showAtmosphere} onOpenChange={setShowAtmosphere}>
-                      <PopoverTrigger asChild>
-                        <button
-                          className="hud-icon-button transition-all duration-300"
-                          title="Jazz Atmosphere"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setShowAtmosphere(!showAtmosphere);
-                          }}
-                        >
-                          <Music
-                            className="w-5 h-5 sm:w-6 sm:h-6 text-foreground transition-all duration-300"
-                            strokeWidth={showAtmosphere ? 3 : 1.5}
-                          />
-                        </button>
-                      </PopoverTrigger>
-                      <PopoverContent side="top" align="center" className="p-0 border-none bg-transparent shadow-none w-auto mb-4 z-[60]">
-                        <AtmospherePlayer onClose={() => setShowAtmosphere(false)} />
-                      </PopoverContent>
-                    </Popover>
+                    {/* Atmosphere Music toggle */}
+                    <button
+                      className="hud-icon-button transition-all duration-300"
+                      title={atmospherePlaying ? "Turn off Jazz Atmosphere" : "Turn on Jazz Atmosphere"}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        // Direct toggle logic to avoid autoplay blocks
+                        if (!atmosphereAudioRef.current) {
+                          atmosphereAudioRef.current = new Audio('https://www.chosic.com/wp-content/uploads/2021/04/Warm-Jazz.mp3');
+                          atmosphereAudioRef.current.loop = true;
+                          atmosphereAudioRef.current.crossOrigin = "anonymous";
+                        }
+
+                        if (atmospherePlaying) {
+                          atmosphereAudioRef.current.pause();
+                        } else {
+                          const playPromise = atmosphereAudioRef.current.play();
+                          if (playPromise !== undefined) {
+                            playPromise.catch(err => {
+                              console.error("Audio block:", err);
+                              toast.error("Please click again to play");
+                            });
+                          }
+                        }
+                        setAtmospherePlaying(!atmospherePlaying);
+                      }}
+                    >
+                      <Music
+                        className={`w-5 h-5 sm:w-6 sm:h-6 transition-all duration-300 ${atmospherePlaying ? 'text-white' : 'text-foreground/40'}`}
+                        strokeWidth={atmospherePlaying ? 3 : 1.5}
+                      />
+                    </button>
 
                     {/* Divider */}
                     <div className="w-px h-6 sm:h-8 bg-border" />
