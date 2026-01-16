@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Play, Pause, RotateCcw, ChevronLeft, Rewind, BookOpen, Clock, Music, Settings, Focus, Eye, Type } from 'lucide-react';
-import { ParsedText, getWordDelay } from '@/lib/textParser';
+import { ParsedText, getWordDelay, filterEmphasis } from '@/lib/textParser';
 import { detectChapters, findSentenceBoundaries, getRewindPosition, Chapter } from '@/lib/chapterParser';
 import { updateDocumentReadingTime as updateLocalReadingTime } from '@/lib/documentStorage';
 import { updateDocumentReadingTime as updateDbReadingTime } from '@/lib/documentDatabase';
@@ -114,7 +114,7 @@ export function KineticPlayer({
 
   // Create sets for quick lookup (lowercase for comparison)
   const emphasisSet = useMemo(
-    () => new Set(emphasisWords.map((w) => w.toLowerCase().replace(/[.,!?;:'"()[\]]/g, ''))),
+    () => new Set(filterEmphasis(emphasisWords).map((w) => w.toLowerCase().replace(/[.,!?;:'"()[\]]/g, ''))),
     [emphasisWords]
   );
   const whisperedSet = useMemo(
