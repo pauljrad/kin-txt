@@ -1,30 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
-  <defs>
-    <style>
-      .bg { fill: #000000; }
-      .fg { fill: #ffffff; }
-      .accent { fill: #eab308; } /* Tailwind yellow-500 */
-    </style>
-  </defs>
-
-  <!-- Rounded square background -->
-  <rect class="bg" x="0" y="0" width="256" height="256" rx="64"/>
-
-  <!-- Simplified KiN mark for small sizes (thicker strokes, fewer details) -->
-  <g transform="translate(34 52)">
-    <!-- K -->
-    <rect class="fg" x="0" y="0" width="28" height="152" rx="4"/>
-    <path class="fg" d="M28 76 L100 0 H138 L66 76 L138 152 H100 Z"/>
-
-    <!-- i -->
-    <rect class="fg" x="146" y="44" width="28" height="108" rx="6"/>
-    <circle class="accent" cx="160" cy="18" r="14"/>
-
-    <!-- N -->
-    <rect class="fg" x="190" y="0" width="26" height="152" rx="4"/>
-    <rect class="fg" x="230" y="0" width="26" height="152" rx="4"/>
-    <path class="fg" d="M216 0 L230 0 L230 26 L216 26 Z"/>
-    <path class="fg" d="M216 26 L230 26 L230 152 L216 152 Z"/>
-    <path class="fg" d="M216 0 L230 0 L190 152 L176 152 Z"/>
-  </g>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <rect width="100" height="100" fill="black"/>
+  <circle cx="35" cy="30" r="6" fill="white"/>
+  <rect x="29" y="42" width="12" height="35" rx="1" fill="white"/>
+  <rect x="52" y="55" width="22" height="10" rx="1" fill="white"/>
 </svg>

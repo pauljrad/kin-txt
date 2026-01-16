@@ -1,54 +1,64 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <title>KiN-TXT</title>
-    
-    <!-- PWA Meta Tags -->
-    <link rel="manifest" href="/manifest.webmanifest" />
 
-    <!-- Favicons -->
-    <link rel="icon" href="/favicon.svg?v=2" type="image/svg+xml" />
-    <link rel="icon" href="/favicon.ico?v=2" sizes="any" />
-    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=2">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="KiN-TXT">
-    <meta name="theme-color" content="#000000" />
-    <meta name="mobile-web-app-capable" content="yes">
-    
-    <!-- iOS Splash Screens -->
-    <link rel="apple-touch-startup-image" href="/splash-portrait.png?v=2" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
-    <link rel="apple-touch-startup-image" href="/splash-portrait.png?v=2" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
-    <link rel="apple-touch-startup-image" href="/splash-portrait.png?v=2" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
-    <link rel="apple-touch-startup-image" href="/splash-portrait.png?v=2" media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
-    <link rel="apple-touch-startup-image" href="/splash-portrait.png?v=2" media="(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
-    <link rel="apple-touch-startup-image" href="/splash-portrait.png?v=2" media="(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
-    <link rel="apple-touch-startup-image" href="/splash-portrait.png?v=2" media="(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
-    <link rel="apple-touch-startup-image" href="/splash-landscape.png?v=2" media="(orientation: landscape)">
-    
-    <!-- Preconnect for faster external resource loading -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    
-    <!-- DNS Prefetch for Supabase -->
-    <link rel="dns-prefetch" href="https://jcribtonvxrwhoixoioo.supabase.co" />
-    
-    <meta name="description" content="Kinetic typography reader - transform text into dynamic visual experiences" />
-    <meta name="author" content="Kin-TXT" />
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>KiN-TXT</title>
 
-    <meta property="og:title" content="Kin-TXT" />
-    <meta property="og:description" content="Kinetic typography reader - transform text into dynamic visual experiences" />
-    <meta property="og:type" content="website" />
-    <meta property="og:image" content="/pwa-512x512.png" />
+  <!-- PWA Meta Tags -->
+  <link rel="manifest" href="/manifest.webmanifest" />
 
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:image" content="/pwa-512x512.png" />
-  </head>
+  <!-- Favicons -->
+  <link rel="icon" href="/favicon.svg?v=3" type="image/svg+xml" />
+  <link rel="icon" href="/favicon-v3.ico?v=3" sizes="any" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon-v3.png?v=3">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="KiN-TXT">
+  <meta name="theme-color" content="#000000" />
+  <meta name="mobile-web-app-capable" content="yes">
 
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+  <!-- iOS Splash Screens -->
+  <link rel="apple-touch-startup-image" href="/splash-portrait.png?v=2"
+    media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
+  <link rel="apple-touch-startup-image" href="/splash-portrait.png?v=2"
+    media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
+  <link rel="apple-touch-startup-image" href="/splash-portrait.png?v=2"
+    media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
+  <link rel="apple-touch-startup-image" href="/splash-portrait.png?v=2"
+    media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
+  <link rel="apple-touch-startup-image" href="/splash-portrait.png?v=2"
+    media="(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
+  <link rel="apple-touch-startup-image" href="/splash-portrait.png?v=2"
+    media="(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
+  <link rel="apple-touch-startup-image" href="/splash-portrait.png?v=2"
+    media="(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
+  <link rel="apple-touch-startup-image" href="/splash-landscape.png?v=2" media="(orientation: landscape)">
+
+  <!-- Preconnect for faster external resource loading -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+  <!-- DNS Prefetch for Supabase -->
+  <link rel="dns-prefetch" href="https://jcribtonvxrwhoixoioo.supabase.co" />
+
+  <meta name="description" content="Kinetic typography reader - transform text into dynamic visual experiences" />
+  <meta name="author" content="Kin-TXT" />
+
+  <meta property="og:title" content="Kin-TXT" />
+  <meta property="og:description"
+    content="Kinetic typography reader - transform text into dynamic visual experiences" />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="/pwa-512x512-v3.png" />
+
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:image" content="/pwa-512x512-v3.png" />
+</head>
+
+<body>
+  <div id="root"></div>
+  <script type="module" src="/src/main.tsx"></script>
+</body>
+
 </html>

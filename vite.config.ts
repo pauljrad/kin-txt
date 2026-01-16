@@ -15,7 +15,7 @@ export default defineConfig(({ mode }) => ({
     mode === "development" && componentTagger(),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["favicon.ico", "apple-touch-icon.png", "robots.txt"],
+      includeAssets: ["favicon-v3.ico", "apple-touch-icon-v3.png", "robots.txt"],
       manifest: {
         name: "KiN-TXT",
         short_name: "KiN-TXT",
@@ -28,25 +28,25 @@ export default defineConfig(({ mode }) => ({
         scope: "/",
         icons: [
           {
-            src: "/pwa-192x192.png",
+            src: "/pwa-192x192-v3.png",
             sizes: "192x192",
             type: "image/png",
             purpose: "any",
           },
           {
-            src: "/pwa-512x512.png",
+            src: "/pwa-512x512-v3.png",
             sizes: "512x512",
             type: "image/png",
             purpose: "any",
           },
           {
-            src: "/pwa-512x512.png",
+            src: "/pwa-512x512-v3.png",
             sizes: "512x512",
             type: "image/png",
             purpose: "maskable",
           },
           {
-            src: "/apple-touch-icon.png",
+            src: "/apple-touch-icon-v3.png",
             sizes: "180x180",
             type: "image/png",
             purpose: "any",
