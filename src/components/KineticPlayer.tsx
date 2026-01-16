@@ -977,25 +977,10 @@ export function KineticPlayer({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className={`fixed inset-0 flex items-center justify-center overflow-hidden cursor-pointer transition-all duration-700 ${focusMode
-        ? 'focus-mode-bg'
-        : 'bg-background'
-        }`}
+      className="fixed inset-0 flex items-center justify-center overflow-hidden cursor-pointer transition-all duration-700 bg-background"
       onMouseMove={handleMouseMove}
       onClick={handleScreenTap}
     >
-      {/* Focus mode vignette overlay */}
-      <AnimatePresence>
-        {focusMode && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.5 }}
-            className="absolute inset-0 focus-mode-vignette pointer-events-none z-0"
-          />
-        )}
-      </AnimatePresence>
       {/* Chapter Title Overlay */}
       <AnimatePresence>
         {showingChapterTitle && (
@@ -1004,14 +989,12 @@ export function KineticPlayer({
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 1.1 }}
             transition={{ duration: 0.5, ease: [0.34, 1.56, 0.64, 1] }}
-            className={`absolute inset-0 z-50 flex items-center justify-center px-8 ${focusMode ? 'focus-mode-bg' : 'bg-background'
-              }`}
+            className="absolute inset-0 z-50 flex items-center justify-center px-8 bg-background"
           >
             <motion.h1
               initial={{ y: 20, filter: 'blur(10px)' }}
               animate={{ y: 0, filter: 'blur(0px)' }}
-              className={`font-display text-center leading-tight max-w-5xl px-4 ${focusMode ? 'text-white focus-word-glow' : 'text-foreground'
-                }`}
+              className="font-display text-center leading-tight max-w-5xl px-4 text-foreground"
               style={{
                 // Keep chapter/section titles readable but not gigantic.
                 // Match the reader's base word size (respects the user's text size multiplier) and scale it by 3x.
@@ -1063,8 +1046,8 @@ export function KineticPlayer({
               }}
               className={`kinetic-word text-center select-none ${cleanWord.includes('kin-txt') || cleanWord === 'kin-txt'
                 ? 'text-foreground'
-                : `font-display ${isWhisperedWord ? 'text-muted-foreground/60 italic' : focusMode ? 'text-white focus-word-glow' : ''}`
-                } ${isEmphasisWord && focusMode ? 'focus-word-glow' : ''}`}
+                : `font-display ${isWhisperedWord ? 'text-muted-foreground/60 italic' : ''}`
+                }`}
               style={{
                 fontSize: `calc(${cleanWord.includes('kin-txt') || cleanWord === 'kin-txt' ? '6rem' : // Reduced to 6rem (~1.3x smaller)
                   isEmphasisWord ? '6rem' : // Reduced to 6rem (~1.3x smaller)
