@@ -27,8 +27,8 @@ export const SplashScreen = ({ onComplete }: { onComplete?: () => void }) => {
                             }}
                             className="absolute block rounded-full bg-foreground"
                             style={{
-                                width: "0.15em",
-                                height: "0.15em",
+                                width: "0.11em",
+                                height: "0.11em",
                                 top: "0.05em",
                             }}
                         />
@@ -36,7 +36,7 @@ export const SplashScreen = ({ onComplete }: { onComplete?: () => void }) => {
                         <span
                             className="block bg-foreground rounded-sm"
                             style={{
-                                width: "0.15em",
+                                width: "0.11em",
                                 height: "0.55em",
                                 marginTop: "0.38em",
                             }}
