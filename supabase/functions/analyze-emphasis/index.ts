@@ -82,7 +82,16 @@ serve(async (req) => {
     }
 
     // Parse the text to get words
-    const words = textToAnalyze.split(/\s+/).filter((w: string) => w.length > 0);
+    const words = textToAnalyze.split(/\\s+/).filter((w: string) => w.length > 0);
+    
+    // First, find words that are in ALL CAPS (3+ letters, all uppercase)
+    const allCapsWords = words
+      .filter((w: string) => {
+        // Must be at least 3 letters, all letters uppercase, may have punctuation at end
+        const cleanWord = w.replace(/[.,!?;:""'""']/g, '');
+        return cleanWord.length >= 3 && /^[A-Z]+$/.test(cleanWord);
+      })
+      .map((w: string) => w); // Keep original with potential punctuation
     
     // Create a prompt to identify emphatic words AND whispered/quiet words
     const prompt = `Analyze the following text and identify words that should be emphasized for dramatic effect. Return TWO categories:
@@ -102,17 +111,17 @@ serve(async (req) => {
 - Words that follow phrases like "she whispered", "he said quietly"
 - Gentle, soft, or delicate words in emotional contexts
 
-Text: "${textToAnalyze}"
+Text: \"${textToAnalyze}\"
 
 Return ONLY a JSON object with two arrays:
 {
-  "emphasis": ["word1", "word2"],
-  "whispered": ["word3", "word4"]
+  \"emphasis\": [\"word1\", \"word2\"],
+  \"whispered\": [\"word3\", \"word4\"]
 }
 
 Match the exact spelling and case from the text. Include no more than 5-10 words per category for the entire text. Only choose truly impactful words.
 
-Example response: {"emphasis": ["BANG", "crash", "fire"], "whispered": ["secret", "quietly", "hush"]}`;
+Example response: {\"emphasis\": [\"BANG\", \"crash\", \"fire\"], \"whispered\": [\"secret\", \"quietly\", \"hush\"]}`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -157,7 +166,7 @@ Example response: {"emphasis": ["BANG", "crash", "fire"], "whispered": ["secret"
     let whisperedWords: string[] = [];
     try {
       // Clean the response - remove markdown code blocks if present
-      const cleaned = content.replace(/```json\n?|\n?```/g, '').trim();
+      const cleaned = content.replace(/```json\\n?|\\n?```/g, '').trim();
       const parsed = JSON.parse(cleaned);
       
       // Handle both old array format and new object format
@@ -173,9 +182,13 @@ Example response: {"emphasis": ["BANG", "crash", "fire"], "whispered": ["secret"
       emphasisWords = [];
       whisperedWords = [];
     }
+    
+    // Merge ALL CAPS words with AI-identified emphasis words
+    // Remove duplicates by converting to a Set and back
+    const mergedEmphasis = Array.from(new Set([...allCapsWords, ...emphasisWords]));
 
-    return new Response(JSON.stringify({ emphasisWords, whisperedWords }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    return new Response(JSON.stringify({ emphasisWords: mergedEmphasis, whisperedWords }), {
+      headers: { ...corsHeaders, \"Content-Type\": \"application/json\" },
     });
   } catch (error) {
     // Log detailed error server-side

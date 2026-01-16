@@ -466,7 +466,7 @@ export const DocumentHistory = forwardRef<HTMLDivElement, DocumentHistoryProps>(
             className="text-lg font-medium text-foreground mb-4 flex items-center gap-2 hover:text-primary transition-colors"
           >
             <BookCheck className="w-5 h-5 text-primary" />
-            Read ({completedDocuments.length})
+            Finished ({completedDocuments.length})
             <ChevronDown 
               className={`w-4 h-4 ml-2 text-muted-foreground transition-transform ${
                 !showCompleted ? '-rotate-90' : ''
