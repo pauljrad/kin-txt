@@ -22,11 +22,25 @@ const AppContent = () => {
   const [showSplash, setShowSplash] = useState(true);
 
   useEffect(() => {
+    // Initial timer
     const timer = setTimeout(() => {
       setShowSplash(false);
     }, 3000);
 
-    return () => clearTimeout(timer);
+    // Handle bfcache (Back-Forward Cache) restoration
+    const handlePageShow = (event: PageTransitionEvent) => {
+      if (event.persisted) {
+        setShowSplash(true);
+        setTimeout(() => setShowSplash(false), 3000);
+      }
+    };
+
+    window.addEventListener('pageshow', handlePageShow);
+
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('pageshow', handlePageShow);
+    };
   }, []);
 
   return (
