@@ -1039,42 +1039,22 @@ export function KineticPlayer({
       </AnimatePresence>
 
       {/* Word Display */}
-      <div className="relative z-10 flex items-center justify-center px-4 sm:px-8">
-        <AnimatePresence mode="wait">
+      <div className="relative z-10 flex items-center justify-center px-4 sm:px-8 h-[20vh] min-h-[120px]">
+        <AnimatePresence mode="popLayout">
           {!showingChapterTitle && (
             <motion.span
               ref={wordRef}
               key={`${currentParagraph}-${currentWord}`}
-              initial={{
-                opacity: 0,
-                scaleX: isEmphasisWord ? 0.5 * emphasisScaleX : isWhisperedWord ? 1.0 : 0.8,
-                scaleY: isEmphasisWord ? 0.5 : isWhisperedWord ? 1.0 : 0.8,
-                y: 10, // Subtle entry movement
-                filter: 'blur(4px)'
-              }}
-              animate={{
-                opacity: isWhisperedWord ? 0.5 : 1,
-                scaleX: isEmphasisWord ? 2.5 * emphasisScaleX : isWhisperedWord ? 0.85 : 1,
-                scaleY: isEmphasisWord ? 2.5 : isWhisperedWord ? 0.85 : 1,
-                y: 0,
-                filter: 'blur(0px)'
-              }}
-              exit={{
-                opacity: 0,
-                scaleX: 0.9,
-                scaleY: 0.9,
-                y: -10, // Subtle exit movement
-                filter: 'blur(4px)',
-                transition: { duration: 0.05 } // CRITICAL FIX: Near-instant exit prevents "wait" mode from slowing down reading speed
-              }}
+              initial={{ opacity: 0, scale: 0.9, y: 10, filter: 'blur(4px)' }}
+              animate={{ opacity: isWhisperedWord ? 0.6 : 1, scale: 1, y: 0, filter: 'blur(0px)' }}
+              exit={{ opacity: 0, scale: 1.1, y: -10, filter: 'blur(4px)' }}
               transition={{
-                // Use a standard easeOut for natural feeling without slowness
-                duration: Math.min(0.2, (currentWordDelayMs / 1000) * 0.4), // Faster transition
-                ease: "easeOut",
+                duration: Math.min(0.2, (currentWordDelayMs / 1000) * 0.4),
+                ease: "easeOut"
               }}
-              className={`kinetic-word text-center select-none ${cleanWord.includes('kin-txt')
-                ? 'text-foreground' // Ensure it's not faded/colored weirdly
-                : `font-display ${isWhisperedWord ? 'text-muted-foreground/60 italic' : focusMode ? 'text-white focus-word-glow' : ''}`
+              className={`kinetic-word text-center select-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full flex justify-center items-center ${cleanWord.includes('kin-txt')
+                  ? 'text-foreground'
+                  : `font-display ${isWhisperedWord ? 'text-muted-foreground/60 italic' : focusMode ? 'text-white focus-word-glow' : ''}`
                 } ${isEmphasisWord && focusMode ? 'focus-word-glow' : ''}`}
               style={{
                 fontSize: `calc(${cleanWord.includes('kin-txt') ? '5rem' : // FORCE VERY large size for KiN-TXT
@@ -1092,6 +1072,16 @@ export function KineticPlayer({
             </motion.span>
           )}
         </AnimatePresence>
+      </div>
+
+      {/* DEBUG OVERLAY - Remove after fixing */}
+      <div className="fixed bottom-20 left-4 p-2 bg-black/80 text-white text-xs font-mono rounded z-50 pointer-events-none opacity-50">
+        <div>Word: "{currentDisplayWord}"</div>
+        <div>Clean: "{currentDisplayWord.toLowerCase().replace(/[.,!?;:'"()[\]]/g, '')}"</div>
+        <div>In WhisperSet: {whisperedSet.has(currentDisplayWord.toLowerCase().replace(/[.,!?;:'"()[\]]/g, '')).toString()}</div>
+        <div>In EmphasisSet: {emphasisSet.has(currentDisplayWord.toLowerCase().replace(/[.,!?;:'"()[\]]/g, '')).toString()}</div>
+        <div>isWhispered: {isWhisperedWord.toString()}</div>
+        <div>isEmphasis: {isEmphasisWord.toString()}</div>
       </div>
 
       {/* Reading Time Display - positioned below the speed indicator */}
