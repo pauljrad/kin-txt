@@ -160,7 +160,10 @@ export function KineticPlayer({
   // Check if current word should be emphasized or whispered
   // Use robust regex matching textParser to ensure punctuation/brackets/quotes don't break lookup
   const cleanWord = currentDisplayWord.toLowerCase().replace(/[.,!?;:'"()[\]]/g, '');
-  const isWhisperedWord = whisperedSet.has(cleanWord);
+
+  // FAILSAFE: Explicitly check for known keywords even if Set data is missing
+  const autoWhisper = ['whisper', 'whispers', 'mouse', 'mice', 'tiny', 'quiet', 'quietly', 'silence', 'silent', 'soft', 'softly'];
+  const isWhisperedWord = whisperedSet.has(cleanWord) || autoWhisper.includes(cleanWord);
 
   // CRITICAL FIX: Whisper trumps emphasis. If it's whispered, it CANNOT be emphasized.
   // This solves the issue where "Mouse" (AI detected emphasis) stayed big instead of shrinking.
@@ -1040,30 +1043,30 @@ export function KineticPlayer({
 
       {/* Word Display */}
       <div className="relative z-10 flex items-center justify-center px-4 sm:px-8 h-[20vh] min-h-[120px]">
-        <AnimatePresence mode="popLayout">
+        <AnimatePresence mode="wait">
           {!showingChapterTitle && (
             <motion.span
               ref={wordRef}
               key={`${currentParagraph}-${currentWord}`}
               initial={{ opacity: 0, scale: 0.9, y: 10, filter: 'blur(4px)' }}
               animate={{ opacity: isWhisperedWord ? 0.6 : 1, scale: 1, y: 0, filter: 'blur(0px)' }}
-              exit={{ opacity: 0, scale: 1.1, y: -10, filter: 'blur(4px)' }}
+              exit={{ opacity: 0, scale: 1.1, y: -10, filter: 'blur(4px)', transition: { duration: 0.05 } }}
               transition={{
                 duration: Math.min(0.2, (currentWordDelayMs / 1000) * 0.4),
                 ease: "easeOut"
               }}
-              className={`kinetic-word text-center select-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full flex justify-center items-center ${cleanWord.includes('kin-txt')
+              className={`kinetic-word text-center select-none ${cleanWord.includes('kin-txt') || cleanWord === 'kin-txt'
                 ? 'text-foreground'
                 : `font-display ${isWhisperedWord ? 'text-muted-foreground/60 italic' : focusMode ? 'text-white focus-word-glow' : ''}`
                 } ${isEmphasisWord && focusMode ? 'focus-word-glow' : ''}`}
               style={{
-                fontSize: `calc(${cleanWord.includes('kin-txt') ? '5rem' : // FORCE VERY large size for KiN-TXT
+                fontSize: `calc(${cleanWord.includes('kin-txt') || cleanWord === 'kin-txt' ? '5rem' : // FORCE VERY large size for KiN-TXT
                   isEmphasisWord ? '4rem' :
                     isWhisperedWord ? '1.5rem' : '3rem'
                   } * var(--text-size-multiplier, 1))`,
               }}
             >
-              {cleanWord.includes('kin-txt') ? (
+              {cleanWord.includes('kin-txt') || cleanWord === 'kin-txt' ? (
                 // Force explicit casing rendering with standard font to avoid small-caps issues
                 <span className="font-sans font-black tracking-tight">K<span style={{ fontSize: '0.8em', textTransform: 'lowercase' }}>i</span>N-TXT</span>
               ) : (
@@ -1072,20 +1075,6 @@ export function KineticPlayer({
             </motion.span>
           )}
         </AnimatePresence>
-      </div>
-
-      {/* DEBUG OVERLAY - Remove after fixing */}
-      <div className="fixed bottom-20 left-4 p-2 bg-black/80 text-white text-xs font-mono rounded z-50 pointer-events-none opacity-80">
-        <div>Word: "{currentDisplayWord}"</div>
-        <div>Clean: "{currentDisplayWord.toLowerCase().replace(/[.,!?;:'"()[\]]/g, '')}"</div>
-        <div style={{ color: whisperedSet.has(currentDisplayWord.toLowerCase().replace(/[.,!?;:'"()[\]]/g, '')) ? '#4ade80' : 'white' }}>
-          In WhisperSet: {whisperedSet.has(currentDisplayWord.toLowerCase().replace(/[.,!?;:'"()[\]]/g, '')).toString()}
-        </div>
-        <div style={{ color: emphasisSet.has(currentDisplayWord.toLowerCase().replace(/[.,!?;:'"()[\]]/g, '')) ? '#4ade80' : 'white' }}>
-          In EmphasisSet: {emphasisSet.has(currentDisplayWord.toLowerCase().replace(/[.,!?;:'"()[\]]/g, '')).toString()}
-        </div>
-        <div>Set Sizes: W({whisperedSet.size}) E({emphasisSet.size})</div>
-        <div>First W: {Array.from(whisperedSet)[0]}</div>
       </div>
 
       {/* Reading Time Display - positioned below the speed indicator */}
