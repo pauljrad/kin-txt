@@ -159,10 +159,13 @@ export function processTextStyles(parsed: ParsedText): ProcessedTextResult {
   const cleanedParagraphs = parsed.paragraphs.map(paragraph => {
     // Track italics state across words in the same paragraph
     let inItalics = false;
+    const AUTO_WHISPER_WORDS = new Set(['whisper', 'whispers', 'mouse', 'mice', 'tiny', 'quiet', 'quietly', 'silence', 'silent', 'soft', 'softly']);
 
     return paragraph.map(word => {
       let cleanWord = word;
       let lowerWord = cleanWord.toLowerCase();
+      // Look up key without punctuation for auto-detection
+      const lookupKey = lowerWord.replace(/[.,!?;:'"()[\]]/g, '');
 
       // 1. Handle KiN-TXT branding (case insensitive, robust to punctuation)
       if (lowerWord.includes('kin-txt')) {
@@ -183,6 +186,10 @@ export function processTextStyles(parsed: ParsedText): ProcessedTextResult {
         cleanWord = prefix + content + suffix;
         const contentClean = content.toLowerCase().replace(/[.,!?;:]/g, '');
         detectedWhispered.push(contentClean);
+      }
+      else if (AUTO_WHISPER_WORDS.has(lookupKey)) {
+        // AUTOMATIC WHISPER DETECTION
+        detectedWhispered.push(lookupKey);
       }
       else {
         // Multi-word handling
@@ -209,8 +216,8 @@ export function processTextStyles(parsed: ParsedText): ProcessedTextResult {
         }
       }
 
-      // 3. Handle ALL CAPS (Emphasis) - only if not KiN-TXT
-      if (!lowerWord.includes('kin-txt')) {
+      // 3. Handle ALL CAPS (Emphasis) - only if not KiN-TXT and not Whisper
+      if (!lowerWord.includes('kin-txt') && !detectedWhispered.includes(lookupKey) && !AUTO_WHISPER_WORDS.has(lookupKey)) {
         const wordNoPunct = cleanWord.replace(/[.,!?;:'"()[\]]/g, '');
         if (
           wordNoPunct.length >= 3 &&
