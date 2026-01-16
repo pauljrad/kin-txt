@@ -1068,7 +1068,7 @@ export function KineticPlayer({
             >
               {cleanWord.includes('kin-txt') || cleanWord === 'kin-txt' ? (
                 // Force explicit casing rendering with standard font to avoid small-caps issues
-                <span className="font-sans font-black tracking-tight">K<span style={{ fontSize: '0.8em', textTransform: 'lowercase' }}>i</span>N-TXT</span>
+                <span className="font-sans font-bold tracking-tight">K<span style={{ fontSize: '0.8em', textTransform: 'lowercase' }}>i</span>N-TXT</span>
               ) : (
                 currentDisplayWord
               )}
