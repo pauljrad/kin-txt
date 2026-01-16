@@ -184,7 +184,7 @@ export function processTextStyles(parsed: ParsedText): ProcessedTextResult {
         const content = singleWordMatch[3];
         const suffix = singleWordMatch[5];
         cleanWord = prefix + content + suffix;
-        const contentClean = content.toLowerCase().replace(/[.,!?;:]/g, '');
+        const contentClean = content.toLowerCase().replace(/[.,!?;:'"()[\]]/g, '');
         detectedWhispered.push(contentClean);
       }
       else if (AUTO_WHISPER_WORDS.has(lookupKey)) {
@@ -211,7 +211,7 @@ export function processTextStyles(parsed: ParsedText): ProcessedTextResult {
           }
 
           // Register this word as whispered
-          const contentClean = cleanWord.toLowerCase().replace(/[.,!?;:]/g, '');
+          const contentClean = cleanWord.toLowerCase().replace(/[.,!?;:'"()[\]]/g, '');
           detectedWhispered.push(contentClean);
         }
       }
@@ -224,7 +224,7 @@ export function processTextStyles(parsed: ParsedText): ProcessedTextResult {
           wordNoPunct === wordNoPunct.toUpperCase() &&
           /[A-Z]/.test(wordNoPunct)
         ) {
-          detectedEmphasis.push(cleanWord.toLowerCase().replace(/[.,!?;:]/g, ''));
+          detectedEmphasis.push(cleanWord.toLowerCase().replace(/[.,!?;:'"()[\]]/g, ''));
         }
       }
 

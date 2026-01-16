@@ -1053,8 +1053,8 @@ export function KineticPlayer({
                 ease: "easeOut"
               }}
               className={`kinetic-word text-center select-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full flex justify-center items-center ${cleanWord.includes('kin-txt')
-                  ? 'text-foreground'
-                  : `font-display ${isWhisperedWord ? 'text-muted-foreground/60 italic' : focusMode ? 'text-white focus-word-glow' : ''}`
+                ? 'text-foreground'
+                : `font-display ${isWhisperedWord ? 'text-muted-foreground/60 italic' : focusMode ? 'text-white focus-word-glow' : ''}`
                 } ${isEmphasisWord && focusMode ? 'focus-word-glow' : ''}`}
               style={{
                 fontSize: `calc(${cleanWord.includes('kin-txt') ? '5rem' : // FORCE VERY large size for KiN-TXT
@@ -1075,13 +1075,17 @@ export function KineticPlayer({
       </div>
 
       {/* DEBUG OVERLAY - Remove after fixing */}
-      <div className="fixed bottom-20 left-4 p-2 bg-black/80 text-white text-xs font-mono rounded z-50 pointer-events-none opacity-50">
+      <div className="fixed bottom-20 left-4 p-2 bg-black/80 text-white text-xs font-mono rounded z-50 pointer-events-none opacity-80">
         <div>Word: "{currentDisplayWord}"</div>
         <div>Clean: "{currentDisplayWord.toLowerCase().replace(/[.,!?;:'"()[\]]/g, '')}"</div>
-        <div>In WhisperSet: {whisperedSet.has(currentDisplayWord.toLowerCase().replace(/[.,!?;:'"()[\]]/g, '')).toString()}</div>
-        <div>In EmphasisSet: {emphasisSet.has(currentDisplayWord.toLowerCase().replace(/[.,!?;:'"()[\]]/g, '')).toString()}</div>
-        <div>isWhispered: {isWhisperedWord.toString()}</div>
-        <div>isEmphasis: {isEmphasisWord.toString()}</div>
+        <div style={{ color: whisperedSet.has(currentDisplayWord.toLowerCase().replace(/[.,!?;:'"()[\]]/g, '')) ? '#4ade80' : 'white' }}>
+          In WhisperSet: {whisperedSet.has(currentDisplayWord.toLowerCase().replace(/[.,!?;:'"()[\]]/g, '')).toString()}
+        </div>
+        <div style={{ color: emphasisSet.has(currentDisplayWord.toLowerCase().replace(/[.,!?;:'"()[\]]/g, '')) ? '#4ade80' : 'white' }}>
+          In EmphasisSet: {emphasisSet.has(currentDisplayWord.toLowerCase().replace(/[.,!?;:'"()[\]]/g, '')).toString()}
+        </div>
+        <div>Set Sizes: W({whisperedSet.size}) E({emphasisSet.size})</div>
+        <div>First W: {Array.from(whisperedSet)[0]}</div>
       </div>
 
       {/* Reading Time Display - positioned below the speed indicator */}
