@@ -152,6 +152,18 @@ export interface ProcessedTextResult {
   detectedEmphasis: string[];
 }
 
+const STOP_WORDS = new Set([
+  'the', 'and', 'or', 'but', 'if', 'of', 'in', 'on', 'at', 'to', 'for', 'by', 'with', 'from',
+  'is', 'are', 'was', 'were', 'be', 'been', 'am',
+  'it', 'he', 'she', 'they', 'we', 'i', 'you',
+  'a', 'an', 'this', 'that', 'these', 'those',
+  'not', 'no', 'yes', 'so', 'as', 'do', 'did', 'does', 'can', 'could', 'would', 'should'
+]);
+
+export function filterEmphasis(words: string[]): string[] {
+  return words.filter(word => !STOP_WORDS.has(word.toLowerCase()));
+}
+
 export function processTextStyles(parsed: ParsedText): ProcessedTextResult {
   const detectedWhispered: string[] = [];
   const detectedEmphasis: string[] = [];
@@ -219,12 +231,19 @@ export function processTextStyles(parsed: ParsedText): ProcessedTextResult {
       // 3. Handle ALL CAPS (Emphasis) - only if not KiN-TXT and not Whisper
       if (!lowerWord.includes('kin-txt') && !detectedWhispered.includes(lookupKey) && !AUTO_WHISPER_WORDS.has(lookupKey)) {
         const wordNoPunct = cleanWord.replace(/[.,!?;:'"()[\]]/g, '');
-        if (
+
+        // RULE A: All uppercase (min 3 chars)
+        const isAllCaps =
           wordNoPunct.length >= 3 &&
           wordNoPunct === wordNoPunct.toUpperCase() &&
-          /[A-Z]/.test(wordNoPunct)
-        ) {
-          detectedEmphasis.push(cleanWord.toLowerCase().replace(/[.,!?;:'"()[\]]/g, ''));
+          /[A-Z]/.test(wordNoPunct);
+
+        // RULE B: Ends with exclamation mark (and not a stop word)
+        // Check fuzzy match on the original raw word to see if it ends in !
+        const hasExclamation = cleanWord.includes('!') && !STOP_WORDS.has(lookupKey);
+
+        if (isAllCaps || hasExclamation) {
+          detectedEmphasis.push(lookupKey); // Push the cleaned lowercase key
         }
       }
 
