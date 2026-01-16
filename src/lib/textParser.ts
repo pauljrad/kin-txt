@@ -41,9 +41,9 @@ async function parseDocx(file: File): Promise<ParsedText> {
 async function parsePdf(file: File): Promise<ParsedText> {
   const arrayBuffer = await file.arrayBuffer();
   const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-  
+
   let fullText = '';
-  
+
   for (let i = 1; i <= pdf.numPages; i++) {
     const page = await pdf.getPage(i);
     const textContent = await page.getTextContent();
@@ -52,19 +52,19 @@ async function parsePdf(file: File): Promise<ParsedText> {
       .join(' ');
     fullText += pageText + '\n\n';
   }
-  
+
   return parseTextContent(fullText);
 }
 
 async function parseEpub(file: File): Promise<ParsedText> {
   const arrayBuffer = await file.arrayBuffer();
   const book = ePub(arrayBuffer);
-  
+
   await book.ready;
-  
+
   const spine = book.spine as any;
   let fullText = '';
-  
+
   for (const item of spine.items) {
     if (item.href) {
       try {
@@ -78,7 +78,7 @@ async function parseEpub(file: File): Promise<ParsedText> {
       }
     }
   }
-  
+
   return parseTextContent(fullText);
 }
 
@@ -144,4 +144,56 @@ export function getWordDelay(word: string, baseSpeed: number, mode: WordDelayMod
   }
 
   return clamp(baseDelay);
+}
+
+export interface ProcessedTextResult {
+  cleanedText: ParsedText;
+  detectedWhispered: string[];
+  detectedEmphasis: string[];
+}
+
+export function processTextStyles(parsed: ParsedText): ProcessedTextResult {
+  const detectedWhispered: string[] = [];
+  const detectedEmphasis: string[] = [];
+
+  const cleanedParagraphs = parsed.paragraphs.map(paragraph => {
+    return paragraph.map(word => {
+      let cleanWord = word;
+
+      // Check for italics (*word* or _word_) - map to whisper
+      // We look for words that start AND end with * or _
+      // Note: This is a simple per-word check. It won't handle multi-word italics like *hello world* 
+      // where "hello" has start-* and "world" has end-*, but typical simple parsing often splits these.
+      // For this implementation, we focused on token-level styles which fits the KineticPlayer model.
+      if (
+        (cleanWord.startsWith('*') && cleanWord.endsWith('*') && cleanWord.length > 2) ||
+        (cleanWord.startsWith('_') && cleanWord.endsWith('_') && cleanWord.length > 2)
+      ) {
+        // Strip the markers
+        cleanWord = cleanWord.slice(1, -1);
+        // Add cleaned word to whispered set
+        detectedWhispered.push(cleanWord.toLowerCase().replace(/[.,!?;:]/g, ''));
+      }
+
+      // Check for ALL CAPS (Emphasis)
+      // Must be at least 3 chars long to avoid "A", "I", "OK" etc being emphasized too aggressively
+      // Must contain only uppercase letters and punctuation
+      const wordNoPunct = cleanWord.replace(/[.,!?;:'"()[\]]/g, '');
+      if (
+        wordNoPunct.length >= 3 &&
+        wordNoPunct === wordNoPunct.toUpperCase() &&
+        /[A-Z]/.test(wordNoPunct)
+      ) {
+        detectedEmphasis.push(cleanWord.toLowerCase().replace(/[.,!?;:]/g, ''));
+      }
+
+      return cleanWord;
+    });
+  });
+
+  return {
+    cleanedText: { paragraphs: cleanedParagraphs },
+    detectedWhispered,
+    detectedEmphasis
+  };
 }
