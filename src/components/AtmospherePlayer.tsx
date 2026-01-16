@@ -15,9 +15,9 @@ interface AtmosphereTrack {
 const TRACKS: AtmosphereTrack[] = [
     {
         id: 'jazz',
-        name: 'Jazz',
+        name: 'Paris 1920s',
         icon: '',
-        url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3' // Slow, more relaxing piano/jazz
+        url: 'https://www.chosic.com/wp-content/uploads/2021/04/Warm-Jazz.mp3' // Real recording, much more soothing
     }
 ];
 
