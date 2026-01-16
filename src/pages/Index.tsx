@@ -283,39 +283,42 @@ const Index = () => {
   }, []);
 
   const handleSelectDocument = useCallback(async (doc: SavedDocument) => {
-    // Check if we already have emphasis data
+    // ALWAYS re-process deterministic styles (KiN-TXT, plain italics, caps)
+    // This ensures that if we update the logic, old docs get the new rendering immediately.
+    const { cleanedText, detectedWhispered, detectedEmphasis } = processTextStyles(doc.parsedText);
+
+    let finalEmphasisWords: string[] = [];
+    let finalWhisperedWords: string[] = [];
+
+    // Check if we already have saved emphasis data from AI
     if (doc.emphasisWords && doc.emphasisWords.length > 0) {
-      setActiveDocument({
-        parsedText: doc.parsedText,
-        id: doc.id,
-        initialProgress: doc.progress,
-        emphasisWords: doc.emphasisWords,
-        whisperedWords: doc.whisperedWords || [],
-        totalReadingTime: doc.totalReadingTime || 0,
-      });
-      return;
+      // Merge new deterministic findings with EXISTING saved AI findings
+      finalEmphasisWords = Array.from(new Set([...detectedEmphasis, ...doc.emphasisWords]));
+      finalWhisperedWords = Array.from(new Set([...detectedWhispered, ...(doc.whisperedWords || [])]));
+    } else {
+      // No saved data? We need to run analysis.
+      setIsAnalyzing(true);
+      toast.info('Analyzing text for emphasis...');
+
+      const fullText = cleanedText.paragraphs.map(p => p.join(' ')).join(' ');
+      const { emphasisWords: aiEmphasis, whisperedWords: aiWhispered } = await analyzeEmphasis(fullText);
+
+      finalEmphasisWords = Array.from(new Set([...detectedEmphasis, ...aiEmphasis]));
+      finalWhisperedWords = Array.from(new Set([...detectedWhispered, ...aiWhispered]));
+
+      // Save this new data back to the document
+      if (doc.id) {
+        await updateDocumentEmphasis(doc.id, finalEmphasisWords, finalWhisperedWords);
+      }
+      setIsAnalyzing(false);
     }
-
-    setIsAnalyzing(true);
-    toast.info('Analyzing text for emphasis...');
-
-    // Get full text for emphasis analysis
-    const fullText = doc.parsedText.paragraphs.map(p => p.join(' ')).join(' ');
-    const { emphasisWords, whisperedWords } = await analyzeEmphasis(fullText);
-
-    // Update document with emphasis data
-    if (doc.id) {
-      await updateDocumentEmphasis(doc.id, emphasisWords, whisperedWords);
-    }
-
-    setIsAnalyzing(false);
 
     setActiveDocument({
-      parsedText: doc.parsedText,
+      parsedText: cleanedText, // Use the CLEANED text (With KiN-TXT fixed)
       id: doc.id,
       initialProgress: doc.progress,
-      emphasisWords,
-      whisperedWords,
+      emphasisWords: finalEmphasisWords,
+      whisperedWords: finalWhisperedWords,
       totalReadingTime: doc.totalReadingTime || 0,
     });
   }, []);
