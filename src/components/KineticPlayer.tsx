@@ -1089,7 +1089,8 @@ export function KineticPlayer({
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className="absolute top-16 sm:top-20 right-4 glass-panel px-3 py-2 flex items-center gap-2 z-20"
+            className="absolute right-4 glass-panel px-3 py-2 flex items-center gap-2 z-20"
+            style={{ top: 'calc(4rem + env(safe-area-inset-top, 0px))' }}
           >
             <Clock className="w-4 h-4 text-muted-foreground" />
             <div className="text-xs">
@@ -1169,7 +1170,8 @@ export function KineticPlayer({
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
-              className="pointer-events-auto absolute top-4 left-4 flex items-center gap-2 sm:gap-3"
+              className="pointer-events-auto absolute left-4 flex items-center gap-2 sm:gap-3"
+              style={{ top: 'calc(1rem + env(safe-area-inset-top, 0px))' }}
             >
               {/* Back Button */}
               <button
@@ -1243,8 +1245,8 @@ export function KineticPlayer({
             <motion.div
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="pointer-events-none absolute top-4 right-16 sm:right-24 glass-panel px-2 py-1 sm:px-4 sm:py-2"
+              className="pointer-events-none absolute right-16 sm:right-24 glass-panel px-2 py-1 sm:px-4 sm:py-2"
+              style={{ top: 'calc(1rem + env(safe-area-inset-top, 0px))' }}
             >
               <span className="text-[10px] sm:text-sm text-muted-foreground">
                 {rhythmMode ? 'Rhythm: ' : 'Speed: '}
@@ -1567,8 +1569,8 @@ export function KineticPlayer({
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            className="pointer-events-auto absolute top-4 left-4 z-30 flex items-center gap-2 sm:gap-3"
+            className="pointer-events-auto absolute left-4 z-30 flex items-center gap-2 sm:gap-3"
+            style={{ top: 'calc(1rem + env(safe-area-inset-top, 0px))' }}
           >
             <button
               onClick={(e) => {
