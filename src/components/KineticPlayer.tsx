@@ -70,6 +70,7 @@ export function KineticPlayer({
   const [lastChapterIndex, setLastChapterIndex] = useState(-1);
   const [focusMode, setFocusMode] = useState(false);
   const [targetMode, setTargetMode] = useState(false); // New RSVP Target Mode
+  const [targetModeWordCount, setTargetModeWordCount] = useState(0); // For speed ramp
   const [atmospherePlaying, setAtmospherePlaying] = useState(false);
   const atmosphereAudioRef = useRef<HTMLAudioElement>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -193,7 +194,7 @@ export function KineticPlayer({
   );
 
   // Calculate horizontal squash for emphasis words that might overflow
-  const wordRef = useRef<HTMLSpanElement>(null);
+  const wordRef = useRef<HTMLDivElement>(null);
   const [emphasisScaleX, setEmphasisScaleX] = useState(1);
 
   // Measure word and calculate squash factor when emphasis word changes
@@ -454,6 +455,13 @@ export function KineticPlayer({
       return DEFAULT_SPEED * rhythmMultiplier;
     }
 
+    if (targetMode) {
+      // 300 WPM = 200ms (1.5x base of 200WPM/300ms)
+      // 900 WPM = 66.6ms (4.5x base of 200WPM/300ms)
+      const rampProgress = Math.min(1, targetModeWordCount / 150);
+      return 1.5 + (4.5 - 1.5) * rampProgress;
+    }
+
     if (accelerationMode) {
       if (chunkLength <= 1) {
         return Number.isFinite(startSpeed) && startSpeed > 0 ? startSpeed : DEFAULT_SPEED;
@@ -610,6 +618,9 @@ export function KineticPlayer({
       } else {
         setSentenceCount(newSentenceCount);
         setWordInChunk(prev => prev + 1);
+        if (targetMode) {
+          setTargetModeWordCount(prev => prev + 1);
+        }
       }
       setCurrentWord(prev => prev + 1);
       // Track words for adaptive speed
@@ -728,10 +739,21 @@ export function KineticPlayer({
     if (!word) return;
 
     // Get current speed based on paragraph progress or rhythm
-    const currentSpeed = getCurrentSpeed();
+    let currentSpeed = getCurrentSpeed();
 
     // Calculate delay with current speed - ensure it's valid
     let delay = getWordDelay(word, currentSpeed, rhythmMode ? 'rhythm' : 'normal');
+
+    // TARGET MODE SPECAL HANDLING: 300-900 WPM ramp
+    if (targetMode) {
+      // 300 WPM = 200ms
+      // 900 WPM = 66.6ms
+      // Ramp over 150 words (approx 30-45 seconds of reading)
+      const rampProgress = Math.min(1, targetModeWordCount / 150);
+      const startDelay = 200;
+      const endDelay = 66.6;
+      delay = startDelay - (startDelay - endDelay) * rampProgress;
+    }
 
     // Sanity check: delay must be a positive finite number
     if (!Number.isFinite(delay) || delay <= 0) {
@@ -1059,24 +1081,24 @@ export function KineticPlayer({
       </AnimatePresence>
 
       {/* Word Display */}
-      <div className="relative z-10 flex items-center justify-center px-4 sm:px-8 h-[20vh] min-h-[120px]">
+      <div className="relative z-10 flex items-center justify-center px-4 sm:px-8 h-[25vh] min-h-[160px]">
         {targetMode && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            {/* Top Anchor */}
-            <div className="absolute top-0 w-0.5 h-6 bg-red-500 opacity-80" style={{ transform: 'translateY(10px)' }} />
-            {/* Bottom Anchor */}
-            <div className="absolute bottom-0 w-0.5 h-6 bg-red-500 opacity-80" style={{ transform: 'translateY(-10px)' }} />
+            {/* Top Anchor - Adjusted for better sight alignment */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[64px] w-0.5 h-10 bg-red-500 opacity-90 shadow-[0_0_8px_rgba(239,68,68,0.5)]" />
+            {/* Bottom Anchor - Adjusted for better sight alignment */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 translate-y-[24px] w-0.5 h-10 bg-red-500 opacity-90 shadow-[0_0_8px_rgba(239,68,68,0.5)]" />
           </div>
         )}
 
         <AnimatePresence mode="wait">
           {!showingChapterTitle && (
-            <motion.span
+            <motion.div
               ref={wordRef}
               key={`${currentParagraph}-${currentWord}`}
               initial={targetMode ? { opacity: 0 } : { opacity: 0, scale: 0.9, y: 10, filter: 'blur(4px)' }}
               animate={targetMode
-                ? { opacity: isWhisperedWord ? 0.6 : 1 }
+                ? { opacity: 1 }
                 : { opacity: isWhisperedWord ? 0.6 : 1, scale: 1, y: 0, filter: 'blur(0px)' }
               }
               exit={targetMode
@@ -1090,20 +1112,26 @@ export function KineticPlayer({
                   ease: "easeOut"
                 }
               }
-              className={`kinetic-word text-center select-none ${cleanWord.includes('kin-txt') || cleanWord === 'kin-txt'
+              className={`kinetic-word select-none w-full flex items-center justify-center ${cleanWord.includes('kin-txt') || cleanWord === 'kin-txt'
                 ? 'text-foreground'
-                : `font-display ${isWhisperedWord ? 'text-muted-foreground/60 italic' : ''}`
+                : `font-display ${isWhisperedWord && !targetMode ? 'text-muted-foreground/60 italic' : ''}`
                 }`}
               style={{
-                fontSize: `calc(${cleanWord.includes('kin-txt') || cleanWord === 'kin-txt' ? '6rem' : // Reduced to 6rem (~1.3x smaller)
-                  isEmphasisWord ? '6rem' : // Reduced to 6rem (~1.3x smaller)
-                    isWhisperedWord ? '1.5rem' : '2.9rem' // Normal text reduced to 2.9rem (3.6 / 1.25)
+                fontSize: targetMode
+                  ? `calc(4.5rem * var(--text-size-multiplier, 1))` // Larger, fixed size for Target Mode
+                  : `calc(${cleanWord.includes('kin-txt') || cleanWord === 'kin-txt' ? '6rem' :
+                    isEmphasisWord ? '6rem' :
+                      isWhisperedWord ? '1.5rem' : '2.9rem'
                   } * var(--text-size-multiplier, 1))`,
               }}
             >
               {cleanWord.includes('kin-txt') || cleanWord === 'kin-txt' ? (
-                // Force explicit casing rendering with standard font to avoid small-caps issues
-                <span className="font-sans font-bold tracking-tight">K<span style={{ fontSize: '0.8em', textTransform: 'lowercase', color: targetMode ? '#ef4444' : 'inherit' }}>i</span>N-TXT</span>
+                // Center the special branding by aligning 'i' to center
+                <div className="flex w-full items-center justify-center h-full">
+                  <div className="flex-1 text-right whitespace-nowrap">K</div>
+                  <div className="text-red-500 shrink-0 min-w-[0.4em] text-center px-[1px]">i</div>
+                  <div className="flex-1 text-left whitespace-nowrap">N-TXT</div>
+                </div>
               ) : targetMode ? (
                 (() => {
                   const orpIndex = getORPIndex(currentDisplayWord);
@@ -1111,17 +1139,17 @@ export function KineticPlayer({
                   const focalChar = currentDisplayWord[orpIndex];
                   const suffix = currentDisplayWord.substring(orpIndex + 1);
                   return (
-                    <span>
-                      {prefix}
-                      <span className="text-red-500">{focalChar}</span>
-                      {suffix}
-                    </span>
+                    <div className="flex w-full items-center justify-center h-full">
+                      <div className="flex-1 text-right whitespace-nowrap">{prefix}</div>
+                      <div className="text-red-500 shrink-0 min-w-[0.4em] text-center font-bold px-[1px]">{focalChar}</div>
+                      <div className="flex-1 text-left whitespace-nowrap">{suffix}</div>
+                    </div>
                   );
                 })()
               ) : (
                 currentDisplayWord
               )}
-            </motion.span>
+            </motion.div>
           )}
         </AnimatePresence>
       </div>
@@ -1441,10 +1469,12 @@ export function KineticPlayer({
                           </div>
                           <button
                             onClick={() => {
-                              setTargetMode(!targetMode);
-                              if (!targetMode) {
+                              const newMode = !targetMode;
+                              setTargetMode(newMode);
+                              if (newMode) {
                                 setAccelerationMode(false);
                                 setRhythmMode(false);
+                                setTargetModeWordCount(0); // Reset ramp
                               }
                             }}
                             className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${targetMode ? 'bg-primary' : 'bg-muted'
