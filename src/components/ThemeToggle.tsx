@@ -41,7 +41,7 @@ export const ThemeToggle = forwardRef<HTMLButtonElement, ThemeToggleProps>(
         }}
         className={
           className ??
-          'fixed right-4 z-50 p-3 rounded-full bg-card/80 backdrop-blur-sm border border-border/50 hover:bg-card transition-colors'
+          'fixed right-4 z-50 p-2 sm:p-3 rounded-full bg-card/80 backdrop-blur-sm border border-border/50 hover:bg-card transition-colors'
         }
         style={{ top: 'calc(1rem + env(safe-area-inset-top, 0px))', ...style }}
         aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
@@ -49,9 +49,9 @@ export const ThemeToggle = forwardRef<HTMLButtonElement, ThemeToggleProps>(
         {...props}
       >
         {isDark ? (
-          <Sun className="w-5 h-5 text-foreground" />
+          <Sun className="w-4 h-4 sm:w-5 sm:h-5 text-foreground" />
         ) : (
-          <Moon className="w-5 h-5 text-foreground" />
+          <Moon className="w-4 h-4 sm:w-5 sm:h-5 text-foreground" />
         )}
       </button>
     );
