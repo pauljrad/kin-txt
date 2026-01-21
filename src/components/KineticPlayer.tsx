@@ -69,6 +69,7 @@ export function KineticPlayer({
   const [showingChapterTitle, setShowingChapterTitle] = useState<string | null>(null);
   const [lastChapterIndex, setLastChapterIndex] = useState(-1);
   const [focusMode, setFocusMode] = useState(false);
+  const [targetMode, setTargetMode] = useState(false); // New RSVP Target Mode
   const [atmospherePlaying, setAtmospherePlaying] = useState(false);
   const atmosphereAudioRef = useRef<HTMLAudioElement>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -141,6 +142,17 @@ export function KineticPlayer({
     }
     return index + currentWord;
   }, [currentParagraph, currentWord, parsedText.paragraphs]);
+
+  // Helper to split word at Optimal Recognition Point (ORP)
+  const getORPIndex = (word: string) => {
+    const length = word.length;
+    if (length === 0) return 0;
+    if (length === 1) return 0;
+    if (length <= 5) return 1;
+    if (length <= 9) return 2;
+    if (length <= 13) return 3;
+    return 4;
+  };
 
   const progress = totalWords > 0 ? (getCurrentWordIndex() / totalWords) * 100 : 0;
 
@@ -1048,18 +1060,36 @@ export function KineticPlayer({
 
       {/* Word Display */}
       <div className="relative z-10 flex items-center justify-center px-4 sm:px-8 h-[20vh] min-h-[120px]">
+        {targetMode && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            {/* Top Anchor */}
+            <div className="absolute top-0 w-0.5 h-6 bg-red-500 opacity-80" style={{ transform: 'translateY(10px)' }} />
+            {/* Bottom Anchor */}
+            <div className="absolute bottom-0 w-0.5 h-6 bg-red-500 opacity-80" style={{ transform: 'translateY(-10px)' }} />
+          </div>
+        )}
+
         <AnimatePresence mode="wait">
           {!showingChapterTitle && (
             <motion.span
               ref={wordRef}
               key={`${currentParagraph}-${currentWord}`}
-              initial={{ opacity: 0, scale: 0.9, y: 10, filter: 'blur(4px)' }}
-              animate={{ opacity: isWhisperedWord ? 0.6 : 1, scale: 1, y: 0, filter: 'blur(0px)' }}
-              exit={{ opacity: 0, scale: 1.1, y: -10, filter: 'blur(4px)', transition: { duration: 0.05 } }}
-              transition={{
-                duration: Math.min(0.2, (currentWordDelayMs / 1000) * 0.4),
-                ease: "easeOut"
-              }}
+              initial={targetMode ? { opacity: 0 } : { opacity: 0, scale: 0.9, y: 10, filter: 'blur(4px)' }}
+              animate={targetMode
+                ? { opacity: isWhisperedWord ? 0.6 : 1 }
+                : { opacity: isWhisperedWord ? 0.6 : 1, scale: 1, y: 0, filter: 'blur(0px)' }
+              }
+              exit={targetMode
+                ? { opacity: 0, transition: { duration: 0.05 } }
+                : { opacity: 0, scale: 1.1, y: -10, filter: 'blur(4px)', transition: { duration: 0.05 } }
+              }
+              transition={targetMode
+                ? { duration: 0.05 }
+                : {
+                  duration: Math.min(0.2, (currentWordDelayMs / 1000) * 0.4),
+                  ease: "easeOut"
+                }
+              }
               className={`kinetic-word text-center select-none ${cleanWord.includes('kin-txt') || cleanWord === 'kin-txt'
                 ? 'text-foreground'
                 : `font-display ${isWhisperedWord ? 'text-muted-foreground/60 italic' : ''}`
@@ -1073,7 +1103,21 @@ export function KineticPlayer({
             >
               {cleanWord.includes('kin-txt') || cleanWord === 'kin-txt' ? (
                 // Force explicit casing rendering with standard font to avoid small-caps issues
-                <span className="font-sans font-bold tracking-tight">K<span style={{ fontSize: '0.8em', textTransform: 'lowercase' }}>i</span>N-TXT</span>
+                <span className="font-sans font-bold tracking-tight">K<span style={{ fontSize: '0.8em', textTransform: 'lowercase', color: targetMode ? '#ef4444' : 'inherit' }}>i</span>N-TXT</span>
+              ) : targetMode ? (
+                (() => {
+                  const orpIndex = getORPIndex(currentDisplayWord);
+                  const prefix = currentDisplayWord.substring(0, orpIndex);
+                  const focalChar = currentDisplayWord[orpIndex];
+                  const suffix = currentDisplayWord.substring(orpIndex + 1);
+                  return (
+                    <span>
+                      {prefix}
+                      <span className="text-red-500">{focalChar}</span>
+                      {suffix}
+                    </span>
+                  );
+                })()
               ) : (
                 currentDisplayWord
               )}
@@ -1389,6 +1433,30 @@ export function KineticPlayer({
                           </div>
                         </div>
 
+                        {/* Target Mode Toggle */}
+                        <div className="flex items-center justify-between border-t border-border/50 pt-3">
+                          <div className="flex flex-col">
+                            <span className="text-sm font-medium">Target Mode</span>
+                            <span className="text-[10px] text-muted-foreground">Professional RSVP anchors</span>
+                          </div>
+                          <button
+                            onClick={() => {
+                              setTargetMode(!targetMode);
+                              if (!targetMode) {
+                                setAccelerationMode(false);
+                                setRhythmMode(false);
+                              }
+                            }}
+                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${targetMode ? 'bg-primary' : 'bg-muted'
+                              }`}
+                          >
+                            <span
+                              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${targetMode ? 'translate-x-6' : 'translate-x-1'
+                                }`}
+                            />
+                          </button>
+                        </div>
+
                         {/* Acceleration Settings - Only show when acceleration mode */}
                         {!rhythmMode && accelerationMode && (
                           <>
@@ -1455,7 +1523,7 @@ export function KineticPlayer({
                         )}
 
                         {/* Static Speed - Only show when static mode */}
-                        {!rhythmMode && !accelerationMode && (
+                        {!rhythmMode && !accelerationMode && !targetMode && (
                           <div className="flex flex-col gap-1.5">
                             <div className="flex justify-between text-xs">
                               <span className="text-muted-foreground">Speed</span>
