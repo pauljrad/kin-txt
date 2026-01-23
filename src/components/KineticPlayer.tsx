@@ -1118,12 +1118,41 @@ export function KineticPlayer({
                   const prefix = currentDisplayWord.substring(0, orpIndex);
                   const focalChar = currentDisplayWord[orpIndex];
                   const suffix = currentDisplayWord.substring(orpIndex + 1);
-                  
+
                   return (
-                    <div className="inline-flex items-center justify-center whitespace-nowrap">
-                      <span className="inline-block">{prefix}</span>
-                      <span className="text-red-500 font-bold inline-block">{focalChar}</span>
-                      <span className="inline-block">{suffix}</span>
+                    <div className="relative w-full h-full flex items-center justify-center">
+                      {/* Prefix - positioned to the left of center */}
+                      <span
+                        className="absolute whitespace-nowrap"
+                        style={{
+                          right: '50%',
+                          paddingRight: '0.05em'
+                        }}
+                      >
+                        {prefix}
+                      </span>
+
+                      {/* ORP character - exactly at center */}
+                      <span
+                        className="text-red-500 font-bold absolute"
+                        style={{
+                          left: '50%',
+                          transform: 'translateX(-50%)'
+                        }}
+                      >
+                        {focalChar}
+                      </span>
+
+                      {/* Suffix - positioned to the right of center */}
+                      <span
+                        className="absolute whitespace-nowrap"
+                        style={{
+                          left: '50%',
+                          paddingLeft: '0.05em'
+                        }}
+                      >
+                        {suffix}
+                      </span>
                     </div>
                   );
                 })()
