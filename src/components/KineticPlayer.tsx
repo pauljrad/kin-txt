@@ -1414,7 +1414,6 @@ export function KineticPlayer({
                                 : 'bg-secondary hover:bg-secondary/80'
                                 }`}
                             >
-                              <Music className="w-3 h-3" />
                               Rhythm
                             </button>
                             <button
@@ -1448,7 +1447,6 @@ export function KineticPlayer({
                         <div className="flex items-center justify-between border-t border-border/50 pt-3">
                           <div className="flex flex-col">
                             <span className="text-sm font-medium">Target Mode</span>
-                            <span className="text-[10px] text-muted-foreground">Professional RSVP anchors</span>
                           </div>
                           <button
                             onClick={() => {
