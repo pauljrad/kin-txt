@@ -1065,9 +1065,9 @@ export function KineticPlayer({
         {targetMode && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             {/* Top Anchor - Adjusted for better sight alignment */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[64px] w-0.5 h-10 bg-red-500 opacity-90 shadow-[0_0_8px_rgba(239,68,68,0.5)]" />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[64px] w-0.5 h-10 bg-[#FFD600] opacity-90 shadow-[0_0_8px_rgba(255,214,0,0.5)]" />
             {/* Bottom Anchor - Adjusted for better sight alignment */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 translate-y-[24px] w-0.5 h-10 bg-red-500 opacity-90 shadow-[0_0_8px_rgba(239,68,68,0.5)]" />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 translate-y-[24px] w-0.5 h-10 bg-[#FFD600] opacity-90 shadow-[0_0_8px_rgba(255,214,0,0.5)]" />
           </div>
         )}
 
@@ -1121,417 +1121,356 @@ export function KineticPlayer({
                   const suffix = safeWord.substring(orpIndex + 1);
 
                   return (
-                    <div className="w-full grid grid-cols-[1fr_auto_1fr] items-baseline">
                       <span className="text-right whitespace-pre">{prefix}</span>
-                      <span className="text-center text-red-500 font-bold min-w-[1ch]">{focalChar}</span>
+                      <span className="text-center text-[#FFD600] font-bold min-w-[1ch]">{focalChar}</span>
                       <span className="text-left whitespace-pre">{suffix}</span>
                     </div>
-                  );
+          );
                 })()
-              ) : (
-                currentDisplayWord
+          ) : (
+          currentDisplayWord
               )}
 
-            </motion.div>
+        </motion.div>
           )}
-        </AnimatePresence>
-      </div>
-
-      {/* Reading Time Display - positioned below the speed indicator */}
-      <AnimatePresence>
-        {hudVisible && (
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className="absolute right-4 glass-panel px-3 py-2 flex items-center gap-2 z-20"
-            style={{ top: 'calc(4rem + env(safe-area-inset-top, 0px))' }}
-          >
-            <Clock className="w-4 h-4 text-muted-foreground" />
-            <div className="text-xs">
-              <div className="text-muted-foreground">Session: <span className="text-foreground font-medium tabular-nums">{formatTime(sessionTime)}</span></div>
-              <div className="text-muted-foreground">Total: <span className="text-foreground font-medium tabular-nums">{formatTime(totalReadingTime)}</span></div>
-            </div>
-          </motion.div>
-        )}
       </AnimatePresence>
+    </div>
 
-      {/* Progress Bar - Seekable */}
-      <AnimatePresence>
-        {hudVisible && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 10 }}
-            transition={{ duration: 0.3 }}
-            ref={progressBarRef}
-            className="progress-bar-container absolute bottom-0 left-0 right-0 h-8 sm:h-6 bg-muted/20 cursor-pointer group flex items-center"
-            onMouseDown={handleProgressMouseDown}
-            onTouchStart={(e) => {
-              e.stopPropagation();
-              setIsDragging(true);
-              setIsPlaying(false);
-              handleProgressBarInteraction(e);
-            }}
-          >
-            {/* Progress fill */}
-            <motion.div
-              className="absolute top-0 left-0 h-full bg-foreground/20"
-              initial={{ width: 0 }}
-              animate={{ width: `${progress}%` }}
-              transition={{ duration: isDragging ? 0 : 0.1 }}
-            />
+      {/* Reading Time Display - positioned below the speed indicator */ }
+  <AnimatePresence>
+    {hudVisible && (
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -20 }}
+        className="absolute right-4 glass-panel px-3 py-2 flex items-center gap-2 z-20"
+        style={{ top: 'calc(4rem + env(safe-area-inset-top, 0px))' }}
+      >
+        <Clock className="w-4 h-4 text-muted-foreground" />
+        <div className="text-xs">
+          <div className="text-muted-foreground">Session: <span className="text-foreground font-medium tabular-nums">{formatTime(sessionTime)}</span></div>
+          <div className="text-muted-foreground">Total: <span className="text-foreground font-medium tabular-nums">{formatTime(totalReadingTime)}</span></div>
+        </div>
+      </motion.div>
+    )}
+  </AnimatePresence>
 
-            {/* Drag handle */}
-            <motion.div
-              className="absolute top-1/2 -translate-y-1/2 w-5 h-5 sm:w-4 sm:h-4 bg-foreground rounded-full shadow-lg cursor-grab active:cursor-grabbing"
-              style={{ left: `calc(${progress}% - 10px)` }}
-              animate={{ scale: isDragging ? 1.2 : 1 }}
-            />
-
-            {/* Percentage label */}
-            <div className="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-medium text-muted-foreground tabular-nums">
-              {Math.round(progress)}%
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Chapter Navigation - uses toolbar button (no floating toggle) */}
-      {hudVisible && (
-        <ChapterNavigation
-          chapters={chapters}
-          currentWordIndex={getCurrentWordIndex()}
-          totalWords={totalWords}
-          isOpen={isNavOpen}
-          onToggle={() => setIsNavOpen(!isNavOpen)}
-          onNavigate={handleChapterNavigate}
-          showToggle={false}
+  {/* Progress Bar - Seekable */ }
+  <AnimatePresence>
+    {hudVisible && (
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: 10 }}
+        transition={{ duration: 0.3 }}
+        ref={progressBarRef}
+        className="progress-bar-container absolute bottom-0 left-0 right-0 h-8 sm:h-6 bg-muted/20 cursor-pointer group flex items-center"
+        onMouseDown={handleProgressMouseDown}
+        onTouchStart={(e) => {
+          e.stopPropagation();
+          setIsDragging(true);
+          setIsPlaying(false);
+          handleProgressBarInteraction(e);
+        }}
+      >
+        {/* Progress fill */}
+        <motion.div
+          className="absolute top-0 left-0 h-full bg-foreground/20"
+          initial={{ width: 0 }}
+          animate={{ width: `${progress}%` }}
+          transition={{ duration: isDragging ? 0 : 0.1 }}
         />
-      )}
 
-      {/* Controls Overlay */}
-      <AnimatePresence>
-        {hudVisible && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
-            className="absolute inset-0 z-20 pointer-events-none"
+        {/* Drag handle */}
+        <motion.div
+          className="absolute top-1/2 -translate-y-1/2 w-5 h-5 sm:w-4 sm:h-4 bg-foreground rounded-full shadow-lg cursor-grab active:cursor-grabbing"
+          style={{ left: `calc(${progress}% - 10px)` }}
+          animate={{ scale: isDragging ? 1.2 : 1 }}
+        />
+
+        {/* Percentage label */}
+        <div className="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-medium text-muted-foreground tabular-nums">
+          {Math.round(progress)}%
+        </div>
+      </motion.div>
+    )}
+  </AnimatePresence>
+
+  {/* Chapter Navigation - uses toolbar button (no floating toggle) */ }
+  {
+    hudVisible && (
+      <ChapterNavigation
+        chapters={chapters}
+        currentWordIndex={getCurrentWordIndex()}
+        totalWords={totalWords}
+        isOpen={isNavOpen}
+        onToggle={() => setIsNavOpen(!isNavOpen)}
+        onNavigate={handleChapterNavigate}
+        showToggle={false}
+      />
+    )
+  }
+
+  {/* Controls Overlay */ }
+  <AnimatePresence>
+    {hudVisible && (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.3 }}
+        className="absolute inset-0 z-20 pointer-events-none"
+      >
+        {/* Top-left Controls (aligned) */}
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: -20 }}
+          className="pointer-events-auto absolute left-4 flex items-center gap-2 sm:gap-3"
+          style={{ top: 'calc(1rem + env(safe-area-inset-top, 0px))' }}
+        >
+          {/* Back Button */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              void persistReadingTime(true);
+              onBack();
+            }}
+            className="p-1.5 sm:p-3 glass-panel hover:bg-card/90 transition-colors"
+            title="Back"
           >
-            {/* Top-left Controls (aligned) */}
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              className="pointer-events-auto absolute left-4 flex items-center gap-2 sm:gap-3"
-              style={{ top: 'calc(1rem + env(safe-area-inset-top, 0px))' }}
+            <ChevronLeft className="w-4 h-4 sm:w-6 sm:h-6" />
+          </button>
+
+          {/* Full Text View Button */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsPlaying(false);
+              setShowFullText(true);
+            }}
+            className="p-1.5 sm:p-3 glass-panel hover:bg-card/90 transition-colors"
+            title="View full text"
+          >
+            <BookOpen className="w-4 h-4 sm:w-6 sm:h-6" />
+          </button>
+
+          {/* Chapter Navigation Button */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsPlaying(false);
+              setIsNavOpen((v) => !v);
+            }}
+            className="p-2 sm:p-3 glass-panel hover:bg-card/90 transition-colors"
+            title="Chapter navigation"
+          >
+            <svg
+              className="w-4 h-4 sm:w-6 sm:h-6"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
             >
-              {/* Back Button */}
+              <line x1="8" y1="6" x2="21" y2="6" />
+              <line x1="8" y1="12" x2="21" y2="12" />
+              <line x1="8" y1="18" x2="21" y2="18" />
+              <line x1="3" y1="6" x2="3.01" y2="6" />
+              <line x1="3" y1="12" x2="3.01" y2="12" />
+              <line x1="3" y1="18" x2="3.01" y2="18" />
+            </svg>
+          </button>
+
+          {/* Focus Mode Toggle */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setFocusMode(!focusMode);
+            }}
+            className={`p-1.5 sm:p-3 glass-panel hover:bg-card/90 transition-all duration-300 ${focusMode ? "ring-2 ring-primary" : ""
+              }`}
+            title={focusMode ? "Exit focus mode" : "Focus mode: hide controls for immersive reading"}
+          >
+            <Eye className={`w-4 h-4 sm:w-6 sm:h-6 ${focusMode ? "text-primary" : ""}`} />
+          </button>
+        </motion.div>
+
+        {/* Current Speed Indicator */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="pointer-events-none absolute right-16 sm:right-24 glass-panel px-2 py-1 sm:px-4 sm:py-2"
+          style={{ top: 'calc(1rem + env(safe-area-inset-top, 0px))' }}
+        >
+          <span className="text-[10px] sm:text-sm text-muted-foreground">
+            {rhythmMode ? 'Rhythm: ' : 'Speed: '}
+          </span>
+          <span className="text-xs sm:text-sm font-medium">{Math.round(displaySpeed * 200)} WPM</span>
+        </motion.div>
+
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 20 }}
+          className="controls-panel pointer-events-auto absolute bottom-12 sm:bottom-10 left-1 right-1 sm:left-1/2 sm:-translate-x-1/2 sm:w-auto"
+        >
+          <div className="glass-panel p-2 sm:p-4 flex flex-col gap-2 sm:gap-4">
+            {/* Playback Controls */}
+            <div className="flex items-center justify-center gap-1.5 sm:gap-4">
+              {/* Rewind 2 sentences */}
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  void persistReadingTime(true);
-                  onBack();
+                  handleRewind();
                 }}
-                className="p-1.5 sm:p-3 glass-panel hover:bg-card/90 transition-colors"
-                title="Back"
+                className="p-1.5 sm:p-3 rounded-xl hover:bg-secondary transition-colors"
+                title="Rewind 2 sentences"
               >
-                <ChevronLeft className="w-4 h-4 sm:w-6 sm:h-6" />
+                <Rewind className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
               </button>
 
-              {/* Full Text View Button */}
+              {/* Play/Pause */}
               <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setIsPlaying(false);
-                  setShowFullText(true);
-                }}
-                className="p-1.5 sm:p-3 glass-panel hover:bg-card/90 transition-colors"
-                title="View full text"
+                onClick={handlePlayPause}
+                className="w-9 h-9 sm:w-12 sm:h-12 rounded-full bg-foreground text-background flex items-center justify-center hover:opacity-90 transition-opacity"
               >
-                <BookOpen className="w-4 h-4 sm:w-6 sm:h-6" />
+                {isPlaying ? (
+                  <Pause className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
+                ) : (
+                  <Play className="w-3.5 h-3.5 sm:w-5 sm:h-5 ml-0.5" />
+                )}
               </button>
 
-              {/* Chapter Navigation Button */}
+              {/* Restart */}
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  setIsPlaying(false);
-                  setIsNavOpen((v) => !v);
+                  handleRestart();
                 }}
-                className="p-2 sm:p-3 glass-panel hover:bg-card/90 transition-colors"
-                title="Chapter navigation"
+                className="p-1.5 sm:p-3 rounded-xl hover:bg-secondary transition-colors"
               >
-                <svg
-                  className="w-4 h-4 sm:w-6 sm:h-6"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
+                <RotateCcw className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
+              </button>
+
+              {/* Divider */}
+              <div className="w-px h-6 sm:h-8 bg-border" />
+
+              {/* Rhythm Presets - Hidden on very small screens, use settings instead */}
+              <div className="hidden xs:flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                {(['slower', 'normal', 'faster'] as const).map((preset) => (
+                  <button
+                    key={preset}
+                    onClick={() => {
+                      setRhythmPreset(preset);
+                      if (!rhythmMode) {
+                        setRhythmMode(true);
+                      }
+                    }}
+                    className={`px-1.5 py-1 sm:px-3 sm:py-1.5 rounded-lg text-[0.65em] sm:text-[0.8em] font-medium transition-colors capitalize ${rhythmMode && rhythmPreset === preset
+                      ? 'bg-primary text-primary-foreground'
+                      : 'hover:bg-secondary text-muted-foreground'
+                      }`}
+                  >
+                    {preset}
+                  </button>
+                ))}
+              </div>
+
+              {/* Settings Button */}
+              <Popover open={showSettingsPopover} onOpenChange={setShowSettingsPopover}>
+                <PopoverTrigger asChild>
+                  <button
+                    onClick={(e) => e.stopPropagation()}
+                    className={`p-1.5 sm:p-3 rounded-xl transition-colors ${showSettingsPopover ? 'bg-secondary' : 'hover:bg-secondary'
+                      }`}
+                    title="Speed settings"
+                  >
+                    <Settings className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent
+                  className="w-72 sm:w-80"
+                  side="top"
+                  align="end"
+                  onClick={(e) => e.stopPropagation()}
+                  container={containerRef.current}
                 >
-                  <line x1="8" y1="6" x2="21" y2="6" />
-                  <line x1="8" y1="12" x2="21" y2="12" />
-                  <line x1="8" y1="18" x2="21" y2="18" />
-                  <line x1="3" y1="6" x2="3.01" y2="6" />
-                  <line x1="3" y1="12" x2="3.01" y2="12" />
-                  <line x1="3" y1="18" x2="3.01" y2="18" />
-                </svg>
-              </button>
+                  <div className="space-y-4">
+                    <div className="font-medium text-sm">Speed Settings</div>
 
-              {/* Focus Mode Toggle */}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setFocusMode(!focusMode);
-                }}
-                className={`p-1.5 sm:p-3 glass-panel hover:bg-card/90 transition-all duration-300 ${focusMode ? "ring-2 ring-primary" : ""
-                  }`}
-                title={focusMode ? "Exit focus mode" : "Focus mode: hide controls for immersive reading"}
-              >
-                <Eye className={`w-4 h-4 sm:w-6 sm:h-6 ${focusMode ? "text-primary" : ""}`} />
-              </button>
-            </motion.div>
-
-            {/* Current Speed Indicator */}
-            <motion.div
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="pointer-events-none absolute right-16 sm:right-24 glass-panel px-2 py-1 sm:px-4 sm:py-2"
-              style={{ top: 'calc(1rem + env(safe-area-inset-top, 0px))' }}
-            >
-              <span className="text-[10px] sm:text-sm text-muted-foreground">
-                {rhythmMode ? 'Rhythm: ' : 'Speed: '}
-              </span>
-              <span className="text-xs sm:text-sm font-medium">{Math.round(displaySpeed * 200)} WPM</span>
-            </motion.div>
-
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 20 }}
-              className="controls-panel pointer-events-auto absolute bottom-12 sm:bottom-10 left-1 right-1 sm:left-1/2 sm:-translate-x-1/2 sm:w-auto"
-            >
-              <div className="glass-panel p-2 sm:p-4 flex flex-col gap-2 sm:gap-4">
-                {/* Playback Controls */}
-                <div className="flex items-center justify-center gap-1.5 sm:gap-4">
-                  {/* Rewind 2 sentences */}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleRewind();
-                    }}
-                    className="p-1.5 sm:p-3 rounded-xl hover:bg-secondary transition-colors"
-                    title="Rewind 2 sentences"
-                  >
-                    <Rewind className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
-                  </button>
-
-                  {/* Play/Pause */}
-                  <button
-                    onClick={handlePlayPause}
-                    className="w-9 h-9 sm:w-12 sm:h-12 rounded-full bg-foreground text-background flex items-center justify-center hover:opacity-90 transition-opacity"
-                  >
-                    {isPlaying ? (
-                      <Pause className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
-                    ) : (
-                      <Play className="w-3.5 h-3.5 sm:w-5 sm:h-5 ml-0.5" />
-                    )}
-                  </button>
-
-                  {/* Restart */}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleRestart();
-                    }}
-                    className="p-1.5 sm:p-3 rounded-xl hover:bg-secondary transition-colors"
-                  >
-                    <RotateCcw className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
-                  </button>
-
-                  {/* Divider */}
-                  <div className="w-px h-6 sm:h-8 bg-border" />
-
-                  {/* Rhythm Presets - Hidden on very small screens, use settings instead */}
-                  <div className="hidden xs:flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                    {(['slower', 'normal', 'faster'] as const).map((preset) => (
-                      <button
-                        key={preset}
-                        onClick={() => {
-                          setRhythmPreset(preset);
-                          if (!rhythmMode) {
+                    {/* Mode Toggle */}
+                    <div className="space-y-2">
+                      <div className="text-xs text-muted-foreground">Mode</div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => {
                             setRhythmMode(true);
-                          }
-                        }}
-                        className={`px-1.5 py-1 sm:px-3 sm:py-1.5 rounded-lg text-[0.65em] sm:text-[0.8em] font-medium transition-colors capitalize ${rhythmMode && rhythmPreset === preset
-                          ? 'bg-primary text-primary-foreground'
-                          : 'hover:bg-secondary text-muted-foreground'
-                          }`}
-                      >
-                        {preset}
-                      </button>
-                    ))}
-                  </div>
+                            setAccelerationMode(false);
+                          }}
+                          className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-colors flex items-center justify-center gap-1.5 ${rhythmMode
+                            ? 'bg-primary text-primary-foreground'
+                            : 'bg-secondary hover:bg-secondary/80'
+                            }`}
+                        >
+                          Rhythm
+                        </button>
+                        <button
+                          onClick={() => {
+                            setRhythmMode(false);
+                            setAccelerationMode(true);
+                          }}
+                          className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-colors ${!rhythmMode && accelerationMode
+                            ? 'bg-primary text-primary-foreground'
+                            : 'bg-secondary hover:bg-secondary/80'
+                            }`}
+                        >
+                          Accelerate
+                        </button>
+                        <button
+                          onClick={() => {
+                            setRhythmMode(false);
+                            setAccelerationMode(false);
+                          }}
+                          className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-colors ${!rhythmMode && !accelerationMode
+                            ? 'bg-primary text-primary-foreground'
+                            : 'bg-secondary hover:bg-secondary/80'
+                            }`}
+                        >
+                          Static
+                        </button>
+                      </div>
+                    </div>
 
-                  {/* Settings Button */}
-                  <Popover open={showSettingsPopover} onOpenChange={setShowSettingsPopover}>
-                    <PopoverTrigger asChild>
+                    {/* Target Mode Toggle */}
+                    <div className="flex items-center justify-between border-t border-border/50 pt-3">
+                      <div className="flex flex-col">
+                        <span className="text-sm font-medium">Target Mode</span>
+                      </div>
                       <button
-                        onClick={(e) => e.stopPropagation()}
-                        className={`p-1.5 sm:p-3 rounded-xl transition-colors ${showSettingsPopover ? 'bg-secondary' : 'hover:bg-secondary'
+                        onClick={() => {
+                          setTargetMode(!targetMode);
+                        }}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${targetMode ? 'bg-primary' : 'bg-muted'
                           }`}
-                        title="Speed settings"
                       >
-                        <Settings className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
+                        <span
+                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${targetMode ? 'translate-x-6' : 'translate-x-1'
+                            }`}
+                        />
                       </button>
-                    </PopoverTrigger>
-                    <PopoverContent
-                      className="w-72 sm:w-80"
-                      side="top"
-                      align="end"
-                      onClick={(e) => e.stopPropagation()}
-                      container={containerRef.current}
-                    >
-                      <div className="space-y-4">
-                        <div className="font-medium text-sm">Speed Settings</div>
+                    </div>
 
-                        {/* Mode Toggle */}
-                        <div className="space-y-2">
-                          <div className="text-xs text-muted-foreground">Mode</div>
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => {
-                                setRhythmMode(true);
-                                setAccelerationMode(false);
-                              }}
-                              className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-colors flex items-center justify-center gap-1.5 ${rhythmMode
-                                ? 'bg-primary text-primary-foreground'
-                                : 'bg-secondary hover:bg-secondary/80'
-                                }`}
-                            >
-                              Rhythm
-                            </button>
-                            <button
-                              onClick={() => {
-                                setRhythmMode(false);
-                                setAccelerationMode(true);
-                              }}
-                              className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-colors ${!rhythmMode && accelerationMode
-                                ? 'bg-primary text-primary-foreground'
-                                : 'bg-secondary hover:bg-secondary/80'
-                                }`}
-                            >
-                              Accelerate
-                            </button>
-                            <button
-                              onClick={() => {
-                                setRhythmMode(false);
-                                setAccelerationMode(false);
-                              }}
-                              className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-colors ${!rhythmMode && !accelerationMode
-                                ? 'bg-primary text-primary-foreground'
-                                : 'bg-secondary hover:bg-secondary/80'
-                                }`}
-                            >
-                              Static
-                            </button>
-                          </div>
-                        </div>
-
-                        {/* Target Mode Toggle */}
-                        <div className="flex items-center justify-between border-t border-border/50 pt-3">
-                          <div className="flex flex-col">
-                            <span className="text-sm font-medium">Target Mode</span>
-                          </div>
-                          <button
-                            onClick={() => {
-                              setTargetMode(!targetMode);
-                            }}
-                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${targetMode ? 'bg-primary' : 'bg-muted'
-                              }`}
-                          >
-                            <span
-                              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${targetMode ? 'translate-x-6' : 'translate-x-1'
-                                }`}
-                            />
-                          </button>
-                        </div>
-
-                        {/* Acceleration Settings - Only show when acceleration mode */}
-                        {!rhythmMode && accelerationMode && (
-                          <>
-                            {/* Speed Sliders */}
-                            <div className="space-y-3">
-                              <div className="flex flex-col gap-1.5">
-                                <div className="flex justify-between text-xs">
-                                  <span className="text-muted-foreground">Starting speed</span>
-                                  <span className="font-medium tabular-nums">{Math.round(startSpeed * 200)} WPM</span>
-                                </div>
-                                <input
-                                  type="range"
-                                  min="40"
-                                  max="600"
-                                  step="10"
-                                  value={Math.round(startSpeed * 200)}
-                                  onChange={(e) => setStartSpeed(parseInt(e.target.value) / 200)}
-                                  className="speed-slider"
-                                />
-                              </div>
-
-                              <div className="flex flex-col gap-1.5">
-                                <div className="flex justify-between text-xs">
-                                  <span className="text-muted-foreground">Finishing speed</span>
-                                  <span className="font-medium tabular-nums">{Math.round(endSpeed * 200)} WPM</span>
-                                </div>
-                                <input
-                                  type="range"
-                                  min="40"
-                                  max="600"
-                                  step="10"
-                                  value={Math.round(endSpeed * 200)}
-                                  onChange={(e) => setEndSpeed(parseInt(e.target.value) / 200)}
-                                  className="speed-slider"
-                                />
-                              </div>
-                            </div>
-
-                            {/* Reset Interval */}
-                            <div className="space-y-2">
-                              <div className="text-xs text-muted-foreground">Reset speed after</div>
-                              <div className="flex flex-wrap gap-1.5">
-                                {(['start', '1', '2', '3', '4', 'end', 'paragraph'] as const).map((interval) => (
-                                  <button
-                                    key={interval}
-                                    onClick={() => setResetInterval(interval)}
-                                    className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${resetInterval === interval
-                                      ? 'bg-primary text-primary-foreground'
-                                      : 'bg-secondary hover:bg-secondary/80'
-                                      }`}
-                                  >
-                                    {interval === 'paragraph'
-                                      ? 'Paragraph'
-                                      : interval === 'start'
-                                        ? 'Start'
-                                        : interval === 'end'
-                                          ? 'End'
-                                          : `${interval} sentence${interval !== '1' ? 's' : ''}`}
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-                          </>
-                        )}
-
-                        {/* Static Speed - Only show when static mode */}
-                        {!rhythmMode && !accelerationMode && !targetMode && (
+                    {/* Acceleration Settings - Only show when acceleration mode */}
+                    {!rhythmMode && accelerationMode && (
+                      <>
+                        {/* Speed Sliders */}
+                        <div className="space-y-3">
                           <div className="flex flex-col gap-1.5">
                             <div className="flex justify-between text-xs">
-                              <span className="text-muted-foreground">Speed</span>
+                              <span className="text-muted-foreground">Starting speed</span>
                               <span className="font-medium tabular-nums">{Math.round(startSpeed * 200)} WPM</span>
                             </div>
                             <input
@@ -1544,93 +1483,155 @@ export function KineticPlayer({
                               className="speed-slider"
                             />
                           </div>
-                        )}
 
-                        {/* Rhythm info - Removed per request */}
-
-                        {/* Text Size */}
-                        <div className="border-t border-border pt-4 space-y-2">
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <Type className="w-3 h-3" />
-                            <span>Text Size</span>
+                          <div className="flex flex-col gap-1.5">
+                            <div className="flex justify-between text-xs">
+                              <span className="text-muted-foreground">Finishing speed</span>
+                              <span className="font-medium tabular-nums">{Math.round(endSpeed * 200)} WPM</span>
+                            </div>
+                            <input
+                              type="range"
+                              min="40"
+                              max="600"
+                              step="10"
+                              value={Math.round(endSpeed * 200)}
+                              onChange={(e) => setEndSpeed(parseInt(e.target.value) / 200)}
+                              className="speed-slider"
+                            />
                           </div>
-                          <div className="flex gap-1.5">
-                            {(['small', 'medium', 'large'] as const).map((size) => (
+                        </div>
+
+                        {/* Reset Interval */}
+                        <div className="space-y-2">
+                          <div className="text-xs text-muted-foreground">Reset speed after</div>
+                          <div className="flex flex-wrap gap-1.5">
+                            {(['start', '1', '2', '3', '4', 'end', 'paragraph'] as const).map((interval) => (
                               <button
-                                key={size}
-                                onClick={() => setTextSize(size)}
-                                className={`flex-1 px-2 py-1.5 rounded-lg text-xs font-medium transition-colors capitalize ${textSize === size
+                                key={interval}
+                                onClick={() => setResetInterval(interval)}
+                                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${resetInterval === interval
                                   ? 'bg-primary text-primary-foreground'
                                   : 'bg-secondary hover:bg-secondary/80'
                                   }`}
                               >
-                                {size.charAt(0).toUpperCase() + size.slice(1)}
+                                {interval === 'paragraph'
+                                  ? 'Paragraph'
+                                  : interval === 'start'
+                                    ? 'Start'
+                                    : interval === 'end'
+                                      ? 'End'
+                                      : `${interval} sentence${interval !== '1' ? 's' : ''}`}
                               </button>
                             ))}
                           </div>
                         </div>
+                      </>
+                    )}
+
+                    {/* Static Speed - Only show when static mode */}
+                    {!rhythmMode && !accelerationMode && !targetMode && (
+                      <div className="flex flex-col gap-1.5">
+                        <div className="flex justify-between text-xs">
+                          <span className="text-muted-foreground">Speed</span>
+                          <span className="font-medium tabular-nums">{Math.round(startSpeed * 200)} WPM</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="40"
+                          max="600"
+                          step="10"
+                          value={Math.round(startSpeed * 200)}
+                          onChange={(e) => setStartSpeed(parseInt(e.target.value) / 200)}
+                          className="speed-slider"
+                        />
                       </div>
-                    </PopoverContent>
-                  </Popover>
+                    )}
 
-                  {/* Atmosphere Music toggle */}
-                  <button
-                    className="hud-icon-button transition-all duration-300"
-                    title={atmospherePlaying ? "Turn off Jazz Atmosphere" : "Turn on Jazz Atmosphere"}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      const audio = atmosphereAudioRef.current;
-                      if (!audio) return;
+                    {/* Rhythm info - Removed per request */}
 
-                      if (atmospherePlaying) {
-                        audio.pause();
-                        setAtmospherePlaying(false);
-                      } else {
-                        audio.play().then(() => {
-                          setAtmospherePlaying(true);
-                        }).catch(err => {
-                          console.error("Audio block:", err);
-                          toast.error("Please click again to play (Browser blocked sound)");
-                          setAtmospherePlaying(false);
-                        });
-                      }
-                    }}
-                  >
-                    <Music
-                      className={`w-4 h-4 sm:w-6 sm:h-6 transition-all duration-300 ${atmospherePlaying ? 'text-white' : 'text-foreground/40'}`}
-                      strokeWidth={atmospherePlaying ? 3 : 1.5}
-                    />
-                  </button>
-
-                  {/* Divider */}
-                  <div className="w-px h-6 sm:h-8 bg-border" />
-
-                  {/* Word Counter */}
-                  <div className="text-xs sm:text-sm text-muted-foreground min-w-[50px] sm:min-w-[70px] text-center tabular-nums">
-                    {getCurrentWordIndex() + 1} / {totalWords}
+                    {/* Text Size */}
+                    <div className="border-t border-border pt-4 space-y-2">
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <Type className="w-3 h-3" />
+                        <span>Text Size</span>
+                      </div>
+                      <div className="flex gap-1.5">
+                        {(['small', 'medium', 'large'] as const).map((size) => (
+                          <button
+                            key={size}
+                            onClick={() => setTextSize(size)}
+                            className={`flex-1 px-2 py-1.5 rounded-lg text-xs font-medium transition-colors capitalize ${textSize === size
+                              ? 'bg-primary text-primary-foreground'
+                              : 'bg-secondary hover:bg-secondary/80'
+                              }`}
+                          >
+                            {size.charAt(0).toUpperCase() + size.slice(1)}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                   </div>
-                </div>
+                </PopoverContent>
+              </Popover>
 
-                {/* Mode indicator */}
-                <div className="text-center text-[10px] sm:text-xs text-muted-foreground">
-                  {rhythmMode ? (
-                    <>
-                      <Music className="w-3 h-3 inline mr-1" />
-                      Rhythm mode ({rhythmPreset})
-                    </>
-                  ) : accelerationMode ? (
-                    <>Accelerating: {startSpeed.toFixed(1)}x → {endSpeed.toFixed(1)}x</>
-                  ) : (
-                    <>Static: {startSpeed.toFixed(1)}x</>
-                  )}
-                </div>
+              {/* Atmosphere Music toggle */}
+              <button
+                className="hud-icon-button transition-all duration-300"
+                title={atmospherePlaying ? "Turn off Jazz Atmosphere" : "Turn on Jazz Atmosphere"}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const audio = atmosphereAudioRef.current;
+                  if (!audio) return;
+
+                  if (atmospherePlaying) {
+                    audio.pause();
+                    setAtmospherePlaying(false);
+                  } else {
+                    audio.play().then(() => {
+                      setAtmospherePlaying(true);
+                    }).catch(err => {
+                      console.error("Audio block:", err);
+                      toast.error("Please click again to play (Browser blocked sound)");
+                      setAtmospherePlaying(false);
+                    });
+                  }
+                }}
+              >
+                <Music
+                  className={`w-4 h-4 sm:w-6 sm:h-6 transition-all duration-300 ${atmospherePlaying ? 'text-white' : 'text-foreground/40'}`}
+                  strokeWidth={atmospherePlaying ? 3 : 1.5}
+                />
+              </button>
+
+              {/* Divider */}
+              <div className="w-px h-6 sm:h-8 bg-border" />
+
+              {/* Word Counter */}
+              <div className="text-xs sm:text-sm text-muted-foreground min-w-[50px] sm:min-w-[70px] text-center tabular-nums">
+                {getCurrentWordIndex() + 1} / {totalWords}
               </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            </div>
 
-      {/* Minimal Focus HUD (Back + Eye only) */}
+            {/* Mode indicator */}
+            <div className="text-center text-[10px] sm:text-xs text-muted-foreground">
+              {rhythmMode ? (
+                <>
+                  <Music className="w-3 h-3 inline mr-1" />
+                  Rhythm mode ({rhythmPreset})
+                </>
+              ) : accelerationMode ? (
+                <>Accelerating: {startSpeed.toFixed(1)}x → {endSpeed.toFixed(1)}x</>
+              ) : (
+                <>Static: {startSpeed.toFixed(1)}x</>
+              )}
+            </div>
+          </div>
+        </motion.div>
+      </motion.div>
+    )}
+  </AnimatePresence>
+
+  {/* Minimal Focus HUD (Back + Eye only) */ }
       <AnimatePresence>
         {minimalControlsVisible && (
           <motion.div
@@ -1703,7 +1704,7 @@ export function KineticPlayer({
         )}
       </AnimatePresence>
 
-      {/* Full Text View */}
+  {/* Full Text View */ }
       <AnimatePresence>
         {showFullText && (
           <FullTextView
@@ -1724,6 +1725,6 @@ export function KineticPlayer({
         loop
         preload="auto"
       />
-    </motion.div>
+    </motion.div >
   );
 }

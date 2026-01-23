@@ -1,7 +1,7 @@
 
 import { useRef, useEffect, useCallback, forwardRef } from 'react';
 import { motion } from 'framer-motion';
-import { X, Play, Music, Smartphone, Layout, BookOpen, Newspaper, Upload } from 'lucide-react';
+import { X, Play, Music, Smartphone, Layout, BookOpen, Newspaper, Upload, MousePointer2, Settings, Type } from 'lucide-react';
 import {
     Accordion,
     AccordionContent,
@@ -37,13 +37,19 @@ export const InfoMenu = forwardRef<HTMLDivElement, InfoMenuProps>(function InfoM
         } else {
             video.pause();
         }
-        // Toggle fullscreen
-        if (!document.fullscreenElement) {
-            video.requestFullscreen().catch(err => {
-                console.error(`Error attempting to enable fullscreen: ${err.message}`);
-            });
-        } else {
-            document.exitFullscreen();
+        // Toggle fullscreen properly for mobile + desktop
+        if (video.requestFullscreen) {
+            if (!document.fullscreenElement) {
+                video.requestFullscreen().catch(err => {
+                    console.error(`Error attempting to enable fullscreen: ${err.message}`);
+                });
+            } else {
+                document.exitFullscreen();
+            }
+            // @ts-ignore - Handle iOS webkit fallback
+        } else if (video.webkitEnterFullscreen) {
+            // @ts-ignore
+            video.webkitEnterFullscreen();
         }
     };
 
@@ -65,9 +71,9 @@ export const InfoMenu = forwardRef<HTMLDivElement, InfoMenuProps>(function InfoM
                 className="absolute right-0 top-0 h-full w-full max-w-2xl bg-background shadow-xl border-l border-border"
                 onClick={(e) => e.stopPropagation()}
             >
-                {/* Header */}
-                <div className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b border-border">
-                    <div className="flex items-center justify-between p-4 sm:p-5">
+                {/* Header - Added pt-safe for mobile */}
+                <div className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b border-border pt-[env(safe-area-inset-top)]">
+                    <div className="flex items-center justify-between p-4 sm:p-5 mt-2">
                         <div className="flex items-center gap-3">
                             {/* Logo "i" Style Icon */}
                             <div className="relative flex flex-col items-center justify-center w-8 h-8">
@@ -90,16 +96,16 @@ export const InfoMenu = forwardRef<HTMLDivElement, InfoMenuProps>(function InfoM
                 <div
                     ref={containerRef}
                     className="overflow-y-auto px-4 sm:px-6 py-6"
-                    style={{ height: 'calc(100vh - 80px)' }}
+                    style={{ height: 'calc(100vh - 80px - env(safe-area-inset-top))' }}
                 >
-                    <div className="prose prose-sm dark:prose-invert max-w-none space-y-8">
+                    <div className="space-y-8">
 
                         {/* Introduction */}
                         <div className="bg-muted/30 p-4 rounded-xl border border-border/50">
-                            <p className="text-base text-muted-foreground m-0">
-                                Welcome to <span className="font-semibold text-foreground">Kin-TXT</span>.
-                                This guide covers everything you need to know about our moving text reader,
-                                ebook libraries, and focus tools.
+                            <p className="text-sm sm:text-base text-foreground/90 m-0 leading-relaxed">
+                                Welcome to <span className="font-semibold text-foreground">KiN-TXT</span>.
+                                This guide covers everything you need to know about our kinetic text reader,
+                                reading modes, ebook library, live news, AI-powered features, and focus tools.
                             </p>
                         </div>
 
@@ -107,23 +113,53 @@ export const InfoMenu = forwardRef<HTMLDivElement, InfoMenuProps>(function InfoM
 
                             {/* Reading Modes */}
                             <AccordionItem value="reading-modes">
-                                <AccordionTrigger className="text-lg font-medium">
+                                <AccordionTrigger className="text-lg font-medium text-foreground">
                                     <div className="flex items-center gap-2">
                                         <Play className="w-5 h-5 text-primary" />
                                         Reading Modes
                                     </div>
                                 </AccordionTrigger>
-                                <AccordionContent className="space-y-6 pt-4 text-base">
+                                <AccordionContent className="space-y-8 pt-4">
+
+                                    {/* Rhythm Mode (Moved to Top) */}
                                     <div className="space-y-4">
-                                        <h4 className="font-semibold text-foreground flex items-center gap-2">
-                                            acceleration Mode
+                                        <h4 className="font-semibold text-foreground flex items-center gap-2 text-base">
+                                            Rhythm Mode
                                         </h4>
-                                        <p>
-                                            Start slow and gradually build up speed. Perfect for warming up or pushing
-                                            your reading limits comfortably.
+                                        <p className="text-sm sm:text-base text-foreground/80 leading-relaxed">
+                                            Rhythm Mode turns reading into a time-based experience, with text arriving through pace,
+                                            pause, and emphasis. Focus becomes continuous, page friction disappears, and language
+                                            unfolds as the writer intended. Great for immersive reading and maintaining focus across
+                                            long texts or books.
                                         </p>
                                         {/* Video */}
-                                        <div className="aspect-video w-full bg-black/5 rounded-lg border border-border flex items-center justify-center relative overflow-hidden group cursor-pointer">
+                                        <div className="aspect-video w-full bg-black/5 rounded-lg border border-border flex items-center justify-center relative overflow-hidden group cursor-pointer shadow-sm">
+                                            <video
+                                                src={rhythmVideo}
+                                                className="w-full h-full object-cover"
+                                                controls={false}
+                                                onClick={handleVideoClick}
+                                                playsInline // Crucial for iOS
+                                            />
+                                            <div className="absolute bottom-2 right-2 bg-black/60 text-white text-[10px] px-2 py-1 rounded pointer-events-none backdrop-blur-sm">
+                                                Tap to expand
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Acceleration Mode */}
+                                    <div className="space-y-4">
+                                        <h4 className="font-semibold text-foreground flex items-center gap-2 text-base">
+                                            Acceleration Mode
+                                        </h4>
+                                        <p className="text-sm sm:text-base text-foreground/80 leading-relaxed">
+                                            Acceleration Mode gradually increases the pace as your brain adapts, helping you absorb
+                                            information faster than you expect. You may miss the odd word, but comprehension keeps
+                                            up as your mind naturally fills the gaps. Ideal for short, information-dense texts like
+                                            news articles and non-fiction, where efficient understanding matters most.
+                                        </p>
+                                        {/* Video */}
+                                        <div className="aspect-video w-full bg-black/5 rounded-lg border border-border flex items-center justify-center relative overflow-hidden group cursor-pointer shadow-sm">
                                             <video
                                                 src={accelerationVideo}
                                                 className="w-full h-full object-cover"
@@ -131,140 +167,162 @@ export const InfoMenu = forwardRef<HTMLDivElement, InfoMenuProps>(function InfoM
                                                 onClick={handleVideoClick}
                                                 playsInline
                                             />
-                                            <div className="absolute bottom-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded pointer-events-none">
+                                            <div className="absolute bottom-2 right-2 bg-black/60 text-white text-[10px] px-2 py-1 rounded pointer-events-none backdrop-blur-sm">
                                                 Tap to expand
                                             </div>
                                         </div>
                                     </div>
 
+                                    {/* Target Mode */}
                                     <div className="space-y-4">
-                                        <h4 className="font-semibold text-foreground flex items-center gap-2">
-                                            Rhythm Mode
+                                        <h4 className="font-semibold text-foreground flex items-center gap-2 text-base">
+                                            Target Mode
                                         </h4>
-                                        <p>
-                                            A steady, rhythmic pace that guides your eyes. Great for maintaining
-                                            consistent focus over long texts.
+                                        <p className="text-sm sm:text-base text-foreground/80 leading-relaxed">
+                                            Target Mode anchors your eyes to a central coloured letter with guiding lines, keeping
+                                            your focus steady and reducing eye movement. Toggle it with Rhythm, Acceleration, or
+                                            Static modes for sharper, more controlled reading.
                                         </p>
-                                        {/* Video */}
-                                        <div className="aspect-video w-full bg-black/5 rounded-lg border border-border flex items-center justify-center relative overflow-hidden group cursor-pointer">
-                                            <video
-                                                src={rhythmVideo}
-                                                className="w-full h-full object-cover"
-                                                controls={false}
-                                                onClick={handleVideoClick}
-                                                playsInline
-                                            />
-                                            <div className="absolute bottom-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded pointer-events-none">
-                                                Tap to expand
-                                            </div>
-                                        </div>
                                     </div>
 
+                                    {/* Static Mode */}
                                     <div className="space-y-4">
-                                        <h4 className="font-semibold text-foreground flex items-center gap-2">
+                                        <h4 className="font-semibold text-foreground flex items-center gap-2 text-base">
                                             Static Mode
                                         </h4>
-                                        <p>
-                                            Traditional scrolling text with our enhanced typography and emphasis highlighting.
-                                            Best for detailed study or when you need to control the pace manually.
+                                        <p className="text-sm sm:text-base text-foreground/80 leading-relaxed">
+                                            Static Mode keeps text moving at a steady, fixed pace, chosen by you. No acceleration,
+                                            no rhythm shifts - just consistent, controlled reading for calm, predictable focus.
                                         </p>
                                     </div>
                                 </AccordionContent>
                             </AccordionItem>
 
-                            {/* Libraries & News */}
+                            {/* Content & Libraries */}
                             <AccordionItem value="content">
-                                <AccordionTrigger className="text-lg font-medium">
+                                <AccordionTrigger className="text-lg font-medium text-foreground">
                                     <div className="flex items-center gap-2">
                                         <BookOpen className="w-5 h-5 text-primary" />
                                         Content & Libraries
                                     </div>
                                 </AccordionTrigger>
-                                <AccordionContent className="space-y-4 pt-4 text-base">
+                                <AccordionContent className="space-y-6 pt-4">
+                                    {/* Overarching Statement */}
+                                    <p className="text-sm sm:text-base text-foreground/90 leading-relaxed italic border-l-2 border-primary/50 pl-4">
+                                        Our AI analyses any text in seconds, instantly highlighting emphasis, rhythm, and writing
+                                        style — whether it’s news, books, reports, or text you upload or paste.
+                                    </p>
+
                                     <div className="grid gap-4 sm:grid-cols-2">
-                                        <div className="p-4 rounded-lg bg-card border border-border">
-                                            <div className="flex items-center gap-2 mb-2 font-semibold text-foreground">
-                                                <Newspaper className="w-4 h-4" /> News
+                                        {/* News */}
+                                        <div className="p-4 rounded-lg bg-card border border-border shadow-sm">
+                                            <div className="flex items-center gap-2 mb-2 font-semibold text-foreground text-sm">
+                                                <Newspaper className="w-4 h-4 text-primary" /> News
                                             </div>
-                                            <p className="text-sm text-muted-foreground">
-                                                Browse the latest headlines. We process articles to highlight key information
-                                                so you can ingest news faster.
+                                            <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                                                Check out the News tab to explore live headlines from top sources and absorb the key
+                                                points faster than ever.
                                             </p>
                                         </div>
-                                        <div className="p-4 rounded-lg bg-card border border-border">
-                                            <div className="flex items-center gap-2 mb-2 font-semibold text-foreground">
-                                                <BookOpen className="w-4 h-4" /> Ebooks
+                                        {/* Ebooks */}
+                                        <div className="p-4 rounded-lg bg-card border border-border shadow-sm">
+                                            <div className="flex items-center gap-2 mb-2 font-semibold text-foreground text-sm">
+                                                <BookOpen className="w-4 h-4 text-primary" /> Ebooks
                                             </div>
-                                            <p className="text-sm text-muted-foreground">
-                                                Access your personal library. Upload EPUB files to read your favorite books
-                                                with kinetic typography.
+                                            <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                                                Explore our collection of free classic Ebooks and experience the text with emphasis
+                                                and rhythm, instantly applied by our AI.
                                             </p>
                                         </div>
-                                        <div className="p-4 rounded-lg bg-card border border-border sm:col-span-2">
-                                            <div className="flex items-center gap-2 mb-2 font-semibold text-foreground">
-                                                <Upload className="w-4 h-4" /> My TXTs
+                                        {/* My TXTs */}
+                                        <div className="p-4 rounded-lg bg-card border border-border shadow-sm sm:col-span-2">
+                                            <div className="flex items-center gap-2 mb-2 font-semibold text-foreground text-sm">
+                                                <Upload className="w-4 h-4 text-primary" /> My TXTs
                                             </div>
-                                            <p className="text-sm text-muted-foreground">
-                                                Paste any text or upload .txt files directly. Our AI analyzes the content
-                                                to separate whispers from emphasis, giving you a rich reading experience instantly.
+                                            <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                                                Under the My TXTs tab, upload files or paste text, and keep track of every book,
+                                                article, and document you’ve read on KiN-TXT.
                                             </p>
                                         </div>
                                     </div>
                                 </AccordionContent>
                             </AccordionItem>
 
-                            {/* Interface Guide */}
+                            {/* Reader Interface */}
                             <AccordionItem value="interface">
-                                <AccordionTrigger className="text-lg font-medium">
+                                <AccordionTrigger className="text-lg font-medium text-foreground">
                                     <div className="flex items-center gap-2">
                                         <Layout className="w-5 h-5 text-primary" />
                                         Reader Interface
                                     </div>
                                 </AccordionTrigger>
-                                <AccordionContent className="space-y-4 pt-4 text-base">
-                                    <ul className="space-y-3 list-disc pl-5 text-muted-foreground">
-                                        <li>
-                                            <strong className="text-foreground">Full Text View:</strong> Click the expand button to see the entire document at once.
-                                            Tap any word to jump the reader to that exact spot.
-                                        </li>
-                                        <li>
-                                            <strong className="text-foreground">Navigation Bars:</strong> The bottom bars represent sections or chapters.
-                                            Hover to see previews, click to jump.
-                                        </li>
-                                        <li>
-                                            <strong className="text-foreground">Progress Gradient:</strong> The active section bar fills with a gradient
-                                            indicating exactly how far through the current chapter you are.
-                                        </li>
-                                    </ul>
+                                <AccordionContent className="pt-4">
+                                    <div className="grid gap-4 sm:grid-cols-2">
+                                        {/* Full Text */}
+                                        <div className="p-4 rounded-lg bg-card border border-border shadow-sm">
+                                            <div className="flex items-center gap-2 mb-2 font-semibold text-foreground text-sm">
+                                                <Type className="w-4 h-4 text-primary" /> Full Text
+                                            </div>
+                                            <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                                                Click the Full TXT button to see the entire document at once. Tap any word to jump
+                                                the reader to that exact spot.
+                                            </p>
+                                        </div>
+
+                                        {/* Navigation Bar */}
+                                        <div className="p-4 rounded-lg bg-card border border-border shadow-sm">
+                                            <div className="flex items-center gap-2 mb-2 font-semibold text-foreground text-sm">
+                                                <MousePointer2 className="w-4 h-4 text-primary" /> Navigation
+                                            </div>
+                                            <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                                                Click the Navigation Bar to jump between sections or chapters. The active section fills
+                                                with a Progress Gradient, showing exactly how far you are through the current chapter.
+                                            </p>
+                                        </div>
+
+                                        {/* Settings */}
+                                        <div className="p-4 rounded-lg bg-card border border-border shadow-sm sm:col-span-2">
+                                            <div className="flex items-center gap-2 mb-2 font-semibold text-foreground text-sm">
+                                                <Settings className="w-4 h-4 text-primary" /> Settings
+                                            </div>
+                                            <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                                                Tap the Settings Button in the toolbar to switch reading modes, adjust the pace, and
+                                                change text size - all in one place for a fully personalised reading experience.
+                                            </p>
+                                        </div>
+                                    </div>
                                 </AccordionContent>
                             </AccordionItem>
 
                             {/* Focus & Audio */}
                             <AccordionItem value="focus">
-                                <AccordionTrigger className="text-lg font-medium">
+                                <AccordionTrigger className="text-lg font-medium text-foreground">
                                     <div className="flex items-center gap-2">
                                         <Smartphone className="w-5 h-5 text-primary" />
                                         Focus & Audio
                                     </div>
                                 </AccordionTrigger>
-                                <AccordionContent className="space-y-4 pt-4 text-base">
-                                    <div className="space-y-4">
-                                        <div>
-                                            <h4 className="font-semibold text-foreground flex items-center gap-2 mb-1">
-                                                <Smartphone className="w-4 h-4" /> Focus Mode (Mobile App)
-                                            </h4>
-                                            <p className="text-muted-foreground">
-                                                When using the installed mobile app, enabling Focus Mode will automatically
-                                                turn off phone notifications, allowing you to immerse completely in the text.
+                                <AccordionContent className="pt-4">
+                                    <div className="grid gap-4 sm:grid-cols-2">
+                                        {/* Focus Mode */}
+                                        <div className="p-4 rounded-lg bg-card border border-border shadow-sm">
+                                            <div className="flex items-center gap-2 mb-2 font-semibold text-foreground text-sm">
+                                                <Smartphone className="w-4 h-4 text-primary" /> Focus Mode
+                                            </div>
+                                            <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                                                When using the installed mobile app, enabling Focus Mode will automatically turn off
+                                                phone notifications, allowing you to immerse completely in the text.
                                             </p>
                                         </div>
-                                        <div>
-                                            <h4 className="font-semibold text-foreground flex items-center gap-2 mb-1">
-                                                <Music className="w-4 h-4" /> Music & Atmosphere
-                                            </h4>
-                                            <p className="text-muted-foreground">
-                                                Toggle the music button to play a curated jazz track ("Paris 1920s")
-                                                designed to aid concentration without distraction.
+
+                                        {/* Music */}
+                                        <div className="p-4 rounded-lg bg-card border border-border shadow-sm">
+                                            <div className="flex items-center gap-2 mb-2 font-semibold text-foreground text-sm">
+                                                <Music className="w-4 h-4 text-primary" /> Music
+                                            </div>
+                                            <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                                                Click the Music Button to choose from curated tracks and ambient sounds, crafted to
+                                                boost focus without distracting you.
                                             </p>
                                         </div>
                                     </div>
