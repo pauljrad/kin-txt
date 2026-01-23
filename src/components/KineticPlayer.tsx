@@ -1086,7 +1086,7 @@ export function KineticPlayer({
                 : { opacity: 0, scale: 1.1, y: -10, filter: 'blur(4px)', transition: { duration: 0.05 } }
               }
               transition={targetMode
-                ? { duration: 0.05 }
+                ? { duration: Math.min(0.15, (currentWordDelayMs / 1000) * 0.3), ease: "easeOut" }
                 : {
                   duration: Math.min(0.2, (currentWordDelayMs / 1000) * 0.4),
                   ease: "easeOut"
@@ -1118,24 +1118,12 @@ export function KineticPlayer({
                   const prefix = currentDisplayWord.substring(0, orpIndex);
                   const focalChar = currentDisplayWord[orpIndex];
                   const suffix = currentDisplayWord.substring(orpIndex + 1);
-
-                  // Calculate the offset to align ORP with center
-                  // Each character is roughly 0.6em wide, so we shift left by (prefix.length * 0.6em)
-                  // and right by (suffix.length * 0.6em) to center the focal character
-                  const charWidth = 0.55; // Approximate character width in em units
-                  const offsetEm = (prefix.length - suffix.length) * charWidth / 2;
-
+                  
                   return (
-                    <div
-                      className="flex items-center justify-center h-full whitespace-nowrap"
-                      style={{
-                        transform: `translateX(${-offsetEm}em)`,
-                        width: 'max-content'
-                      }}
-                    >
-                      <span>{prefix}</span>
-                      <span className="text-red-500 font-bold">{focalChar}</span>
-                      <span>{suffix}</span>
+                    <div className="inline-flex items-center justify-center whitespace-nowrap">
+                      <span className="inline-block">{prefix}</span>
+                      <span className="text-red-500 font-bold inline-block">{focalChar}</span>
+                      <span className="inline-block">{suffix}</span>
                     </div>
                   );
                 })()
