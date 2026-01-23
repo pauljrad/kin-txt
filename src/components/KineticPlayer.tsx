@@ -1118,41 +1118,23 @@ export function KineticPlayer({
                   const prefix = currentDisplayWord.substring(0, orpIndex);
                   const focalChar = currentDisplayWord[orpIndex];
                   const suffix = currentDisplayWord.substring(orpIndex + 1);
-
+                  
+                  // Calculate offset to center the ORP character
+                  // We need to shift the word so the ORP lands at 50%
+                  const totalChars = currentDisplayWord.length;
+                  const orpPosition = orpIndex / totalChars; // 0 to 1
+                  const offsetPercent = (0.5 - orpPosition) * 100; // How much to shift
+                  
                   return (
-                    <div className="relative w-full h-full flex items-center justify-center">
-                      {/* Prefix - positioned to the left of center */}
-                      <span
-                        className="absolute whitespace-nowrap"
-                        style={{
-                          right: '50%',
-                          paddingRight: '0.05em'
-                        }}
-                      >
-                        {prefix}
-                      </span>
-
-                      {/* ORP character - exactly at center */}
-                      <span
-                        className="text-red-500 font-bold absolute"
-                        style={{
-                          left: '50%',
-                          transform: 'translateX(-50%)'
-                        }}
-                      >
-                        {focalChar}
-                      </span>
-
-                      {/* Suffix - positioned to the right of center */}
-                      <span
-                        className="absolute whitespace-nowrap"
-                        style={{
-                          left: '50%',
-                          paddingLeft: '0.05em'
-                        }}
-                      >
-                        {suffix}
-                      </span>
+                    <div 
+                      className="inline-flex items-center whitespace-nowrap"
+                      style={{
+                        transform: `translateX(${offsetPercent}%)`
+                      }}
+                    >
+                      <span>{prefix}</span>
+                      <span className="text-red-500 font-bold">{focalChar}</span>
+                      <span>{suffix}</span>
                     </div>
                   );
                 })()
