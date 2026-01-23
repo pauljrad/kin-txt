@@ -13,6 +13,7 @@ import {
 import accelerationVideo from '@/assets/videos/acceleration-mode.mov';
 import rhythmVideo from '@/assets/videos/rhythm-and-emphasis-mode.mov';
 
+// Trigger deployment
 interface InfoMenuProps {
     onClose: () => void;
 }
