@@ -1114,23 +1114,24 @@ export function KineticPlayer({
                 </div>
               ) : targetMode ? (
                 (() => {
-                  const orpIndex = getORPIndex(currentDisplayWord);
-                  const prefix = currentDisplayWord.substring(0, orpIndex);
-                  const focalChar = currentDisplayWord[orpIndex];
-                  const suffix = currentDisplayWord.substring(orpIndex + 1);
-                  
+                  const safeWord = currentDisplayWord || '';
+                  const orpIndex = getORPIndex(safeWord);
+                  const prefix = safeWord.substring(0, orpIndex);
+                  const focalChar = safeWord[orpIndex] || '';
+                  const suffix = safeWord.substring(orpIndex + 1);
+
                   return (
-                    <>
-                      {prefix}
-                      <span className="text-red-500 font-bold">{focalChar}</span>
-                      {suffix}
-                    </>
+                    <div className="w-full grid grid-cols-[1fr_auto_1fr] items-baseline">
+                      <span className="text-right whitespace-pre">{prefix}</span>
+                      <span className="text-center text-red-500 font-bold min-w-[1ch]">{focalChar}</span>
+                      <span className="text-left whitespace-pre">{suffix}</span>
+                    </div>
                   );
                 })()
               ) : (
                 currentDisplayWord
               )}
-              )}
+
             </motion.div>
           )}
         </AnimatePresence>
