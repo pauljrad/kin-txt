@@ -69,8 +69,7 @@ export function KineticPlayer({
   const [showingChapterTitle, setShowingChapterTitle] = useState<string | null>(null);
   const [lastChapterIndex, setLastChapterIndex] = useState(-1);
   const [focusMode, setFocusMode] = useState(false);
-  const [targetMode, setTargetMode] = useState(false); // New RSVP Target Mode
-  const [targetModeWordCount, setTargetModeWordCount] = useState(0); // For speed ramp
+  const [targetMode, setTargetMode] = useState(false); // RSVP Target Mode (visual overlay)
   const [atmospherePlaying, setAtmospherePlaying] = useState(false);
   const atmosphereAudioRef = useRef<HTMLAudioElement>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -455,12 +454,6 @@ export function KineticPlayer({
       return DEFAULT_SPEED * rhythmMultiplier;
     }
 
-    if (targetMode) {
-      // 300 WPM = 200ms (1.5x base of 200WPM/300ms)
-      // 900 WPM = 66.6ms (4.5x base of 200WPM/300ms)
-      const rampProgress = Math.min(1, targetModeWordCount / 150);
-      return 1.5 + (4.5 - 1.5) * rampProgress;
-    }
 
     if (accelerationMode) {
       if (chunkLength <= 1) {
@@ -618,9 +611,6 @@ export function KineticPlayer({
       } else {
         setSentenceCount(newSentenceCount);
         setWordInChunk(prev => prev + 1);
-        if (targetMode) {
-          setTargetModeWordCount(prev => prev + 1);
-        }
       }
       setCurrentWord(prev => prev + 1);
       // Track words for adaptive speed
@@ -744,16 +734,6 @@ export function KineticPlayer({
     // Calculate delay with current speed - ensure it's valid
     let delay = getWordDelay(word, currentSpeed, rhythmMode ? 'rhythm' : 'normal');
 
-    // TARGET MODE SPECAL HANDLING: 300-900 WPM ramp
-    if (targetMode) {
-      // 300 WPM = 200ms
-      // 900 WPM = 66.6ms
-      // Ramp over 150 words (approx 30-45 seconds of reading)
-      const rampProgress = Math.min(1, targetModeWordCount / 150);
-      const startDelay = 200;
-      const endDelay = 66.6;
-      delay = startDelay - (startDelay - endDelay) * rampProgress;
-    }
 
     // Sanity check: delay must be a positive finite number
     if (!Number.isFinite(delay) || delay <= 0) {
@@ -1118,7 +1098,7 @@ export function KineticPlayer({
                 }`}
               style={{
                 fontSize: targetMode
-                  ? `calc(4.5rem * var(--text-size-multiplier, 1))` // Larger, fixed size for Target Mode
+                  ? `calc(2.9rem * var(--text-size-multiplier, 1))` // Match normal text size in Target Mode
                   : `calc(${cleanWord.includes('kin-txt') || cleanWord === 'kin-txt' ? '6rem' :
                     isEmphasisWord ? '6rem' :
                       isWhisperedWord ? '1.5rem' : '2.9rem'
@@ -1138,11 +1118,24 @@ export function KineticPlayer({
                   const prefix = currentDisplayWord.substring(0, orpIndex);
                   const focalChar = currentDisplayWord[orpIndex];
                   const suffix = currentDisplayWord.substring(orpIndex + 1);
+
+                  // Calculate the offset to align ORP with center
+                  // Each character is roughly 0.6em wide, so we shift left by (prefix.length * 0.6em)
+                  // and right by (suffix.length * 0.6em) to center the focal character
+                  const charWidth = 0.55; // Approximate character width in em units
+                  const offsetEm = (prefix.length - suffix.length) * charWidth / 2;
+
                   return (
-                    <div className="flex w-full items-center justify-center h-full">
-                      <div className="flex-1 text-right whitespace-nowrap">{prefix}</div>
-                      <div className="text-red-500 shrink-0 min-w-[0.4em] text-center font-bold px-[1px]">{focalChar}</div>
-                      <div className="flex-1 text-left whitespace-nowrap">{suffix}</div>
+                    <div
+                      className="flex items-center justify-center h-full whitespace-nowrap"
+                      style={{
+                        transform: `translateX(${-offsetEm}em)`,
+                        width: 'max-content'
+                      }}
+                    >
+                      <span>{prefix}</span>
+                      <span className="text-red-500 font-bold">{focalChar}</span>
+                      <span>{suffix}</span>
                     </div>
                   );
                 })()
@@ -1469,13 +1462,7 @@ export function KineticPlayer({
                           </div>
                           <button
                             onClick={() => {
-                              const newMode = !targetMode;
-                              setTargetMode(newMode);
-                              if (newMode) {
-                                setAccelerationMode(false);
-                                setRhythmMode(false);
-                                setTargetModeWordCount(0); // Reset ramp
-                              }
+                              setTargetMode(!targetMode);
                             }}
                             className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${targetMode ? 'bg-primary' : 'bg-muted'
                               }`}
