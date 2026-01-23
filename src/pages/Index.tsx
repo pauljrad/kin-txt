@@ -6,6 +6,7 @@ import { KineticPlayer } from '@/components/KineticPlayer';
 import { DocumentHistory } from '@/components/DocumentHistory';
 import { EbookLibrary } from '@/components/EbookLibrary';
 import { NewsLibrary } from '@/components/NewsLibrary';
+import { InfoMenu } from '@/components/InfoMenu';
 
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { AnimatedTitle } from '@/components/AnimatedTitle';
@@ -43,6 +44,7 @@ const Index = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [isPongGameActive, setIsPongGameActive] = useState(false);
+  const [showInfoMenu, setShowInfoMenu] = useState(false);
 
   // If we switch into the reader view, forcibly clear the "Pong active" UI lock
   // so the main interface never stays blurred/unclickable.
@@ -403,6 +405,29 @@ const Index = () => {
         </motion.button>
       )}
 
+      {/* Info Button - Top Right */}
+      {!activeDocument && (
+        <motion.button
+          onClick={() => setShowInfoMenu(true)}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          animate={{
+            opacity: isPongGameActive ? 0 : 1,
+            filter: isPongGameActive ? 'blur(6px)' : 'blur(0px)',
+          }}
+          transition={{ duration: 0.4 }}
+          className="fixed right-4 z-50 p-2 rounded-lg bg-card/50 hover:bg-card transition-colors text-foreground"
+          style={{ top: 'calc(3.5rem + env(safe-area-inset-top, 0px))', pointerEvents: isPongGameActive ? 'none' : 'auto' }}
+          title="Information & Instructions"
+        >
+          {/* Logo "i" Style Icon */}
+          <div className="flex flex-col items-center justify-center w-5 h-5">
+            <span className="w-[3px] h-[3px] rounded-full bg-current mb-[2px]" />
+            <span className="w-[3px] h-[10px] bg-current rounded-[1px]" />
+          </div>
+        </motion.button>
+      )}
+
 
       <AnimatePresence mode="wait">
         {!activeDocument ? (
@@ -577,6 +602,13 @@ const Index = () => {
               isEbook={activeDocument.isEbook}
             />
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Information Menu Overlay */}
+      <AnimatePresence>
+        {showInfoMenu && (
+          <InfoMenu onClose={() => setShowInfoMenu(false)} />
         )}
       </AnimatePresence>
 
