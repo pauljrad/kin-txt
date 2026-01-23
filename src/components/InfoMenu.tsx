@@ -72,8 +72,8 @@ export const InfoMenu = forwardRef<HTMLDivElement, InfoMenuProps>(function InfoM
                 className="absolute right-0 top-0 h-full w-full max-w-2xl bg-background shadow-xl border-l border-border"
                 onClick={(e) => e.stopPropagation()}
             >
-                {/* Header - Added pt-safe for mobile */}
-                <div className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b border-border pt-[env(safe-area-inset-top)]">
+                {/* Header - Added pt-safe for mobile with extra breathing room */}
+                <div className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b border-border pt-[calc(env(safe-area-inset-top)+1.5rem)]">
                     <div className="flex items-center justify-between p-4 sm:p-5 mt-2">
                         <div className="flex items-center gap-3">
                             {/* Logo "i" Style Icon */}
@@ -103,7 +103,7 @@ export const InfoMenu = forwardRef<HTMLDivElement, InfoMenuProps>(function InfoM
 
                         {/* Introduction */}
                         <div className="bg-muted/30 p-4 rounded-xl border border-border/50">
-                            <p className="text-sm sm:text-base text-foreground/90 m-0 leading-relaxed">
+                            <p className="text-xs sm:text-sm text-foreground m-0 leading-relaxed font-medium">
                                 Welcome to <span className="font-semibold text-foreground">KiN-TXT</span>.
                                 This guide covers everything you need to know about our kinetic text reader,
                                 reading modes, ebook library, live news, AI-powered features, and focus tools.
@@ -127,7 +127,7 @@ export const InfoMenu = forwardRef<HTMLDivElement, InfoMenuProps>(function InfoM
                                         <h4 className="font-semibold text-foreground flex items-center gap-2 text-base">
                                             Rhythm Mode
                                         </h4>
-                                        <p className="text-sm sm:text-base text-foreground/80 leading-relaxed">
+                                        <p className="text-xs sm:text-sm text-foreground/90 leading-relaxed">
                                             Rhythm Mode turns reading into a time-based experience, with text arriving through pace,
                                             pause, and emphasis. Focus becomes continuous, page friction disappears, and language
                                             unfolds as the writer intended. Great for immersive reading and maintaining focus across
@@ -140,7 +140,7 @@ export const InfoMenu = forwardRef<HTMLDivElement, InfoMenuProps>(function InfoM
                                                 className="w-full h-full object-cover"
                                                 controls={false}
                                                 onClick={handleVideoClick}
-                                                playsInline // Crucial for iOS
+                                                playsInline
                                             />
                                             <div className="absolute bottom-2 right-2 bg-black/60 text-white text-[10px] px-2 py-1 rounded pointer-events-none backdrop-blur-sm">
                                                 Tap to expand
@@ -153,7 +153,7 @@ export const InfoMenu = forwardRef<HTMLDivElement, InfoMenuProps>(function InfoM
                                         <h4 className="font-semibold text-foreground flex items-center gap-2 text-base">
                                             Acceleration Mode
                                         </h4>
-                                        <p className="text-sm sm:text-base text-foreground/80 leading-relaxed">
+                                        <p className="text-xs sm:text-sm text-foreground/90 leading-relaxed">
                                             Acceleration Mode gradually increases the pace as your brain adapts, helping you absorb
                                             information faster than you expect. You may miss the odd word, but comprehension keeps
                                             up as your mind naturally fills the gaps. Ideal for short, information-dense texts like
@@ -179,7 +179,7 @@ export const InfoMenu = forwardRef<HTMLDivElement, InfoMenuProps>(function InfoM
                                         <h4 className="font-semibold text-foreground flex items-center gap-2 text-base">
                                             Target Mode
                                         </h4>
-                                        <p className="text-sm sm:text-base text-foreground/80 leading-relaxed">
+                                        <p className="text-xs sm:text-sm text-foreground/90 leading-relaxed">
                                             Target Mode anchors your eyes to a central coloured letter with guiding lines, keeping
                                             your focus steady and reducing eye movement. Toggle it with Rhythm, Acceleration, or
                                             Static modes for sharper, more controlled reading.
@@ -191,13 +191,14 @@ export const InfoMenu = forwardRef<HTMLDivElement, InfoMenuProps>(function InfoM
                                         <h4 className="font-semibold text-foreground flex items-center gap-2 text-base">
                                             Static Mode
                                         </h4>
-                                        <p className="text-sm sm:text-base text-foreground/80 leading-relaxed">
+                                        <p className="text-xs sm:text-sm text-foreground/90 leading-relaxed">
                                             Static Mode keeps text moving at a steady, fixed pace, chosen by you. No acceleration,
                                             no rhythm shifts - just consistent, controlled reading for calm, predictable focus.
                                         </p>
                                     </div>
                                 </AccordionContent>
                             </AccordionItem>
+
 
                             {/* Content & Libraries */}
                             <AccordionItem value="content">
@@ -209,7 +210,7 @@ export const InfoMenu = forwardRef<HTMLDivElement, InfoMenuProps>(function InfoM
                                 </AccordionTrigger>
                                 <AccordionContent className="space-y-6 pt-4">
                                     {/* Overarching Statement */}
-                                    <p className="text-sm sm:text-base text-foreground/90 leading-relaxed italic border-l-2 border-primary/50 pl-4">
+                                    <p className="text-xs sm:text-sm text-foreground/90 leading-relaxed italic border-l-2 border-primary/50 pl-4">
                                         Our AI analyses any text in seconds, instantly highlighting emphasis, rhythm, and writing
                                         style — whether it’s news, books, reports, or text you upload or paste.
                                     </p>
@@ -331,6 +332,7 @@ export const InfoMenu = forwardRef<HTMLDivElement, InfoMenuProps>(function InfoM
                             </AccordionItem>
 
                         </Accordion>
+
                     </div>
                 </div>
             </motion.div>
