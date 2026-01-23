@@ -1306,7 +1306,7 @@ export function KineticPlayer({
               <span className="text-[10px] sm:text-sm text-muted-foreground">
                 {rhythmMode ? 'Rhythm: ' : 'Speed: '}
               </span>
-              <span className="text-xs sm:text-sm font-medium">{displaySpeed.toFixed(1)}x</span>
+              <span className="text-xs sm:text-sm font-medium">{Math.round(displaySpeed * 200)} WPM</span>
             </motion.div>
 
 
@@ -1472,15 +1472,15 @@ export function KineticPlayer({
                               <div className="flex flex-col gap-1.5">
                                 <div className="flex justify-between text-xs">
                                   <span className="text-muted-foreground">Starting speed</span>
-                                  <span className="font-medium tabular-nums">{startSpeed.toFixed(1)}x</span>
+                                  <span className="font-medium tabular-nums">{Math.round(startSpeed * 200)} WPM</span>
                                 </div>
                                 <input
                                   type="range"
-                                  min="0.2"
-                                  max="3"
-                                  step="0.1"
-                                  value={startSpeed}
-                                  onChange={(e) => setStartSpeed(parseFloat(e.target.value))}
+                                  min="40"
+                                  max="600"
+                                  step="10"
+                                  value={Math.round(startSpeed * 200)}
+                                  onChange={(e) => setStartSpeed(parseInt(e.target.value) / 200)}
                                   className="speed-slider"
                                 />
                               </div>
@@ -1488,15 +1488,15 @@ export function KineticPlayer({
                               <div className="flex flex-col gap-1.5">
                                 <div className="flex justify-between text-xs">
                                   <span className="text-muted-foreground">Finishing speed</span>
-                                  <span className="font-medium tabular-nums">{endSpeed.toFixed(1)}x</span>
+                                  <span className="font-medium tabular-nums">{Math.round(endSpeed * 200)} WPM</span>
                                 </div>
                                 <input
                                   type="range"
-                                  min="0.2"
-                                  max="3"
-                                  step="0.1"
-                                  value={endSpeed}
-                                  onChange={(e) => setEndSpeed(parseFloat(e.target.value))}
+                                  min="40"
+                                  max="600"
+                                  step="10"
+                                  value={Math.round(endSpeed * 200)}
+                                  onChange={(e) => setEndSpeed(parseInt(e.target.value) / 200)}
                                   className="speed-slider"
                                 />
                               </div>
@@ -1534,27 +1534,21 @@ export function KineticPlayer({
                           <div className="flex flex-col gap-1.5">
                             <div className="flex justify-between text-xs">
                               <span className="text-muted-foreground">Speed</span>
-                              <span className="font-medium tabular-nums">{startSpeed.toFixed(1)}x</span>
+                              <span className="font-medium tabular-nums">{Math.round(startSpeed * 200)} WPM</span>
                             </div>
                             <input
                               type="range"
-                              min="0.2"
-                              max="3"
-                              step="0.1"
-                              value={startSpeed}
-                              onChange={(e) => setStartSpeed(parseFloat(e.target.value))}
+                              min="40"
+                              max="600"
+                              step="10"
+                              value={Math.round(startSpeed * 200)}
+                              onChange={(e) => setStartSpeed(parseInt(e.target.value) / 200)}
                               className="speed-slider"
                             />
                           </div>
                         )}
 
-                        {/* Rhythm info */}
-                        {rhythmMode && (
-                          <div className="text-xs text-muted-foreground text-center py-2">
-                            <Music className="w-3 h-3 inline mr-1" />
-                            Following the writer's intended pace
-                          </div>
-                        )}
+                        {/* Rhythm info - Removed per request */}
 
                         {/* Text Size */}
                         <div className="border-t border-border pt-4 space-y-2">
