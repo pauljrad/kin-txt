@@ -1119,27 +1119,17 @@ export function KineticPlayer({
                   const focalChar = currentDisplayWord[orpIndex];
                   const suffix = currentDisplayWord.substring(orpIndex + 1);
                   
-                  // Calculate offset to center the ORP character
-                  // We need to shift the word so the ORP lands at 50%
-                  const totalChars = currentDisplayWord.length;
-                  const orpPosition = orpIndex / totalChars; // 0 to 1
-                  const offsetPercent = (0.5 - orpPosition) * 100; // How much to shift
-                  
                   return (
-                    <div 
-                      className="inline-flex items-center whitespace-nowrap"
-                      style={{
-                        transform: `translateX(${offsetPercent}%)`
-                      }}
-                    >
-                      <span>{prefix}</span>
+                    <>
+                      {prefix}
                       <span className="text-red-500 font-bold">{focalChar}</span>
-                      <span>{suffix}</span>
-                    </div>
+                      {suffix}
+                    </>
                   );
                 })()
               ) : (
                 currentDisplayWord
+              )}
               )}
             </motion.div>
           )}
