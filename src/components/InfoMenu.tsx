@@ -140,8 +140,7 @@ export const InfoMenu = forwardRef<HTMLDivElement, InfoMenuProps>(function InfoM
                                         <div className="aspect-video w-full bg-black/5 rounded-lg border border-border flex items-center justify-center relative overflow-hidden group cursor-pointer shadow-sm">
                                             <video
                                                 src={rhythmVideo}
-                                                className="w-full h-full object-cover transition-transform duration-500"
-                                                style={{ transform: 'scale(1.25)' }}
+                                                className="w-full h-full object-cover"
                                                 controls={false}
                                                 loop
                                                 muted
@@ -170,8 +169,7 @@ export const InfoMenu = forwardRef<HTMLDivElement, InfoMenuProps>(function InfoM
                                         <div className="aspect-video w-full bg-black/5 rounded-lg border border-border flex items-center justify-center relative overflow-hidden group cursor-pointer shadow-sm">
                                             <video
                                                 src={accelerationVideo}
-                                                className="w-full h-full object-cover transition-transform duration-500"
-                                                style={{ transform: 'scale(1.25)' }}
+                                                className="w-full h-full object-cover"
                                                 controls={false}
                                                 loop
                                                 muted
@@ -198,8 +196,7 @@ export const InfoMenu = forwardRef<HTMLDivElement, InfoMenuProps>(function InfoM
                                         <div className="aspect-video w-full bg-black/5 rounded-lg border border-border flex items-center justify-center relative overflow-hidden group cursor-pointer shadow-sm">
                                             <video
                                                 src={staticVideo}
-                                                className="w-full h-full object-cover transition-transform duration-500"
-                                                style={{ transform: 'scale(1.25)' }}
+                                                className="w-full h-full object-cover"
                                                 controls={false}
                                                 loop
                                                 muted
@@ -227,8 +224,7 @@ export const InfoMenu = forwardRef<HTMLDivElement, InfoMenuProps>(function InfoM
                                         <div className="aspect-video w-full bg-black/5 rounded-lg border border-border flex items-center justify-center relative overflow-hidden group cursor-pointer shadow-sm">
                                             <video
                                                 src={targetVideo}
-                                                className="w-full h-full object-cover transition-transform duration-500"
-                                                style={{ transform: 'scale(1.25)' }}
+                                                className="w-full h-full object-cover"
                                                 controls={false}
                                                 loop
                                                 muted
@@ -318,8 +314,7 @@ export const InfoMenu = forwardRef<HTMLDivElement, InfoMenuProps>(function InfoM
                                             <div className="mt-3 aspect-video w-full bg-black/5 rounded-lg border border-border flex items-center justify-center relative overflow-hidden group cursor-pointer shadow-sm">
                                                 <video
                                                     src={fullTxtVideo}
-                                                    className="w-full h-full object-cover transition-transform duration-500"
-                                                    style={{ transform: 'scale(1.3)' }}
+                                                    className="w-full h-full object-cover"
                                                     controls={false}
                                                     loop
                                                     muted
