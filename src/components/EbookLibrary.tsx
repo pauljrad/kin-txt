@@ -57,21 +57,21 @@ const BookCover = ({ title, index }: { title: string; index: number }) => {
   const logoColor = isDark ? 'bg-white' : 'bg-black';
 
   return (
-    <div className={`aspect-[2/3] mb-2 rounded-md ${bgColor} flex flex-col items-center justify-between p-4 relative border border-border/10 shadow-inner group-hover:shadow-lg transition-all duration-500 overflow-hidden`}>
+    <div className={`aspect-[2/3] mb-2 rounded-md ${bgColor} flex flex-col items-center justify-between p-2 sm:p-4 relative border border-border/10 shadow-inner group-hover:shadow-lg transition-all duration-500 overflow-hidden`}>
       {/* Centered KiN-TXT "i -" Logo */}
       <div className="flex-1 flex items-center justify-center">
-        <div className="flex items-center gap-3">
-          <div className="relative flex flex-col items-center justify-center w-6 h-10">
-            <span className={`w-2 h-2 rounded-full ${logoColor} mb-1`} />
-            <span className={`w-2 h-5 ${logoColor} rounded-sm`} />
+        <div className="flex items-center gap-1.5 sm:gap-3">
+          <div className="relative flex flex-col items-center justify-center w-3 h-5 sm:w-6 sm:h-10">
+            <span className={`w-1 h-1 sm:w-2 sm:h-2 rounded-full ${logoColor} mb-0.5 sm:mb-1`} />
+            <span className={`w-1 h-2.5 sm:w-2 sm:h-5 ${logoColor} rounded-sm`} />
           </div>
-          <div className={`w-5 h-1 ${logoColor} rounded-full opacity-80`} />
+          <div className={`w-2.5 h-0.5 sm:w-5 sm:h-1 ${logoColor} rounded-full opacity-80`} />
         </div>
       </div>
 
       {/* Title at the bottom */}
       <div className="w-full">
-        <h4 className={`text-center font-display font-medium text-[10px] leading-tight uppercase tracking-widest ${textColor} line-clamp-3`}>
+        <h4 className={`text-center font-display font-medium text-[6px] sm:text-[10px] leading-tight uppercase tracking-widest ${textColor} line-clamp-3`}>
           {title}
         </h4>
       </div>
