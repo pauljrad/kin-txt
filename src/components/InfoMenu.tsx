@@ -13,6 +13,7 @@ import {
 import accelerationVideo from '@/assets/videos/acceleration-mode.mov';
 import rhythmVideo from '@/assets/videos/rhythm-and-emphasis-mode.mov';
 import fullTxtVideo from '@/assets/videos/full_txt_button.mov';
+import staticVideo from '@/assets/videos/static_mode.mov';
 
 // Trigger deployment
 interface InfoMenuProps {
@@ -184,6 +185,22 @@ export const InfoMenu = forwardRef<HTMLDivElement, InfoMenuProps>(function InfoM
                                             Static Mode keeps text moving at a steady, fixed pace, chosen by you. No acceleration,
                                             no rhythm shifts - just consistent, controlled reading for calm, predictable focus.
                                         </p>
+                                        {/* Video */}
+                                        <div className="aspect-video w-full bg-black/5 rounded-lg border border-border flex items-center justify-center relative overflow-hidden group cursor-pointer shadow-sm">
+                                            <video
+                                                src={staticVideo}
+                                                className="w-full h-full object-cover"
+                                                controls={false}
+                                                loop
+                                                muted
+                                                playsInline
+                                                autoPlay
+                                                onClick={handleVideoClick}
+                                            />
+                                            <div className="absolute bottom-2 right-2 bg-black/60 text-white text-[10px] px-2 py-1 rounded pointer-events-none backdrop-blur-sm">
+                                                Tap to expand
+                                            </div>
+                                        </div>
                                     </div>
 
                                     {/* Target Mode */}
