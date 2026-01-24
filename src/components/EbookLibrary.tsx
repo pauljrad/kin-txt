@@ -50,6 +50,36 @@ const AVAILABLE_EBOOKS: Ebook[] = [
   },
 ];
 
+const BookCover = ({ title, index }: { title: string; index: number }) => {
+  const isDark = index % 2 === 0;
+  const bgColor = isDark ? 'bg-[#000000]' : 'bg-[#ffffff]';
+  const textColor = isDark ? 'text-white' : 'text-black';
+  const logoColor = isDark ? 'bg-white' : 'bg-black';
+
+  return (
+    <div className={`aspect-[2/3] mb-2 rounded-md ${bgColor} flex flex-col items-center justify-between p-4 relative border border-border/10 shadow-inner group-hover:shadow-lg transition-all duration-500 overflow-hidden`}>
+      {/* Centered KiN-TXT "i" Logo */}
+      <div className="flex-1 flex items-center justify-center">
+        <div className="relative flex flex-col items-center justify-center w-12 h-12">
+          <span className={`w-2.5 h-2.5 rounded-full ${logoColor} mb-1.5`} />
+          <span className={`w-2.5 h-6 ${logoColor} rounded-sm`} />
+        </div>
+      </div>
+
+      {/* Title at the bottom */}
+      <div className="w-full">
+        <h4 className={`text-center font-display font-medium text-[10px] leading-tight uppercase tracking-widest ${textColor} line-clamp-3`}>
+          {title}
+        </h4>
+      </div>
+
+      {/* Decorative lines */}
+      <div className={`absolute left-4 right-4 top-4 h-px ${logoColor} opacity-10`} />
+      <div className={`absolute left-4 right-4 bottom-4 h-px ${logoColor} opacity-10`} />
+    </div>
+  );
+};
+
 interface EbookLibraryProps {
   onSelectEbook: (parsed: ParsedText, title: string, initialProgress?: { paragraph: number; word: number }) => void;
 }
@@ -66,12 +96,12 @@ export function EbookLibrary({ onSelectEbook }: EbookLibraryProps) {
       // Fetch the epub file
       const response = await fetch(ebook.filePath);
       if (!response.ok) throw new Error('Failed to load ebook');
-      
+
       const blob = await response.blob();
       const file = new File([blob], `${ebook.title}.epub`, { type: 'application/epub+zip' });
-      
+
       const parsed = await parseFile(file);
-      
+
       // Start from the beginning
       onSelectEbook(parsed, ebook.title, { paragraph: 0, word: 0 });
     } catch (err) {
@@ -99,18 +129,8 @@ export function EbookLibrary({ onSelectEbook }: EbookLibraryProps) {
             whileTap={{ scale: 0.98 }}
             className="group relative glass-panel p-3 text-left transition-all duration-300 hover:ring-2 hover:ring-primary/50 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {/* Book cover placeholder */}
-            <div className="aspect-[2/3] mb-2 rounded-md bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center overflow-hidden">
-              {ebook.coverUrl ? (
-                <img 
-                  src={ebook.coverUrl} 
-                  alt={ebook.title}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <BookOpen className="w-8 h-8 text-muted-foreground/50" />
-              )}
-            </div>
+            {/* Book cover */}
+            <BookCover title={ebook.title} index={AVAILABLE_EBOOKS.indexOf(ebook)} />
 
             {/* Book info */}
             <h3 className="font-medium text-xs text-foreground mb-0.5 line-clamp-2 group-hover:text-primary transition-colors">
