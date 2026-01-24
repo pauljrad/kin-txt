@@ -70,6 +70,7 @@ export function KineticPlayer({
   const [lastChapterIndex, setLastChapterIndex] = useState(-1);
   const [focusMode, setFocusMode] = useState(false);
   const [targetMode, setTargetMode] = useState(false); // RSVP Target Mode (visual overlay)
+  const [targetColor, setTargetColor] = useState('#FFD600'); // Default Yellow
   const [atmospherePlaying, setAtmospherePlaying] = useState(false);
   const atmosphereAudioRef = useRef<HTMLAudioElement>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -1065,9 +1066,15 @@ export function KineticPlayer({
         {targetMode && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             {/* Top Anchor - Adjusted for better sight alignment */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[64px] w-0.5 h-10 bg-[#FFD600] opacity-90 shadow-[0_0_8px_rgba(255,214,0,0.5)]" />
+            <div
+              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[64px] w-0.5 h-10 opacity-90 transition-colors duration-300"
+              style={{ backgroundColor: targetColor, boxShadow: `0 0 8px ${targetColor}80` }}
+            />
             {/* Bottom Anchor - Adjusted for better sight alignment */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 translate-y-[24px] w-0.5 h-10 bg-[#FFD600] opacity-90 shadow-[0_0_8px_rgba(255,214,0,0.5)]" />
+            <div
+              className="absolute top-1/2 left-1/2 -translate-x-1/2 translate-y-[24px] w-0.5 h-10 opacity-90 transition-colors duration-300"
+              style={{ backgroundColor: targetColor, boxShadow: `0 0 8px ${targetColor}80` }}
+            />
           </div>
         )}
 
@@ -1123,7 +1130,7 @@ export function KineticPlayer({
                   return (
                     <div className="w-full grid grid-cols-[1fr_auto_1fr] items-baseline">
                       <span className="text-right whitespace-pre">{prefix}</span>
-                      <span className="text-center text-[#FFD600] font-bold min-w-[1ch]">{focalChar}</span>
+                      <span className="text-center font-bold min-w-[1ch] transition-colors duration-300" style={{ color: targetColor }}>{focalChar}</span>
                       <span className="text-left whitespace-pre">{suffix}</span>
                     </div>
                   );
@@ -1463,6 +1470,36 @@ export function KineticPlayer({
                             />
                           </button>
                         </div>
+
+                        {/* Target Mode Color Selection - Only show when target mode is on */}
+                        {targetMode && (
+                          <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            className="flex items-center justify-between pt-2 pb-1 overflow-hidden"
+                          >
+                            <span className="text-xs text-muted-foreground">Target Color</span>
+                            <div className="flex gap-2">
+                              {[
+                                { name: 'Yellow', color: '#FFD600' },
+                                { name: 'Pink', color: '#ff007f' },
+                                { name: 'Blue', color: '#0000cd' }
+                              ].map((item) => (
+                                <button
+                                  key={item.color}
+                                  onClick={() => setTargetColor(item.color)}
+                                  className={`w-5 h-5 rounded-full border-2 transition-all ${targetColor === item.color
+                                      ? 'border-foreground scale-110 shadow-sm'
+                                      : 'border-transparent opacity-60 hover:opacity-100'
+                                    }`}
+                                  style={{ backgroundColor: item.color }}
+                                  title={item.name}
+                                />
+                              ))}
+                            </div>
+                          </motion.div>
+                        )}
 
                         {/* Acceleration Settings - Only show when acceleration mode */}
                         {!rhythmMode && accelerationMode && (
