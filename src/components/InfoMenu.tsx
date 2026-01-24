@@ -141,8 +141,11 @@ export const InfoMenu = forwardRef<HTMLDivElement, InfoMenuProps>(function InfoM
                                                 src={rhythmVideo}
                                                 className="w-full h-full object-cover"
                                                 controls={false}
-                                                onClick={handleVideoClick}
+                                                loop
+                                                muted
                                                 playsInline
+                                                autoPlay
+                                                onClick={handleVideoClick}
                                             />
                                             <div className="absolute bottom-2 right-2 bg-black/60 text-white text-[10px] px-2 py-1 rounded pointer-events-none backdrop-blur-sm">
                                                 Tap to expand
@@ -167,8 +170,11 @@ export const InfoMenu = forwardRef<HTMLDivElement, InfoMenuProps>(function InfoM
                                                 src={accelerationVideo}
                                                 className="w-full h-full object-cover"
                                                 controls={false}
-                                                onClick={handleVideoClick}
+                                                loop
+                                                muted
                                                 playsInline
+                                                autoPlay
+                                                onClick={handleVideoClick}
                                             />
                                             <div className="absolute bottom-2 right-2 bg-black/60 text-white text-[10px] px-2 py-1 rounded pointer-events-none backdrop-blur-sm">
                                                 Tap to expand
