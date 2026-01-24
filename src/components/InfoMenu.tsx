@@ -1,7 +1,7 @@
 
 import { useRef, useEffect, useCallback, forwardRef } from 'react';
 import { motion } from 'framer-motion';
-import { X, Play, Music, Smartphone, Layout, BookOpen, Newspaper, Upload, MousePointer2, Settings, Type } from 'lucide-react';
+import { X, Play, Music, Smartphone, Layout, BookOpen, Newspaper, Upload, MousePointer2, Settings, Type, Eye } from 'lucide-react';
 import {
     Accordion,
     AccordionContent,
@@ -174,6 +174,17 @@ export const InfoMenu = forwardRef<HTMLDivElement, InfoMenuProps>(function InfoM
                                         </div>
                                     </div>
 
+                                    {/* Static Mode */}
+                                    <div className="space-y-4">
+                                        <h4 className="font-semibold text-foreground flex items-center gap-2 text-base">
+                                            Static Mode
+                                        </h4>
+                                        <p className="text-xs sm:text-sm text-foreground/90 leading-relaxed">
+                                            Static Mode keeps text moving at a steady, fixed pace, chosen by you. No acceleration,
+                                            no rhythm shifts - just consistent, controlled reading for calm, predictable focus.
+                                        </p>
+                                    </div>
+
                                     {/* Target Mode */}
                                     <div className="space-y-4">
                                         <h4 className="font-semibold text-foreground flex items-center gap-2 text-base">
@@ -183,17 +194,6 @@ export const InfoMenu = forwardRef<HTMLDivElement, InfoMenuProps>(function InfoM
                                             Target Mode anchors your eyes to a central coloured letter with guiding lines, keeping
                                             your focus steady and reducing eye movement. Toggle it with Rhythm, Acceleration, or
                                             Static modes for sharper, more controlled reading.
-                                        </p>
-                                    </div>
-
-                                    {/* Static Mode */}
-                                    <div className="space-y-4">
-                                        <h4 className="font-semibold text-foreground flex items-center gap-2 text-base">
-                                            Static Mode
-                                        </h4>
-                                        <p className="text-xs sm:text-sm text-foreground/90 leading-relaxed">
-                                            Static Mode keeps text moving at a steady, fixed pace, chosen by you. No acceleration,
-                                            no rhythm shifts - just consistent, controlled reading for calm, predictable focus.
                                         </p>
                                     </div>
                                 </AccordionContent>
@@ -263,7 +263,7 @@ export const InfoMenu = forwardRef<HTMLDivElement, InfoMenuProps>(function InfoM
                                         {/* Full Text */}
                                         <div className="p-4 rounded-lg bg-card border border-border shadow-sm">
                                             <div className="flex items-center gap-2 mb-2 font-semibold text-foreground text-sm">
-                                                <Type className="w-4 h-4 text-primary" /> Full Text
+                                                <BookOpen className="w-4 h-4 text-primary" /> Full TXT
                                             </div>
                                             <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
                                                 Click the Full TXT button to see the entire document at once. Tap any word to jump
@@ -274,7 +274,22 @@ export const InfoMenu = forwardRef<HTMLDivElement, InfoMenuProps>(function InfoM
                                         {/* Navigation Bar */}
                                         <div className="p-4 rounded-lg bg-card border border-border shadow-sm">
                                             <div className="flex items-center gap-2 mb-2 font-semibold text-foreground text-sm">
-                                                <MousePointer2 className="w-4 h-4 text-primary" /> Navigation
+                                                <svg
+                                                    className="w-4 h-4 text-primary"
+                                                    viewBox="0 0 24 24"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    strokeWidth="2"
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                >
+                                                    <line x1="8" y1="6" x2="21" y2="6" />
+                                                    <line x1="8" y1="12" x2="21" y2="12" />
+                                                    <line x1="8" y1="18" x2="21" y2="18" />
+                                                    <line x1="3" y1="6" x2="3.01" y2="6" />
+                                                    <line x1="3" y1="12" x2="3.01" y2="12" />
+                                                    <line x1="3" y1="18" x2="3.01" y2="18" />
+                                                </svg> Navigation
                                             </div>
                                             <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
                                                 Click the Navigation Bar to jump between sections or chapters. The active section fills
@@ -309,7 +324,7 @@ export const InfoMenu = forwardRef<HTMLDivElement, InfoMenuProps>(function InfoM
                                         {/* Focus Mode */}
                                         <div className="p-4 rounded-lg bg-card border border-border shadow-sm">
                                             <div className="flex items-center gap-2 mb-2 font-semibold text-foreground text-sm">
-                                                <Smartphone className="w-4 h-4 text-primary" /> Focus Mode
+                                                <Eye className="w-4 h-4 text-primary" /> Focus Mode
                                             </div>
                                             <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
                                                 When using the installed mobile app, enabling Focus Mode will automatically turn off
