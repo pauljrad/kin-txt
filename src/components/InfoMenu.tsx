@@ -16,6 +16,7 @@ import fullTxtVideo from '@/assets/videos/full_txt_button.mov';
 import staticVideo from '@/assets/videos/static_mode.mov';
 import targetVideo from '@/assets/videos/target_mode.mov';
 import navigationVideo from '@/assets/videos/navigation_button.mov';
+import settingsVideo from '@/assets/videos/settings_button.mov';
 
 // Trigger deployment
 interface InfoMenuProps {
@@ -380,6 +381,22 @@ export const InfoMenu = forwardRef<HTMLDivElement, InfoMenuProps>(function InfoM
                                                 Tap the Settings Button in the toolbar to switch reading modes, adjust the pace, and
                                                 change text size - all in one place for a fully personalised reading experience.
                                             </p>
+                                            {/* Video */}
+                                            <div className="mt-3 aspect-video w-full bg-black/5 rounded-lg border border-border flex items-center justify-center relative overflow-hidden group cursor-pointer shadow-sm">
+                                                <video
+                                                    src={settingsVideo}
+                                                    className="w-full h-full object-cover"
+                                                    controls={false}
+                                                    loop
+                                                    muted
+                                                    playsInline
+                                                    autoPlay
+                                                    onClick={handleVideoClick}
+                                                />
+                                                <div className="absolute bottom-2 right-2 bg-black/60 text-white text-[10px] px-2 py-1 rounded pointer-events-none backdrop-blur-sm">
+                                                    Tap to expand
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </AccordionContent>
