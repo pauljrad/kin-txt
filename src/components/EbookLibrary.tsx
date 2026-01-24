@@ -58,11 +58,14 @@ const BookCover = ({ title, index }: { title: string; index: number }) => {
 
   return (
     <div className={`aspect-[2/3] mb-2 rounded-md ${bgColor} flex flex-col items-center justify-between p-4 relative border border-border/10 shadow-inner group-hover:shadow-lg transition-all duration-500 overflow-hidden`}>
-      {/* Centered KiN-TXT "i" Logo */}
+      {/* Centered KiN-TXT "i -" Logo */}
       <div className="flex-1 flex items-center justify-center">
-        <div className="relative flex flex-col items-center justify-center w-12 h-12">
-          <span className={`w-2.5 h-2.5 rounded-full ${logoColor} mb-1.5`} />
-          <span className={`w-2.5 h-6 ${logoColor} rounded-sm`} />
+        <div className="flex items-center gap-3">
+          <div className="relative flex flex-col items-center justify-center w-6 h-10">
+            <span className={`w-2 h-2 rounded-full ${logoColor} mb-1`} />
+            <span className={`w-2 h-5 ${logoColor} rounded-sm`} />
+          </div>
+          <div className={`w-5 h-1 ${logoColor} rounded-full opacity-80`} />
         </div>
       </div>
 
@@ -72,10 +75,6 @@ const BookCover = ({ title, index }: { title: string; index: number }) => {
           {title}
         </h4>
       </div>
-
-      {/* Decorative lines */}
-      <div className={`absolute left-4 right-4 top-4 h-px ${logoColor} opacity-10`} />
-      <div className={`absolute left-4 right-4 bottom-4 h-px ${logoColor} opacity-10`} />
     </div>
   );
 };
