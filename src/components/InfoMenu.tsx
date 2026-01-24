@@ -12,7 +12,7 @@ import {
 // Import videos
 import accelerationVideo from '@/assets/videos/acceleration-mode.mov';
 import rhythmVideo from '@/assets/videos/rhythm-and-emphasis-mode.mov';
-import fullTxtVideo from '@/assets/videos/full_txt_demo.webp';
+import fullTxtVideo from '@/assets/videos/full_txt_button.mov';
 
 // Trigger deployment
 interface InfoMenuProps {
@@ -270,13 +270,21 @@ export const InfoMenu = forwardRef<HTMLDivElement, InfoMenuProps>(function InfoM
                                                 Click the Full TXT button to see the entire document at once. Tap any word to jump
                                                 the reader to that exact spot.
                                             </p>
-                                            {/* Video/Animation */}
-                                            <div className="mt-3 aspect-video w-full bg-black/5 rounded-lg border border-border flex items-center justify-center relative overflow-hidden shadow-sm">
-                                                <img
+                                            {/* Video */}
+                                            <div className="mt-3 aspect-video w-full bg-black/5 rounded-lg border border-border flex items-center justify-center relative overflow-hidden group cursor-pointer shadow-sm">
+                                                <video
                                                     src={fullTxtVideo}
                                                     className="w-full h-full object-cover"
-                                                    alt="Full Text Mode Demo"
+                                                    controls={false}
+                                                    loop
+                                                    muted
+                                                    playsInline
+                                                    autoPlay
+                                                    onClick={handleVideoClick}
                                                 />
+                                                <div className="absolute bottom-2 right-2 bg-black/60 text-white text-[10px] px-2 py-1 rounded pointer-events-none backdrop-blur-sm">
+                                                    Tap to expand
+                                                </div>
                                             </div>
                                         </div>
 
