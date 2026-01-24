@@ -15,6 +15,7 @@ import rhythmVideo from '@/assets/videos/rhythm-and-emphasis-mode.mov';
 import fullTxtVideo from '@/assets/videos/full_txt_button.mov';
 import staticVideo from '@/assets/videos/static_mode.mov';
 import targetVideo from '@/assets/videos/target_mode.mov';
+import navigationVideo from '@/assets/videos/navigation_button.mov';
 
 // Trigger deployment
 interface InfoMenuProps {
@@ -352,6 +353,22 @@ export const InfoMenu = forwardRef<HTMLDivElement, InfoMenuProps>(function InfoM
                                                 Click the Navigation Bar to jump between sections or chapters. The active section fills
                                                 with a Progress Gradient, showing exactly how far you are through the current chapter.
                                             </p>
+                                            {/* Video */}
+                                            <div className="mt-3 aspect-video w-full bg-black/5 rounded-lg border border-border flex items-center justify-center relative overflow-hidden group cursor-pointer shadow-sm">
+                                                <video
+                                                    src={navigationVideo}
+                                                    className="w-full h-full object-cover"
+                                                    controls={false}
+                                                    loop
+                                                    muted
+                                                    playsInline
+                                                    autoPlay
+                                                    onClick={handleVideoClick}
+                                                />
+                                                <div className="absolute bottom-2 right-2 bg-black/60 text-white text-[10px] px-2 py-1 rounded pointer-events-none backdrop-blur-sm">
+                                                    Tap to expand
+                                                </div>
+                                            </div>
                                         </div>
 
                                         {/* Settings */}
