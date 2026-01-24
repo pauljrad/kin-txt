@@ -12,6 +12,7 @@ import {
 // Import videos
 import accelerationVideo from '@/assets/videos/acceleration-mode.mov';
 import rhythmVideo from '@/assets/videos/rhythm-and-emphasis-mode.mov';
+import fullTxtVideo from '@/assets/videos/full_txt_demo.webp';
 
 // Trigger deployment
 interface InfoMenuProps {
@@ -269,6 +270,14 @@ export const InfoMenu = forwardRef<HTMLDivElement, InfoMenuProps>(function InfoM
                                                 Click the Full TXT button to see the entire document at once. Tap any word to jump
                                                 the reader to that exact spot.
                                             </p>
+                                            {/* Video/Animation */}
+                                            <div className="mt-3 aspect-video w-full bg-black/5 rounded-lg border border-border flex items-center justify-center relative overflow-hidden shadow-sm">
+                                                <img
+                                                    src={fullTxtVideo}
+                                                    className="w-full h-full object-cover"
+                                                    alt="Full Text Mode Demo"
+                                                />
+                                            </div>
                                         </div>
 
                                         {/* Navigation Bar */}
