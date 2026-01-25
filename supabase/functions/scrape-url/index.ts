@@ -4,33 +4,34 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, GET, OPTIONS, PUT, DELETE',
 };
 
 // Validate URL to prevent SSRF attacks
 function validateUrl(urlString: string): void {
   const url = new URL(urlString);
-  
+
   if (!['http:', 'https:'].includes(url.protocol)) {
     throw new Error('Only HTTP/HTTPS protocols are allowed');
   }
-  
+
   const hostname = url.hostname.toLowerCase();
-  
+
   if (['localhost', '127.0.0.1', '0.0.0.0', '[::1]', '::1'].includes(hostname)) {
     throw new Error('Access to localhost is not allowed');
   }
-  
+
   if (hostname === '169.254.169.254' || hostname.startsWith('metadata.')) {
     throw new Error('Access to metadata endpoints is not allowed');
   }
-  
-  if (/^10\./.test(hostname) || 
-      /^172\.(1[6-9]|2[0-9]|3[01])\./.test(hostname) ||
-      /^192\.168\./.test(hostname) ||
-      /^169\.254\./.test(hostname)) {
+
+  if (/^10\./.test(hostname) ||
+    /^172\.(1[6-9]|2[0-9]|3[01])\./.test(hostname) ||
+    /^192\.168\./.test(hostname) ||
+    /^169\.254\./.test(hostname)) {
     throw new Error('Access to private networks is not allowed');
   }
-  
+
   if (hostname.endsWith('.local') || hostname.endsWith('.internal')) {
     throw new Error('Access to internal domains is not allowed');
   }
@@ -81,7 +82,7 @@ function extractReadableContent(markdown: string, title?: string): string {
 
   // Step 2: Split into paragraphs and analyze each one
   const paragraphs = text.split(/\n\s*\n/);
-  
+
   // Patterns that indicate non-content (navigation, metadata, ads, etc.)
   const nonContentPatterns = [
     // Navigation and UI
@@ -120,84 +121,84 @@ function extractReadableContent(markdown: string, title?: string): string {
   // Filter and score paragraphs using readability heuristics
   const scoredParagraphs = paragraphs.map(para => {
     const trimmed = para.trim();
-    
+
     // Empty paragraph - keep for spacing
     if (trimmed.length === 0) {
       return { text: '', score: 0, keep: false };
     }
-    
+
     // Check against non-content patterns
     for (const pattern of nonContentPatterns) {
       if (pattern.test(trimmed)) {
         return { text: trimmed, score: -100, keep: false };
       }
     }
-    
+
     // Calculate readability score (inspired by Readability.js)
     let score = 0;
-    
+
     // Longer paragraphs are more likely to be content
     const wordCount = trimmed.split(/\s+/).length;
     if (wordCount >= 25) score += 40;
     else if (wordCount >= 15) score += 25;
     else if (wordCount >= 8) score += 10;
     else if (wordCount < 4) score -= 15;
-    
+
     // Sentences (ending with punctuation) are good indicators
     const sentenceEndings = (trimmed.match(/[.!?]["']?\s|[.!?]["']?$/g) || []).length;
     score += sentenceEndings * 12;
-    
+
     // Commas indicate complex sentences - usually content
     const commaCount = (trimmed.match(/,/g) || []).length;
     score += Math.min(commaCount * 4, 20);
-    
+
     // Multiple sentences in a paragraph is strong content signal
     if (sentenceEndings >= 2) score += 25;
-    
+
     // Very short lines without punctuation are suspicious
     if (trimmed.length < 50 && !/[.!?]$/.test(trimmed)) {
       score -= 20;
     }
-    
+
     // Penalize lines with too many special characters
     const specialCharRatio = (trimmed.match(/[^a-zA-Z0-9\s.,!?'"()-]/g) || []).length / trimmed.length;
     if (specialCharRatio > 0.15) score -= 25;
-    
+
     // Penalize lines that are mostly uppercase (often headers/buttons)
     const letters = trimmed.match(/[a-zA-Z]/g) || [];
     const uppercaseRatio = letters.length > 0 ? (trimmed.match(/[A-Z]/g) || []).length / letters.length : 0;
     if (uppercaseRatio > 0.6 && trimmed.length < 60) score -= 20;
-    
+
     // Skip if it starts with common non-content starters
     if (/^(skip|jump|go to|back to|return to|view all|show all|hide|expand|collapse|more|less|next|previous|first|last)\b/i.test(trimmed)) {
       score -= 40;
     }
-    
+
     // Skip lines that are just author attributions (short ones)
     if (/^(by|from|via|source:|credit:)\s+[a-z\s,]+$/i.test(trimmed) && trimmed.length < 50) {
       score -= 50;
     }
-    
+
     // Skip lines that look like tags/categories
     if (/^(tags?:|categor(y|ies):|topics?:|filed under:|in:)/i.test(trimmed)) {
       score -= 60;
     }
-    
+
     // Skip lines that are just social stats
     if (/^\d+\s*(likes?|shares?|comments?|views?|reactions?)/i.test(trimmed)) {
       score -= 60;
     }
-    
+
     // Skip Guardian live blog UI elements
     if (/^(all times|gmt|bst|et|pt|cet)\b/i.test(trimmed) && trimmed.length < 30) {
       score -= 50;
     }
-    
+
     // Keep lines that look like actual sports/news updates (have a time prefix but substantial content)
     if (/^\d{1,2}[:.]\d{2}\s+.{50,}/.test(trimmed)) {
       score += 20; // Timestamped updates with content
     }
-    
+
     return { text: trimmed, score, keep: score > 5 };
   });
 
@@ -214,7 +215,7 @@ function extractReadableContent(markdown: string, title?: string): string {
         if (p.length === 0) return false;
         return p.length >= 100 || (p.length >= 50 && /[.!?]$/.test(p));
       });
-    
+
     if (fallbackParagraphs.length > contentParagraphs.length) {
       return fallbackParagraphs.join('\n\n').trim();
     }
@@ -222,7 +223,7 @@ function extractReadableContent(markdown: string, title?: string): string {
 
   // Join paragraphs with proper spacing
   let result = contentParagraphs.join('\n\n');
-  
+
   // Final cleanup
   result = result
     .replace(/[ \t]+/g, ' ')
@@ -240,13 +241,13 @@ function extractFromHtml(html: string): { title: string; body: string } {
   const ogTitleMatch = html.match(/<meta[^>]*property="og:title"[^>]*content="([^"]+)"/i);
   const h1Match = html.match(/<h1[^>]*>([^<]+)<\/h1>/i);
   const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
-  
+
   let title = ogTitleMatch?.[1] || h1Match?.[1] || titleMatch?.[1] || 'Untitled Article';
   title = title.replace(/\s*[|\-–—]\s*[^|\-–—]+$/, '').trim();
-  
+
   // Try to find the article container
   let articleHtml = html;
-  
+
   // Priority order for content containers
   const contentSelectors = [
     /<article[^>]*class="[^"]*article-body[^"]*"[^>]*>([\s\S]*?)<\/article>/i,
@@ -257,7 +258,7 @@ function extractFromHtml(html: string): { title: string; body: string } {
     /<article[^>]*>([\s\S]*?)<\/article>/i,
     /<main[^>]*>([\s\S]*?)<\/main>/i,
   ];
-  
+
   for (const selector of contentSelectors) {
     const match = html.match(selector);
     if (match) {
@@ -265,7 +266,7 @@ function extractFromHtml(html: string): { title: string; body: string } {
       break;
     }
   }
-  
+
   // Remove non-content elements aggressively
   let cleanHtml = articleHtml
     .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
@@ -294,7 +295,7 @@ function extractFromHtml(html: string): { title: string; body: string } {
     .replace(/<[^>]*data-(?:ad|tracking|analytics|component="(?:share|social|ad|related)")[^>]*>[\s\S]*?<\/[^>]+>/gi, '')
     // Remove image tags
     .replace(/<img[^>]*>/gi, '');
-  
+
   // Convert to text preserving paragraph structure
   let text = cleanHtml
     .replace(/<\/p>/gi, '\n\n')
@@ -314,16 +315,16 @@ function extractFromHtml(html: string): { title: string; body: string } {
     .replace(/[ \t]+/g, ' ')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
-  
+
   // Apply readability filtering to the extracted text
   const cleanedBody = extractReadableContent(text, title);
-  
+
   return { title, body: cleanedBody };
 }
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response('ok', { headers: corsHeaders });
   }
 
   try {
@@ -385,10 +386,10 @@ serve(async (req) => {
 
     // Try Firecrawl first (handles JS rendering, paywalls better)
     const firecrawlApiKey = Deno.env.get('FIRECRAWL_API_KEY');
-    
+
     if (firecrawlApiKey) {
       console.log('Using Firecrawl for:', formattedUrl);
-      
+
       try {
         const firecrawlResponse = await fetch('https://api.firecrawl.dev/v1/scrape', {
           method: 'POST',
@@ -405,27 +406,27 @@ serve(async (req) => {
         });
 
         const firecrawlData = await firecrawlResponse.json();
-        
+
         if (firecrawlResponse.ok && firecrawlData.success) {
           const markdown = firecrawlData.data?.markdown || firecrawlData.markdown || '';
           const metadata = firecrawlData.data?.metadata || firecrawlData.metadata || {};
-          
+
           let title = metadata.title || metadata.ogTitle || 'Untitled Article';
           title = title.replace(/\s*[|\-–—]\s*[^|\-–—]+$/, '').trim();
-          
+
           // Apply readability extraction to the markdown
           const cleanedText = extractReadableContent(markdown, title);
-          
+
           // Prepend headline to the body text
           const fullText = title + '\n\n' + cleanedText;
-          
+
           console.log('Firecrawl extracted title:', title);
           console.log('Firecrawl raw markdown length:', markdown.length);
           console.log('Firecrawl cleaned body length:', cleanedText.length);
 
           return new Response(
-            JSON.stringify({ 
-              success: true, 
+            JSON.stringify({
+              success: true,
               text: fullText,
               title: title
             }),
@@ -468,13 +469,13 @@ serve(async (req) => {
       }
 
       const html = await response.text();
-      
+
       if (html.length > 1024 * 1024) {
         throw new Error('Content too large to process');
       }
 
       const { title, body } = extractFromHtml(html);
-      
+
       // Prepend headline to the body text
       const fullText = title + '\n\n' + body;
 
@@ -482,8 +483,8 @@ serve(async (req) => {
       console.log('Basic scraping extracted body length:', body.length);
 
       return new Response(
-        JSON.stringify({ 
-          success: true, 
+        JSON.stringify({
+          success: true,
           text: fullText,
           title: title
         }),
@@ -495,13 +496,13 @@ serve(async (req) => {
     }
   } catch (error) {
     console.error('Error in scrape-url function:', error);
-    
+
     const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
-    
+
     return new Response(
-      JSON.stringify({ 
-        success: false, 
-        error: errorMessage 
+      JSON.stringify({
+        success: false,
+        error: errorMessage
       }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
