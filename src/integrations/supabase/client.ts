@@ -2,10 +2,10 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
-const EXPECTED_SUPABASE_REF = "jcribtonvxrwhoixoioo";
+const EXPECTED_SUPABASE_REF = "pxvnylvkzdcuuauppull";
 const FALLBACK_SUPABASE_URL = `https://${EXPECTED_SUPABASE_REF}.supabase.co`;
 const FALLBACK_SUPABASE_PUBLISHABLE_KEY =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpjcmlidG9udnhyd2hvaXhvaW9vIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjcwODY3MDcsImV4cCI6MjA4MjY2MjcwN30.Hi6FUnBoZp7QwgwPE34otWUBD4yAn3USqqdMANxoCeg";
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4dm55bHZremRjdXVhdXBwdWxsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg1MDc5OTQsImV4cCI6MjA4NDA4Mzk5NH0.TuPUGvfnoF8bruTl_TkCm4w0E78R4GAXjb92cIJXI-w";
 
 function safeDecodeJwtPayload(jwt: string): Record<string, unknown> | null {
   // JWT = header.payload.signature (base64url)
@@ -38,7 +38,7 @@ function resolveSupabaseConfig() {
   if (!hasUrl || !hasKey) {
     console.warn(
       "[supabase] Missing VITE_SUPABASE_URL and/or VITE_SUPABASE_PUBLISHABLE_KEY; using fallback configuration. " +
-        "For production, set these environment variables in your hosting provider."
+      "For production, set these environment variables in your hosting provider."
     );
     return { url: FALLBACK_SUPABASE_URL, key: FALLBACK_SUPABASE_PUBLISHABLE_KEY };
   }
@@ -46,7 +46,7 @@ function resolveSupabaseConfig() {
   if (!urlLooksRight || !keyLooksRight) {
     console.warn(
       "[supabase] VITE_SUPABASE_URL and/or VITE_SUPABASE_PUBLISHABLE_KEY do not match the expected project; using fallback configuration. " +
-        `Expected ref: ${EXPECTED_SUPABASE_REF}`
+      `Expected ref: ${EXPECTED_SUPABASE_REF}`
     );
     return { url: FALLBACK_SUPABASE_URL, key: FALLBACK_SUPABASE_PUBLISHABLE_KEY };
   }
