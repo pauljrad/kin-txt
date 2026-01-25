@@ -18,7 +18,7 @@ import targetVideo from '@/assets/videos/target_mode.mov';
 import navigationVideo from '@/assets/videos/navigation_button.mov';
 import settingsVideo from '@/assets/videos/settings_button.mov';
 
-// Trigger deployment
+// Trigger deployment refresh
 interface InfoMenuProps {
     onClose: () => void;
 }
