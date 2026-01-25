@@ -4,6 +4,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, GET, OPTIONS, PUT, DELETE",
 };
 
 interface NewsItem {
@@ -79,17 +80,17 @@ function extractContent(xml: string, tag: string): string {
   const cdataPattern = new RegExp(`<${tag}[^>]*>\\s*<!\\[CDATA\\[([\\s\\S]*?)\\]\\]>\\s*</${tag}>`, "i");
   const cdataMatch = xml.match(cdataPattern);
   if (cdataMatch) return stripTags(decodeEntities(cdataMatch[1].trim()));
-  
+
   // Handle regular content  
   const regularPattern = new RegExp(`<${tag}[^>]*>([\\s\\S]*?)</${tag}>`, "i");
   const regularMatch = xml.match(regularPattern);
   if (regularMatch) return stripTags(decodeEntities(regularMatch[1].trim()));
-  
+
   // Handle escaped CDATA (like &lt;![CDATA[)
   const escapedPattern = new RegExp(`<${tag}[^>]*>&lt;!\\[CDATA\\[([\\s\\S]*?)\\]\\]&gt;</${tag}>`, "i");
   const escapedMatch = xml.match(escapedPattern);
   if (escapedMatch) return stripTags(decodeEntities(escapedMatch[1].trim()));
-  
+
   return "";
 }
 
@@ -98,17 +99,17 @@ function extractLink(xml: string): string {
   const linkPattern = /<link[^>]*>([^<]+)<\/link>/i;
   const linkMatch = xml.match(linkPattern);
   if (linkMatch) return decodeEntities(linkMatch[1].trim());
-  
+
   // Sometimes link is just text without closing tag properly
   const simplePattern = /<link>([^\n<]+)/i;
   const simpleMatch = xml.match(simplePattern);
   if (simpleMatch) return decodeEntities(simpleMatch[1].trim());
-  
+
   // Self-closing link with href
   const hrefPattern = /<link[^>]+href=["']([^"']+)["']/i;
   const hrefMatch = xml.match(hrefPattern);
   if (hrefMatch) return decodeEntities(hrefMatch[1]);
-  
+
   return "";
 }
 
@@ -151,7 +152,7 @@ function extractImage(xml: string): string | undefined {
 async function fetchRSSFeed(feed: RSSFeed): Promise<NewsItem[]> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 8000);
-  
+
   try {
     const response = await fetch(feed.url, {
       signal: controller.signal,
@@ -160,34 +161,34 @@ async function fetchRSSFeed(feed: RSSFeed): Promise<NewsItem[]> {
         "Accept": "application/rss+xml, application/xml, text/xml, */*",
       },
     });
-    
+
     clearTimeout(timeout);
-    
+
     if (!response.ok) {
       console.error(`${feed.source}: HTTP ${response.status}`);
       return [];
     }
-    
+
     const xml = await response.text();
     const items: NewsItem[] = [];
-    
+
     // Split by <item> tags
     const itemRegex = /<item[^>]*>([\s\S]*?)<\/item>/gi;
     let match;
     let count = 0;
-    
+
     while ((match = itemRegex.exec(xml)) !== null && count < 10) {
       const itemXml = match[1];
-      
+
       const title = extractContent(itemXml, "title");
       const link = extractLink(itemXml);
-      
+
       if (!title || !link) continue;
-      
+
       const description = extractContent(itemXml, "description");
       const pubDate = extractContent(itemXml, "pubDate") || extractContent(itemXml, "pubdate");
       const imageUrl = extractImage(itemXml);
-      
+
       items.push({
         id: `${feed.source}-${count}-${Date.now()}`,
         title,
@@ -197,13 +198,13 @@ async function fetchRSSFeed(feed: RSSFeed): Promise<NewsItem[]> {
         source: feed.source,
         imageUrl,
       });
-      
+
       count++;
     }
-    
+
     console.log(`${feed.source}: ${items.length} items`);
     return items;
-    
+
   } catch (err) {
     clearTimeout(timeout);
     console.error(`${feed.source} error:`, err instanceof Error ? err.message : err);
@@ -213,7 +214,7 @@ async function fetchRSSFeed(feed: RSSFeed): Promise<NewsItem[]> {
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response("ok", { headers: corsHeaders });
   }
 
   try {
@@ -252,7 +253,7 @@ serve(async (req) => {
     try {
       const body = await req.json();
       categoryFilter = body?.category || null;
-      
+
       // Validate category input
       if (categoryFilter && !ALLOWED_CATEGORIES.includes(categoryFilter)) {
         return new Response(
@@ -270,7 +271,7 @@ serve(async (req) => {
       : RSS_FEEDS.filter(f => f.category === "top"); // Default to top stories only
 
     const results = await Promise.all(feedsToFetch.map(fetchRSSFeed));
-    
+
     // Dedupe by link to avoid duplicate articles across feeds
     const seen = new Set<string>();
     const allNews = results.flat()
@@ -288,11 +289,11 @@ serve(async (req) => {
     console.log(`Category: ${categoryFilter || 'top'}, Total: ${allNews.length} news items`);
 
     return new Response(
-      JSON.stringify({ 
-        success: true, 
-        news: allNews, 
+      JSON.stringify({
+        success: true,
+        news: allNews,
         categories: CATEGORIES,
-        sources: RSS_FEEDS.map(f => ({ name: f.name, source: f.source })) 
+        sources: RSS_FEEDS.map(f => ({ name: f.name, source: f.source }))
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );

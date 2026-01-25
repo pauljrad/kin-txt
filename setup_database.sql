@@ -22,6 +22,7 @@ CREATE TABLE IF NOT EXISTS public.documents (
   emphasis_words TEXT[] DEFAULT '{}',
   whispered_words TEXT[] DEFAULT '{}',
   total_reading_time INTEGER DEFAULT 0,
+  file_type TEXT,
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
   UNIQUE(user_id, id)
@@ -116,3 +117,11 @@ CREATE TRIGGER update_documents_updated_at
   BEFORE UPDATE ON public.documents
   FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
+
+-- 5. Add file_type column if it doesn't exist (idempotent migration)
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'documents' AND column_name = 'file_type') THEN
+        ALTER TABLE public.documents ADD COLUMN file_type TEXT;
+    END IF;
+END $$;
