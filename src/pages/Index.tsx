@@ -76,7 +76,7 @@ const Index = () => {
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${user.id}` },
-        (payload) => {
+        async (payload) => {
           if (payload.new.type === 'pong_challenge') {
             const data = payload.new.payload;
             toast("Challenged to Pong!", {
@@ -93,7 +93,7 @@ const Index = () => {
                   // 2. Notify Challenger we accepted (so they can start)
                   await supabase.from('notifications').insert({
                     user_id: data.challengerId,
-                    type: 'pong_accept', // Signal type
+                    type: 'pong_accept' as any, // Type definition update pending
                     payload: { accepterId: user.id, sessionId: data.sessionId }
                   });
 

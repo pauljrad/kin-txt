@@ -38,21 +38,21 @@ export const Notifications = () => {
             .limit(10);
 
         if (data) {
-            // Enrich with sender names for requests
             const enriched = await Promise.all(data.map(async (n) => {
-                if (n.type === 'kin_request' && n.payload?.requester_id) {
+                const payload = n.payload as any;
+                if (n.type === 'kin_request' && payload?.requester_id) {
                     const { data: profile } = await supabase
                         .from('profiles')
                         .select('display_name')
-                        .eq('id', n.payload.requester_id)
+                        .eq('id', payload.requester_id)
                         .single();
                     return { ...n, senderProfile: profile };
                 }
-                if (n.type === 'pong_challenge' && n.payload?.challengerId) {
+                if (n.type === 'pong_challenge' && payload?.challengerId) {
                     const { data: profile } = await supabase
                         .from('profiles')
                         .select('display_name')
-                        .eq('id', n.payload.challengerId)
+                        .eq('id', payload.challengerId)
                         .single();
                     return { ...n, senderProfile: profile };
                 }
@@ -98,7 +98,8 @@ export const Notifications = () => {
 
     const handleAction = async (notification: Notification, action: 'accept' | 'decline') => {
         if (notification.type !== 'kin_request') return;
-        const requesterId = notification.payload.requester_id;
+        const payload = notification.payload as any;
+        const requesterId = payload.requester_id;
 
         try {
             if (action === 'accept') {
