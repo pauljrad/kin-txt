@@ -56,6 +56,14 @@ export const Notifications = () => {
                         .single();
                     return { ...n, senderProfile: profile };
                 }
+                if (n.type === 'shared_item' && payload?.senderId) {
+                    const { data: profile } = await supabase
+                        .from('profiles')
+                        .select('display_name')
+                        .eq('id', payload.senderId)
+                        .single();
+                    return { ...n, senderProfile: profile };
+                }
                 return n;
             }));
             setNotifications(enriched as Notification[]);
@@ -97,36 +105,38 @@ export const Notifications = () => {
     };
 
     const handleAction = async (notification: Notification, action: 'accept' | 'decline') => {
-        if (notification.type !== 'kin_request') return;
+        if (notification.type !== 'kin_request' && notification.type !== 'shared_item') return;
         const payload = notification.payload as any;
-        const requesterId = payload.requester_id;
+        const requesterId = payload.requester_id || payload.senderId;
 
         try {
-            if (action === 'accept') {
-                // Update connection status
-                const { error } = await supabase
-                    .from('kin_connections')
-                    .update({ status: 'accepted' })
-                    .eq('requester_id', requesterId)
-                    .eq('recipient_id', user?.id);
-
-                if (error) throw error;
-
-                toast({ title: "Connected!", description: "You are now KiNs." });
-
-                // create reverse notification? No, existing system handles it via triggers ideally, 
-                // but we might need to manually notify sender if no triggers exist.
-                // For MVP, just update UI.
-            } else {
-                // Delete connection request
-                const { error } = await supabase
-                    .from('kin_connections')
-                    .delete()
-                    .eq('requester_id', requesterId)
-                    .eq('recipient_id', user?.id);
-
-                if (error) throw error;
-                toast({ title: "Declined", description: "Request declined." });
+            if (notification.type === 'kin_request') {
+                if (action === 'accept') {
+                    const { error } = await supabase
+                        .from('kin_connections')
+                        .update({ status: 'accepted' })
+                        .eq('requester_id', requesterId)
+                        .eq('recipient_id', user?.id);
+                    if (error) throw error;
+                    toast({ title: "Connected!", description: "You are now KiNs." });
+                } else {
+                    const { error } = await supabase
+                        .from('kin_connections')
+                        .delete()
+                        .eq('requester_id', requesterId)
+                        .eq('recipient_id', user?.id);
+                    if (error) throw error;
+                    toast({ title: "Declined", description: "Request declined." });
+                }
+            } else if (notification.type === 'shared_item') {
+                if (action === 'accept') {
+                    // Logic to "accept" share: maybe just toast and mark read
+                    toast({ title: "Accepted", description: "TXTs added to your notifications." });
+                } else {
+                    // Logic to "decline" share: delete from shared_items
+                    await supabase.from('shared_items').delete().eq('sender_id', requesterId).eq('receiver_id', user?.id);
+                    toast({ title: "Declined", description: "Shared item removed." });
+                }
             }
 
             // Mark notification as read and handled
@@ -184,7 +194,11 @@ export const Notifications = () => {
                                     </>
                                 )}
                                 {notification.type === 'kin_accepted' && 'Your connection request was accepted.'}
-                                {notification.type === 'shared_item' && 'Shared an item with you.'}
+                                {notification.type === 'shared_item' && (
+                                    <>
+                                        <span className="font-bold text-white">{notification.senderProfile?.display_name || 'Someone'}</span> wants to send you a TXT.
+                                    </>
+                                )}
                                 {notification.type === 'pong_challenge' && (
                                     <>
                                         <span className="font-bold text-white">{notification.senderProfile?.display_name || 'Someone'}</span> challenged you to Pong!
@@ -192,8 +206,8 @@ export const Notifications = () => {
                                 )}
                             </p>
 
-                            {/* Actions for Request */}
-                            {notification.type === 'kin_request' && (
+                            {/* Actions for Request & Share */}
+                            {(notification.type === 'kin_request' || notification.type === 'shared_item') && (
                                 <div className="flex gap-2 w-full mt-1">
                                     <Button
                                         size="sm"
