@@ -582,7 +582,7 @@ const Index = () => {
           }}
           transition={{ duration: 0.4 }}
           className="fixed right-4 z-50 p-2 rounded-lg bg-card/50 hover:bg-card transition-colors text-foreground"
-          style={{ top: 'calc(2rem + env(safe-area-inset-top, 0px))', pointerEvents: isPongGameActive ? 'none' : 'auto' }}
+          style={{ top: 'calc(5rem + env(safe-area-inset-top, 0px))', pointerEvents: isPongGameActive ? 'none' : 'auto' }}
           title="Information & Instructions"
         >
           {/* Logo "i" Style Icon */}
