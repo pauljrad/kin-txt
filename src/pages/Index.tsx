@@ -8,6 +8,12 @@ import { EbookLibrary } from '@/components/EbookLibrary';
 import { NewsLibrary } from '@/components/NewsLibrary';
 import { InfoMenu } from '@/components/InfoMenu';
 
+// KiN Components
+import { KinLayout } from '@/components/kin/KinLayout';
+import { KinPongGame } from '@/components/kin/KinPongGame';
+import { Notifications } from '@/components/kin/Notifications';
+import { UserProfile } from '@/components/kin/UserProfile';
+
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { AnimatedTitle } from '@/components/AnimatedTitle';
 import { usePullGesture } from '@/hooks/usePullGesture';
@@ -46,6 +52,10 @@ const Index = () => {
   const [isPongGameActive, setIsPongGameActive] = useState(false);
   const [showInfoMenu, setShowInfoMenu] = useState(false);
 
+  // KiN State
+  const [kinSession, setKinSession] = useState<{ id: string; isHost: boolean; opponentId: string } | null>(null);
+  const [activeProfile, setActiveProfile] = useState<string | null>(null);
+
   // If we switch into the reader view, forcibly clear the "Pong active" UI lock
   // so the main interface never stays blurred/unclickable.
   useEffect(() => {
@@ -57,6 +67,63 @@ const Index = () => {
 
   const headerRef = useRef<HTMLDivElement | null>(null);
   const [headerHeight, setHeaderHeight] = useState(0); // Start at 0, will be measured
+
+  // Listen for Pong Challenges
+  useEffect(() => {
+    if (!user) return;
+    const channel = supabase.channel('global_notifications')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${user.id}` },
+        (payload) => {
+          if (payload.new.type === 'pong_challenge') {
+            const data = payload.new.payload;
+            toast("Challenged to Pong!", {
+              action: {
+                label: "Accept",
+                onClick: () => {
+                  setKinSession({
+                    id: data.sessionId,
+                    isHost: false,
+                    opponentId: data.challengerId
+                  });
+                  setIsPongGameActive(true);
+                }
+              }
+            });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [user]);
+
+  const handleSendChallenge = async () => {
+    if (!activeProfile || !user) return;
+
+    const sessionId = crypto.randomUUID();
+
+    // Notify opponent
+    await supabase.from('notifications').insert({
+      user_id: activeProfile,
+      type: 'pong_challenge',
+      payload: {
+        challengerId: user.id,
+        sessionId: sessionId
+      }
+    });
+
+    toast.success("Challenge sent! Waiting for them to accept...");
+
+    // Auto-join as host (waiting)
+    setKinSession({
+      id: sessionId,
+      isHost: true,
+      opponentId: activeProfile,
+    });
+    setIsPongGameActive(true);
+  };
 
   // One-time migration: bring this device's old local history into your account
   useEffect(() => {
@@ -372,6 +439,11 @@ const Index = () => {
     navigate('/');
   };
 
+  const handleEndPong = () => {
+    setIsPongGameActive(false);
+    setKinSession(null);
+  };
+
 
 
   return (
@@ -403,6 +475,15 @@ const Index = () => {
         >
           <LogOut className="w-5 h-5" />
         </motion.button>
+      )}
+
+      {!activeDocument && (
+        <div className="fixed top-4 right-28 z-50">
+          <Notifications />
+        </div>
+      )}
+      {!activeDocument && !isPongGameActive && (
+        <KinLayout onViewProfile={setActiveProfile} />
       )}
 
       {/* Info Button - Top Right */}
@@ -457,58 +538,75 @@ const Index = () => {
                       transition={{ duration: 0.6, delay: 0.2 }}
                       className="text-center"
                     >
-                      <AnimatedTitle onGameStateChange={setIsPongGameActive} />
+                      <AnimatedTitle
+                        onGameStateChange={setIsPongGameActive}
+                        onChallenge={activeProfile ? handleSendChallenge : undefined}
+                      />
                     </motion.div>
 
-                    {/* Tab Toggle */}
-                    <motion.div
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{
-                        opacity: isPongGameActive ? 0 : 1,
-                        y: 0,
-                        filter: isPongGameActive ? 'blur(6px)' : 'blur(0px)',
-                      }}
-                      transition={{ duration: 0.4, delay: isPongGameActive ? 0 : 0.3 }}
-                      className="flex justify-center gap-2 mt-6"
-                      style={{ pointerEvents: isPongGameActive ? 'none' : 'auto' }}
-                    >
-                      <motion.button
-                        onClick={() => setActiveTab('my-texts')}
-                        whileHover={{ y: -2 }}
-                        whileTap={{ scale: 0.97 }}
-                        className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium transition-all duration-300 whitespace-nowrap ${activeTab === 'my-texts'
-                          ? 'bg-primary text-primary-foreground shadow-lg'
-                          : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
-                          }`}
+                    {!activeProfile && (
+                      /* Tab Toggle - Only show if NO profile active */
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{
+                          opacity: isPongGameActive ? 0 : 1,
+                          y: 0,
+                          filter: isPongGameActive ? 'blur(6px)' : 'blur(0px)',
+                        }}
+                        transition={{ duration: 0.4, delay: isPongGameActive ? 0 : 0.3 }}
+                        className="flex justify-center gap-2 mt-6"
+                        style={{ pointerEvents: isPongGameActive ? 'none' : 'auto' }}
                       >
-                        <FileText className="w-4 h-4 flex-shrink-0" />
-                        My TXTs
-                      </motion.button>
-                      <motion.button
-                        onClick={() => setActiveTab('library')}
-                        whileHover={{ y: -2 }}
-                        whileTap={{ scale: 0.97 }}
-                        className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium transition-all duration-300 ${activeTab === 'library'
-                          ? 'bg-primary text-primary-foreground shadow-lg'
-                          : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
-                          }`}
-                      >
-                        <Library className="w-4 h-4" />
-                        Ebooks
-                      </motion.button>
-                      <motion.button
-                        onClick={() => setActiveTab('news')}
-                        whileHover={{ y: -2 }}
-                        whileTap={{ scale: 0.97 }}
-                        className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium transition-all duration-300 ${activeTab === 'news'
-                          ? 'bg-primary text-primary-foreground shadow-lg'
-                          : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
-                          }`}
-                      >
-                        <Newspaper className="w-4 h-4" />
-                        News
-                      </motion.button>
-                    </motion.div>
+                        <motion.button
+                          onClick={() => setActiveTab('my-texts')}
+                          whileHover={{ y: -2 }}
+                          whileTap={{ scale: 0.97 }}
+                          className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium transition-all duration-300 whitespace-nowrap ${activeTab === 'my-texts'
+                            ? 'bg-primary text-primary-foreground shadow-lg'
+                            : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
+                            }`}
+                        >
+                          <FileText className="w-4 h-4 flex-shrink-0" />
+                          My TXTs
+                        </motion.button>
+                        <motion.button
+                          onClick={() => setActiveTab('library')}
+                          whileHover={{ y: -2 }}
+                          whileTap={{ scale: 0.97 }}
+                          className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium transition-all duration-300 ${activeTab === 'library'
+                            ? 'bg-primary text-primary-foreground shadow-lg'
+                            : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
+                            }`}
+                        >
+                          <Library className="w-4 h-4" />
+                          Ebooks
+                        </motion.button>
+                        <motion.button
+                          onClick={() => setActiveTab('news')}
+                          whileHover={{ y: -2 }}
+                          whileTap={{ scale: 0.97 }}
+                          className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium transition-all duration-300 ${activeTab === 'news'
+                            ? 'bg-primary text-primary-foreground shadow-lg'
+                            : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
+                            }`}
+                        >
+                          <Newspaper className="w-4 h-4" />
+                          News
+                        </motion.button>
+                      </motion.div>
+                    )}
+
+                    {/* Back Button for Profile */}
+                    {activeProfile && (
+                      <div className="mt-6 flex justify-center">
+                        <button
+                          onClick={() => setActiveProfile(null)}
+                          className="text-sm text-white/50 hover:text-white transition-colors"
+                        >
+                          ← Back to My Library
+                        </button>
+                      </div>
+                    )}
 
                     {/* Loading indicator */}
                     {isAnalyzing && (
@@ -524,9 +622,8 @@ const Index = () => {
                 </div>
               </div>
 
-              {/* Tab Content */}
+              {/* Tab Content or Profile Content */}
               <div className="pb-12">
-                {/* Tab Content */}
                 <motion.div
                   className="flex w-full justify-center"
                   animate={{
@@ -538,7 +635,16 @@ const Index = () => {
                 >
                   <div className="w-full max-w-4xl">
                     <AnimatePresence mode="wait">
-                      {activeTab === 'my-texts' ? (
+                      {activeProfile ? (
+                        <motion.div
+                          key="profile"
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -20 }}
+                        >
+                          <UserProfile userId={activeProfile} />
+                        </motion.div>
+                      ) : activeTab === 'my-texts' ? (
                         <motion.div
                           key="my-texts"
                           initial={{ opacity: 0, x: -20 }}
@@ -581,6 +687,17 @@ const Index = () => {
                 </motion.div>
               </div>
             </div>
+
+            {/* KiN Pong Game Overlay */}
+            {kinSession && (
+              <KinPongGame
+                sessionId={kinSession.id}
+                isHost={kinSession.isHost}
+                opponentId={kinSession.opponentId}
+                onGameEnd={handleEndPong}
+              />
+            )}
+
           </motion.div>
         ) : (
           <motion.div

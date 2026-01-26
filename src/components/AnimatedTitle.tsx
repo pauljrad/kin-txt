@@ -10,10 +10,11 @@ import { PongGame } from "./PongGame";
 
 type AnimatedTitleProps = React.HTMLAttributes<HTMLDivElement> & {
   onGameStateChange?: (isPlaying: boolean) => void;
+  onChallenge?: () => void;
 };
 
 export const AnimatedTitle = forwardRef<HTMLDivElement, AnimatedTitleProps>(
-  ({ className, onGameStateChange, ...props }, ref) => {
+  ({ className, onGameStateChange, onChallenge, ...props }, ref) => {
     const dragY = useMotionValue(0);
     const stemControls = useAnimation();
     const dotControls = useAnimation();
@@ -80,6 +81,21 @@ export const AnimatedTitle = forwardRef<HTMLDivElement, AnimatedTitleProps>(
             return;
           }
           pongTriggerRef.current = true;
+
+          // If onChallenge is provided, trigger that instead of local game
+          if (onChallenge) {
+            // Reset state immediately as we are handling external logic
+            pongTriggerRef.current = false;
+            setIsBouncing(false);
+            onChallenge();
+
+            // We still want a visual "pop" to confirm action
+            await dotControls.start({
+              y: [0, -30, 0],
+              transition: { duration: 0.3 }
+            });
+            return;
+          }
 
           // Capture the REAL dot + hyphen sizes and positions (for 1:1 game sprites)
           const dotEl = dotRef.current;
