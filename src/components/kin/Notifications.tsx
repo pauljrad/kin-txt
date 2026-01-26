@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Bell } from "lucide-react";
+import { Bell, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
     DropdownMenu,
@@ -20,6 +20,7 @@ interface Notification {
     payload: any;
     is_read: boolean;
     created_at: string;
+    senderProfile?: { display_name: string }; // Enriched data
 }
 
 export const Notifications = () => {
@@ -27,24 +28,43 @@ export const Notifications = () => {
     const { user } = useAuth();
     const { toast } = useToast();
 
-    useEffect(() => {
+    const fetchNotifications = async () => {
         if (!user) return;
+        const { data } = await supabase
+            .from('notifications')
+            .select('*')
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false })
+            .limit(10);
 
-        // Fetch existing notifications
-        const fetchNotifications = async () => {
-            const { data } = await supabase
-                .from('notifications')
-                .select('*')
-                .eq('user_id', user.id)
-                .order('created_at', { ascending: false })
-                .limit(10);
+        if (data) {
+            // Enrich with sender names for requests
+            const enriched = await Promise.all(data.map(async (n) => {
+                if (n.type === 'kin_request' && n.payload?.requester_id) {
+                    const { data: profile } = await supabase
+                        .from('profiles')
+                        .select('display_name')
+                        .eq('id', n.payload.requester_id)
+                        .single();
+                    return { ...n, senderProfile: profile };
+                }
+                if (n.type === 'pong_challenge' && n.payload?.challengerId) {
+                    const { data: profile } = await supabase
+                        .from('profiles')
+                        .select('display_name')
+                        .eq('id', n.payload.challengerId)
+                        .single();
+                    return { ...n, senderProfile: profile };
+                }
+                return n;
+            }));
+            setNotifications(enriched as Notification[]);
+        }
+    };
 
-            if (data) setNotifications(data);
-        };
-
+    useEffect(() => {
         fetchNotifications();
 
-        // Subscribe to new notifications
         const channel = supabase
             .channel('notifications')
             .on(
@@ -53,10 +73,11 @@ export const Notifications = () => {
                     event: 'INSERT',
                     schema: 'public',
                     table: 'notifications',
-                    filter: `user_id=eq.${user.id}`,
+                    filter: `user_id=eq.${user?.id}`,
                 },
-                (payload) => {
-                    setNotifications(prev => [payload.new as Notification, ...prev]);
+                async (payload) => {
+                    // Re-fetch to simpler handle enrichment logic
+                    await fetchNotifications();
                     toast({
                         title: "New Notification",
                         description: "You have a new update in your KiN network.",
@@ -73,6 +94,49 @@ export const Notifications = () => {
     const handleRead = async (id: string) => {
         setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: true } : n));
         await supabase.from('notifications').update({ is_read: true }).eq('id', id);
+    };
+
+    const handleAction = async (notification: Notification, action: 'accept' | 'decline') => {
+        if (notification.type !== 'kin_request') return;
+        const requesterId = notification.payload.requester_id;
+
+        try {
+            if (action === 'accept') {
+                // Update connection status
+                const { error } = await supabase
+                    .from('kin_connections')
+                    .update({ status: 'accepted' })
+                    .eq('requester_id', requesterId)
+                    .eq('recipient_id', user?.id);
+
+                if (error) throw error;
+
+                toast({ title: "Connected!", description: "You are now KiNs." });
+
+                // create reverse notification? No, existing system handles it via triggers ideally, 
+                // but we might need to manually notify sender if no triggers exist.
+                // For MVP, just update UI.
+            } else {
+                // Delete connection request
+                const { error } = await supabase
+                    .from('kin_connections')
+                    .delete()
+                    .eq('requester_id', requesterId)
+                    .eq('recipient_id', user?.id);
+
+                if (error) throw error;
+                toast({ title: "Declined", description: "Request declined." });
+            }
+
+            // Mark notification as read and handled
+            await handleRead(notification.id);
+            // Optionally remove from list or update UI
+            fetchNotifications();
+
+        } catch (e) {
+            console.error(e);
+            toast({ title: "Error", description: "Something went wrong.", variant: "destructive" });
+        }
     };
 
     const unreadCount = notifications.filter(n => !n.is_read).length;
@@ -98,10 +162,10 @@ export const Notifications = () => {
                     </div>
                 ) : (
                     notifications.map((notification) => (
-                        <DropdownMenuItem
+                        <div
                             key={notification.id}
-                            className={`flex flex-col items-start p-3 focus:bg-white/5 ${!notification.is_read ? 'bg-white/5' : ''}`}
-                            onClick={() => handleRead(notification.id)}
+                            className={`flex flex-col items-start p-3 border-b border-white/5 last:border-0 ${!notification.is_read ? 'bg-white/5' : ''}`}
+                            onClick={() => !notification.is_read && handleRead(notification.id)}
                         >
                             <div className="flex w-full justify-between items-start mb-1">
                                 <span className="font-medium text-xs uppercase tracking-wider text-white/70">
@@ -111,13 +175,42 @@ export const Notifications = () => {
                                     {new Date(notification.created_at).toLocaleDateString()}
                                 </span>
                             </div>
-                            <p className="text-sm">
-                                {notification.type === 'kin_request' && 'Someone wants to connect.'}
+                            <p className="text-sm mb-2">
+                                {notification.type === 'kin_request' && (
+                                    <>
+                                        <span className="font-bold text-white">{notification.senderProfile?.display_name || 'Someone'}</span> wants to connect.
+                                    </>
+                                )}
                                 {notification.type === 'kin_accepted' && 'Your connection request was accepted.'}
                                 {notification.type === 'shared_item' && 'Shared an item with you.'}
-                                {notification.type === 'pong_challenge' && 'Challenged you to a game of Pong!'}
+                                {notification.type === 'pong_challenge' && (
+                                    <>
+                                        <span className="font-bold text-white">{notification.senderProfile?.display_name || 'Someone'}</span> challenged you to Pong!
+                                    </>
+                                )}
                             </p>
-                        </DropdownMenuItem>
+
+                            {/* Actions for Request */}
+                            {notification.type === 'kin_request' && (
+                                <div className="flex gap-2 w-full mt-1">
+                                    <Button
+                                        size="sm"
+                                        className="h-7 bg-white text-black hover:bg-white/90 flex-1"
+                                        onClick={(e) => { e.stopPropagation(); handleAction(notification, 'accept'); }}
+                                    >
+                                        <Check className="w-3 h-3 mr-1" /> Accept
+                                    </Button>
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className="h-7 border-white/20 text-white hover:bg-white/10 flex-1"
+                                        onClick={(e) => { e.stopPropagation(); handleAction(notification, 'decline'); }}
+                                    >
+                                        <X className="w-3 h-3 mr-1" /> Decline
+                                    </Button>
+                                </div>
+                            )}
+                        </div>
                     ))
                 )}
             </DropdownMenuContent>
