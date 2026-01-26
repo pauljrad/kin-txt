@@ -63,7 +63,7 @@ export const KinLayout = ({ onViewProfile }: { onViewProfile?: (userId: string) 
             </SheetTrigger>
             <SheetContent className="bg-zinc-950 border-white/10 text-white w-full sm:max-w-md p-0 overflow-y-auto">
                 <div className="p-6">
-                    <h2 className="text-2xl font-bold mb-6 font-serif">KiN Network</h2>
+                    <h2 className="text-2xl font-bold mb-6 font-display">KiN Network</h2>
 
                     <div className="space-y-6">
                         <section>
