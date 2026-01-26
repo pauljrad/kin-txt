@@ -1389,6 +1389,18 @@ export function KineticPlayer({
                     ))}
                   </div>
 
+                  {/* Share Button */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onShare?.();
+                    }}
+                    className="p-1.5 sm:p-3 rounded-xl transition-colors hover:bg-secondary text-muted-foreground hover:text-foreground"
+                    title="Share with KiN"
+                  >
+                    <Share2 className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
+                  </button>
+
                   {/* Settings Button */}
                   <Popover open={showSettingsPopover} onOpenChange={setShowSettingsPopover}>
                     <PopoverTrigger asChild>

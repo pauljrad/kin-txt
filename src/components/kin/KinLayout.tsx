@@ -55,7 +55,8 @@ export const KinLayout = ({ onViewProfile }: { onViewProfile?: (userId: string) 
                 <Button
                     variant="ghost"
                     size="icon"
-                    className="absolute top-4 right-16 z-50 text-white/50 hover:text-white hover:bg-white/10"
+                    className="fixed right-16 z-50 text-white/50 hover:text-white hover:bg-white/10"
+                    style={{ top: 'calc(2rem + env(safe-area-inset-top, 0px))' }}
                 >
                     <Users className="h-5 w-5" />
                     <span className="sr-only">KiN Network</span>
