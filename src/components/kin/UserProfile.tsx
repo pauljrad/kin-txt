@@ -60,7 +60,7 @@ export const UserProfile = ({ userId }: UserProfileProps) => {
                     <AvatarImage src={profile.avatar_url || ''} />
                     <AvatarFallback className="text-xl">{profile.display_name?.substring(0, 2).toUpperCase()}</AvatarFallback>
                 </Avatar>
-                <h3 className="text-xl font-serif text-white">{profile.display_name}</h3>
+                <h3 className="text-xl font-display text-white">{profile.display_name}</h3>
                 <p className="text-xs text-white/40">Member since {new Date(profile.created_at).getFullYear()}</p>
             </div>
 

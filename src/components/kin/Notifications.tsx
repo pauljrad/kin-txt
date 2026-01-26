@@ -130,8 +130,9 @@ export const Notifications = () => {
 
             // Mark notification as read and handled
             await handleRead(notification.id);
-            // Optionally remove from list or update UI
-            fetchNotifications();
+            // Remove from list immediately
+            setNotifications(prev => prev.filter(n => n.id !== notification.id));
+
 
         } catch (e) {
             console.error(e);

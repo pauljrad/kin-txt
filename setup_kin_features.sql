@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS public.shared_items (
 CREATE TABLE IF NOT EXISTS public.notifications (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
-  type TEXT NOT NULL CHECK (type IN ('kin_request', 'kin_accepted', 'shared_item', 'pong_challenge')),
+  type TEXT NOT NULL CHECK (type IN ('kin_request', 'kin_accepted', 'shared_item', 'pong_challenge', 'pong_accept')),
   payload JSONB,
   is_read BOOLEAN DEFAULT false,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL

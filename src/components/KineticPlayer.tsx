@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, Pause, RotateCcw, ChevronLeft, Rewind, BookOpen, Clock, Music, Settings, Focus, Eye, Type } from 'lucide-react';
+import { Play, Pause, RotateCcw, ChevronLeft, Rewind, BookOpen, Clock, Music, Settings, Focus, Eye, Type, Share2 } from 'lucide-react';
 import { ParsedText, getWordDelay, filterEmphasis } from '@/lib/textParser';
 import { detectChapters, findSentenceBoundaries, getRewindPosition, Chapter } from '@/lib/chapterParser';
 import { updateDocumentReadingTime as updateLocalReadingTime } from '@/lib/documentStorage';
@@ -27,6 +27,7 @@ interface KineticPlayerProps {
   onBack: () => void;
   onProgressChange?: (paragraph: number, word: number) => void;
   isEbook?: boolean;
+  onShare?: () => void;
 }
 
 export function KineticPlayer({
@@ -38,7 +39,8 @@ export function KineticPlayer({
   initialTotalReadingTime = 0,
   onBack,
   onProgressChange,
-  isEbook = false
+  isEbook = false,
+  onShare
 }: KineticPlayerProps) {
   const { textSize, setTextSize } = useTextSize();
   const [isPlaying, setIsPlaying] = useState(false);
@@ -1490,8 +1492,8 @@ export function KineticPlayer({
                                   key={item.color}
                                   onClick={() => setTargetColor(item.color)}
                                   className={`w-5 h-5 rounded-full border-2 transition-all ${targetColor === item.color
-                                      ? 'border-foreground scale-110 shadow-sm'
-                                      : 'border-transparent opacity-60 hover:opacity-100'
+                                    ? 'border-foreground scale-110 shadow-sm'
+                                    : 'border-transparent opacity-60 hover:opacity-100'
                                     }`}
                                   style={{ backgroundColor: item.color }}
                                   title={item.name}

@@ -13,6 +13,7 @@ import { KinLayout } from '@/components/kin/KinLayout';
 import { KinPongGame } from '@/components/kin/KinPongGame';
 import { Notifications } from '@/components/kin/Notifications';
 import { UserProfile } from '@/components/kin/UserProfile';
+import { ShareModal } from '@/components/kin/ShareModal';
 
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { AnimatedTitle } from '@/components/AnimatedTitle';
@@ -68,7 +69,7 @@ const Index = () => {
   const headerRef = useRef<HTMLDivElement | null>(null);
   const [headerHeight, setHeaderHeight] = useState(0); // Start at 0, will be measured
 
-  // Listen for Pong Challenges
+  // Listen for Pong Challenges and Global Events
   useEffect(() => {
     if (!user) return;
     const channel = supabase.channel('global_notifications')
@@ -81,23 +82,57 @@ const Index = () => {
             toast("Challenged to Pong!", {
               action: {
                 label: "Accept",
-                onClick: () => {
+                onClick: async () => {
+                  // When accepting:
+                  // 1. Join game session
                   setKinSession({
                     id: data.sessionId,
-                    isHost: false,
+                    isHost: false, // Challenger is host
                     opponentId: data.challengerId
                   });
+                  // 2. Notify Challenger we accepted (so they can start)
+                  await supabase.from('notifications').insert({
+                    user_id: data.challengerId,
+                    type: 'pong_accept', // Signal type
+                    payload: { accepterId: user.id, sessionId: data.sessionId }
+                  });
+
+                  // 3. Start game locally
                   setIsPongGameActive(true);
+
+                  // 4. Mark notification read
+                  await supabase.from('notifications').update({ is_read: true }).eq('id', payload.new.id);
                 }
               }
             });
+          } else if (payload.new.type === 'pong_accept') {
+            // We are the host, and opponent accepted!
+            const data = payload.new.payload;
+            if (kinSession && kinSession.id === data.sessionId) {
+              toast.success("Challenge Accepted! Starting Game...");
+              setIsPongGameActive(true);
+            } else {
+              // Should technically verify session ID, but if we are waiting for THIS session:
+              // Auto-start for host
+              toast.success("Challenge Accepted! Starting Game in 3...");
+              // Delay slightly for effect?
+              setKinSession({
+                id: data.sessionId,
+                isHost: true,
+                opponentId: data.accepterId
+              });
+              setIsPongGameActive(true);
+
+              // Mark notification read
+              await supabase.from('notifications').update({ is_read: true }).eq('id', payload.new.id);
+            }
           }
         }
       )
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [user]);
+  }, [user, kinSession]);
 
   const handleSendChallenge = async () => {
     if (!activeProfile || !user) return;
@@ -114,15 +149,15 @@ const Index = () => {
       }
     });
 
-    toast.success("Challenge sent! Waiting for them to accept...");
+    toast.success("Challenge sent to KiN! Waiting for them to accept...");
 
-    // Auto-join as host (waiting)
+    // Set session but DO NOT start game (active=false)
     setKinSession({
       id: sessionId,
       isHost: true,
       opponentId: activeProfile,
     });
-    setIsPongGameActive(true);
+    // setIsPongGameActive(true); // Don't start yet
   };
 
   // One-time migration: bring this device's old local history into your account
@@ -444,6 +479,46 @@ const Index = () => {
     setKinSession(null);
   };
 
+  const [isShareOpen, setIsShareOpen] = useState(false);
+  const handleShareClick = () => setIsShareOpen(true);
+
+  const handleConfirmShare = async (recipientId: string) => {
+    if (!activeDocument || !user) return;
+
+    try {
+      // Create shared item
+      const { error } = await supabase
+        .from('shared_items')
+        .insert({
+          sender_id: user.id,
+          receiver_id: recipientId,
+          item_type: 'txt', // Defaulting to txt for now, could be 'link' or 'news' if meta available
+          content: {
+            title: activeDocument.parsedText.paragraphs[0]?.[0] || 'Shared Text', // Heuristic title if missing
+            // Ideally we should share the STORAGE ID or the full text. 
+            // Sharing full text for now as 'content'.
+            // Optimization: Sharing a reference if it was a saved doc. 
+            // activeDocument has ID if saved.
+            documentId: activeDocument.id,
+            preview: activeDocument.parsedText.paragraphs[0]?.slice(0, 20).join(' ') + '...',
+          }
+        });
+
+      if (error) throw error;
+
+      // Notify recipient
+      await supabase.from('notifications').insert({
+        user_id: recipientId,
+        type: 'shared_item',
+        payload: { senderId: user.id, documentTitle: 'Shared Text' }
+      });
+
+      toast.success("Sent to KiN!");
+    } catch (e) {
+      console.error(e);
+      toast.error("Failed to share.");
+    }
+  };
 
 
   return (
@@ -454,6 +529,12 @@ const Index = () => {
         paddingBottom: 'env(safe-area-inset-bottom, 0px)',
       }}
     >
+      <ShareModal
+        open={isShareOpen}
+        onOpenChange={setIsShareOpen}
+        onShare={handleConfirmShare}
+      />
+
       {/* Pull-down progress indicator - removed per user request */}
 
       <ThemeToggle />
@@ -501,7 +582,7 @@ const Index = () => {
           }}
           transition={{ duration: 0.4 }}
           className="fixed right-4 z-50 p-2 rounded-lg bg-card/50 hover:bg-card transition-colors text-foreground"
-          style={{ top: 'calc(5.5rem + env(safe-area-inset-top, 0px))', pointerEvents: isPongGameActive ? 'none' : 'auto' }}
+          style={{ top: 'calc(7rem + env(safe-area-inset-top, 0px))', pointerEvents: isPongGameActive ? 'none' : 'auto' }}
           title="Information & Instructions"
         >
           {/* Logo "i" Style Icon */}
@@ -720,6 +801,7 @@ const Index = () => {
               onBack={handleBack}
               onProgressChange={handleProgressChange}
               isEbook={activeDocument.isEbook}
+              onShare={handleShareClick}
             />
           </motion.div>
         )}
