@@ -23,7 +23,7 @@ interface Notification {
     senderProfile?: { display_name: string }; // Enriched data
 }
 
-export const Notifications = () => {
+export const Notifications = ({ onOpenDocument }: { onOpenDocument?: (id: string) => void }) => {
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const { user } = useAuth();
     const { toast } = useToast();

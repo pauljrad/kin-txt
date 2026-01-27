@@ -530,6 +530,14 @@ const Index = () => {
     }
   };
 
+  const handleOpenDocumentById = async (id: string) => {
+    const { getDocument } = await import('@/lib/documentDatabase');
+    const doc = await getDocument(id);
+    if (doc) {
+      handleSelectDocument(doc);
+    }
+  };
+
 
   return (
     <div
