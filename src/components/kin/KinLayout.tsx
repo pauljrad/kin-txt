@@ -57,7 +57,7 @@ export const KinLayout = ({ onViewProfile }: { onViewProfile?: (userId: string) 
                     style={{ top: 'calc(1rem + env(safe-area-inset-top, 0px))' }}
                 >
                     <Users className="h-4 w-4 sm:h-5 sm:w-5" />
-                    <span className="sr-only">KiN Network</span>
+                    <span className="sr-only">KiN-Network</span>
                 </button>
             </SheetTrigger>
             <SheetContent className="bg-card border-l border-border text-foreground w-full sm:max-w-md p-0 overflow-hidden flex flex-col items-stretch [&>button]:top-[calc(env(safe-area-inset-top)+2.4rem)] [&>button]:right-6">

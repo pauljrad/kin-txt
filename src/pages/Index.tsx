@@ -660,7 +660,7 @@ const Index = () => {
         </div>
       )}
 
-      {/* KiN Network - Top Right (right-40) */}
+      {/* KiN-Network - Top Right (right-40) */}
       {!activeDocument && !isPongGameActive && (
         <KinLayout onViewProfile={setActiveProfile} />
       )}
