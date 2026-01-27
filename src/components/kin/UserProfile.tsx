@@ -77,7 +77,7 @@ export const UserProfile = ({ userId }: UserProfileProps) => {
                     </AvatarFallback>
                 </Avatar>
                 <h3 className="text-xl font-display text-foreground uppercase tracking-tight">{profile.display_name}</h3>
-                <p className="text-[10px] text-muted-foreground uppercase tracking-widest mt-1">KiN since {new Date(profile.created_at).getFullYear()}</p>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-widest mt-1">K<span className="lowercase font-sans text-[10px] relative -top-[0.5px]">i</span>N since {new Date(profile.created_at).getFullYear()}</p>
             </div>
 
             <Separator className="mb-4" />
