@@ -146,7 +146,7 @@ export const Notifications = ({ onOpenDocument }: { onOpenDocument?: (id: string
                     const content = sharedItem.content as any;
 
                     // Save to user's library
-                    const { error: saveErr } = await supabase
+                    const { data: newDoc, error: saveErr } = await supabase
                         .from('documents')
                         .insert({
                             user_id: user?.id,
@@ -156,16 +156,22 @@ export const Notifications = ({ onOpenDocument }: { onOpenDocument?: (id: string
                             word_count: content.parsedText.paragraphs.flat().length,
                             current_word_index: 0,
                             progress: 0,
-                            source: 'paste', // Logic: It's shared text, treating as paste for storage purposes
+                            source: 'paste',
                             file_type: null
-                        });
+                        })
+                        .select()
+                        .single();
 
                     if (saveErr) throw saveErr;
 
-                    toast({ title: "TXT Added!", description: "Document added to your library." });
+                    toast({ title: "TXT Added!", description: "Opening now..." });
 
                     // Mark as read in notifications and shared_items
                     await supabase.from('shared_items').update({ is_read: true }).eq('id', sharedItem.id);
+
+                    if (newDoc) {
+                        onOpenDocument?.(newDoc.id);
+                    }
                 } else {
                     // Decline: mark shared item read/handled
                     await supabase.from('shared_items').update({ is_read: true }).eq('sender_id', requesterId).eq('receiver_id', user?.id);
