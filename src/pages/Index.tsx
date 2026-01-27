@@ -606,7 +606,7 @@ const Index = () => {
           style={{ top: 'calc(1rem + env(safe-area-inset-top, 0px))', pointerEvents: isPongGameActive ? 'none' : 'auto' }}
           title="Sign out"
         >
-          <LogOut className="w-4 h-4 sm:w-5 h-5" />
+          <LogOut className="w-4 h-4 sm:w-5 sm:h-5" />
         </motion.button>
       )}
 
