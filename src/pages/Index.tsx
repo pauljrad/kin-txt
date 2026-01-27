@@ -581,7 +581,7 @@ const Index = () => {
           className="fixed right-28 z-50"
           style={{ top: 'calc(4rem + env(safe-area-inset-top, 0px))' }}
         >
-          <Notifications />
+          <Notifications onOpenDocument={handleOpenDocumentById} />
         </div>
       )}
       {!activeDocument && !isPongGameActive && (
