@@ -4,6 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { getInitials } from "@/lib/utils";
+import { useToast } from "@/components/ui/use-toast";
 
 interface UserProfileProps {
     userId: string;
@@ -26,6 +27,7 @@ interface ReadingHistory {
 export const UserProfile = ({ userId }: UserProfileProps) => {
     const [profile, setProfile] = useState<Profile | null>(null);
     const [history, setHistory] = useState<ReadingHistory[]>([]);
+    const { toast } = useToast();
 
     useEffect(() => {
         const fetchProfile = async () => {
@@ -45,13 +47,20 @@ export const UserProfile = ({ userId }: UserProfileProps) => {
                 .order('updated_at', { ascending: false })
                 .limit(10);
 
-            if (error) console.error("Error fetching history:", error);
+            if (error) {
+                console.error("Error fetching history:", error);
+                toast({
+                    title: "Unable to load reading history",
+                    description: "You may need to apply the database policy update. Check the console for details.",
+                    variant: "destructive"
+                });
+            }
             if (data) setHistory(data as ReadingHistory[]);
         };
 
         fetchProfile();
         fetchHistory();
-    }, [userId]);
+    }, [userId, toast]);
 
     if (!profile) return <div className="p-8 text-center text-muted-foreground animate-pulse">Loading Profile...</div>;
 
