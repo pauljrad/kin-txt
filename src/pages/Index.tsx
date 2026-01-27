@@ -454,6 +454,110 @@ const Index = () => {
     }
   };
 
+  // Handle Shared Link Redemption
+  useEffect(() => {
+    if (!user) return;
+
+    const redeemShare = async () => {
+      // Check URL and LocalStorage
+      const params = new URLSearchParams(window.location.search);
+      const urlShareId = params.get('share_id');
+      const pendingShareId = localStorage.getItem('pending_share_id');
+
+      const shareId = urlShareId || pendingShareId;
+
+      if (!shareId) return;
+
+      try {
+        // Clear immediately to prevent loop/double-add
+        if (urlShareId) {
+          const newUrl = new URL(window.location.href);
+          newUrl.searchParams.delete('share_id');
+          window.history.replaceState({}, '', newUrl.toString());
+        }
+        localStorage.removeItem('pending_share_id');
+
+        toast.info("Importing shared TXT...");
+
+        // Fetch Shared Link Content
+        const { data: linkData, error: linkError } = await supabase
+          .from('shared_links' as any)
+          .select('*')
+          .eq('id', shareId)
+          .single();
+
+        if (linkError || !linkData) throw new Error("Link invalid or expired");
+
+        const content = linkData.content as any;
+
+        // Save to Library
+        const { data: newDoc, error: saveErr } = await supabase
+          .from('documents')
+          .insert({
+            user_id: user.id,
+            title: content.title || 'Shared TXT',
+            content: JSON.stringify(content.parsedText),
+            preview: content.preview || '',
+            word_count: content.parsedText.paragraphs.flat().length,
+            current_word_index: 0,
+            progress: 0,
+            source: 'url',
+            file_type: null
+          })
+          .select()
+          .single();
+
+        if (saveErr) throw saveErr;
+
+        toast.success("Shared TXT added to library!");
+
+        // Open it
+        if (newDoc) {
+          handleOpenDocumentById(newDoc.id);
+        }
+
+      } catch (e) {
+        console.error("Error redeeming share:", e);
+        toast.error("Could not import shared TXT.");
+      }
+    };
+
+    redeemShare();
+  }, [user]);
+
+  const handleGenerateShareLink = async () => {
+    const docToShare = sharingDoc || activeDocument;
+    if (!docToShare || !user) return null;
+
+    try {
+      const { data, error } = await supabase
+        .from('shared_links' as any)
+        .insert({
+          user_id: user.id,
+          title: docToShare.title,
+          content: {
+            title: docToShare.title,
+            parsedText: docToShare.parsedText,
+            preview: docToShare.parsedText.paragraphs[0]?.slice(0, 20).join(' ') + '...',
+          } as any
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      if (!data) return null;
+
+      // Construct URL
+      const url = new URL(window.location.origin);
+      url.searchParams.set('share_id', data.id);
+      return url.toString();
+    } catch (e) {
+      console.error("Error generating link:", e);
+      toast.error("Failed to generate link.");
+      return null;
+    }
+  };
+
 
   return (
     <div
@@ -467,6 +571,7 @@ const Index = () => {
         open={isShareOpen}
         onOpenChange={setIsShareOpen}
         onShare={handleConfirmShare}
+        onGenerateLink={handleGenerateShareLink}
       />
 
       <AnimatePresence mode="wait">

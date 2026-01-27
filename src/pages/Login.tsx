@@ -35,33 +35,43 @@ const Login = forwardRef<HTMLDivElement>((_, ref) => {
   // Use shared pull-down gesture hook
   usePullGesture(true);
 
+  // Capture shared link ID if present
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const shareId = params.get('share_id');
+    if (shareId) {
+      localStorage.setItem('pending_share_id', shareId);
+      toast.info("Login to view the shared TXT");
+    }
+  }, []);
+
   const validateForm = () => {
     const newErrors: { email?: string; password?: string } = {};
-    
+
     const emailResult = emailSchema.safeParse(email);
     if (!emailResult.success) {
       newErrors.email = emailResult.error.errors[0].message;
     }
-    
+
     const passwordResult = passwordSchema.safeParse(password);
     if (!passwordResult.success) {
       newErrors.password = passwordResult.error.errors[0].message;
     }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) return;
-    
+
     setIsLoading(true);
 
     try {
       if (isSignUp) {
-        const { error, data } = await signUp(email, password, displayName || undefined);
+        const { error } = await signUp(email, password, displayName || undefined);
         if (error) {
           if (error.message.includes('already registered')) {
             toast.error('This email is already registered. Please sign in instead.');
@@ -71,30 +81,30 @@ const Login = forwardRef<HTMLDivElement>((_, ref) => {
           setIsLoading(false);
           return;
         }
-        
+
         // Get user info for notifications
         const { data: { user: newUser } } = await supabase.auth.getUser();
-        
+
         // Send welcome email (fire and forget - don't block signup)
         supabase.functions.invoke('send-welcome-email', {
-          body: { 
-            email, 
+          body: {
+            email,
             displayName: displayName || undefined
           }
         }).catch(err => console.error('Welcome email failed:', err));
-        
+
         // Send admin notification (fire and forget - don't block signup)
         if (newUser) {
           supabase.functions.invoke('notify-admin-signup', {
-            body: { 
-              email, 
+            body: {
+              email,
               displayName: displayName || undefined,
               userId: newUser.id,
               createdAt: newUser.created_at
             }
           }).catch(err => console.error('Admin notification failed:', err));
         }
-        
+
         toast.success('Account created! Please check your email to verify your account.');
         navigate('/home');
       } else {
@@ -128,7 +138,7 @@ const Login = forwardRef<HTMLDivElement>((_, ref) => {
   return (
     <div className="min-h-[100svh] relative bg-background overflow-hidden flex flex-col">
       <ThemeToggle />
-      
+
       <div className="flex-1 flex flex-col items-center justify-center px-4">
         {/* Animated Title */}
         <motion.div
@@ -143,8 +153,8 @@ const Login = forwardRef<HTMLDivElement>((_, ref) => {
         {/* Login/Signup Form */}
         <motion.form
           initial={{ opacity: 0, y: 20 }}
-          animate={{ 
-            opacity: isPongGameActive ? 0 : 1, 
+          animate={{
+            opacity: isPongGameActive ? 0 : 1,
             y: 0,
             filter: isPongGameActive ? 'blur(6px)' : 'blur(0px)',
           }}
@@ -165,7 +175,7 @@ const Login = forwardRef<HTMLDivElement>((_, ref) => {
               />
             </div>
           )}
-          
+
           <div className="space-y-1">
             <Input
               type="email"
@@ -182,7 +192,7 @@ const Login = forwardRef<HTMLDivElement>((_, ref) => {
               <p className="text-xs text-destructive text-center">{errors.email}</p>
             )}
           </div>
-          
+
           <div className="space-y-1">
             <Input
               type="password"
@@ -199,7 +209,7 @@ const Login = forwardRef<HTMLDivElement>((_, ref) => {
               <p className="text-xs text-destructive text-center">{errors.password}</p>
             )}
           </div>
-          
+
           <Button
             type="submit"
             disabled={isLoading || !email || !password}
@@ -207,7 +217,7 @@ const Login = forwardRef<HTMLDivElement>((_, ref) => {
           >
             {isLoading ? (isSignUp ? 'Creating account...' : 'Signing in...') : (isSignUp ? 'Create Account' : 'Sign In')}
           </Button>
-          
+
           <div className="text-center">
             <button
               type="button"
