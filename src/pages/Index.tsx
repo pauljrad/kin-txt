@@ -520,8 +520,8 @@ const Index = () => {
                   <button
                     onClick={() => setActiveTab('my-texts')}
                     className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all ${activeTab === 'my-texts'
-                        ? 'bg-foreground text-background font-medium'
-                        : 'bg-secondary text-muted-foreground hover:bg-secondary/80'
+                      ? 'bg-foreground text-background font-medium'
+                      : 'bg-secondary text-muted-foreground hover:bg-secondary/80'
                       }`}
                   >
                     <FileText className="w-4 h-4" />
@@ -530,8 +530,8 @@ const Index = () => {
                   <button
                     onClick={() => setActiveTab('library')}
                     className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all ${activeTab === 'library'
-                        ? 'bg-foreground text-background font-medium'
-                        : 'bg-secondary text-muted-foreground hover:bg-secondary/80'
+                      ? 'bg-foreground text-background font-medium'
+                      : 'bg-secondary text-muted-foreground hover:bg-secondary/80'
                       }`}
                   >
                     <Library className="w-4 h-4" />
@@ -540,8 +540,8 @@ const Index = () => {
                   <button
                     onClick={() => setActiveTab('news')}
                     className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all ${activeTab === 'news'
-                        ? 'bg-foreground text-background font-medium'
-                        : 'bg-secondary text-muted-foreground hover:bg-secondary/80'
+                      ? 'bg-foreground text-background font-medium'
+                      : 'bg-secondary text-muted-foreground hover:bg-secondary/80'
                       }`}
                   >
                     <Newspaper className="w-4 h-4" />
@@ -567,7 +567,7 @@ const Index = () => {
                         />
                       </div>
                     ) : activeTab === 'library' ? (
-                      <EbookLibrary onSelectEbook={handleSelectDocument} />
+                      <EbookLibrary onSelectEbook={handleEbookSelect} />
                     ) : (
                       <NewsLibrary onSelectArticle={handleNewsSelect} />
                     )}
@@ -594,7 +594,11 @@ const Index = () => {
         )}
       </AnimatePresence>
 
-      <InfoMenu onClose={() => setShowInfoMenu(false)} />
+      <AnimatePresence>
+        {showInfoMenu && (
+          <InfoMenu onClose={() => setShowInfoMenu(false)} />
+        )}
+      </AnimatePresence>
 
       {/* Pong Game Overlay */}
       {isPongGameActive && kinSession && (
