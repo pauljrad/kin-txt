@@ -93,7 +93,7 @@ export const UserProfile = ({ userId }: UserProfileProps) => {
                         {reading.length > 0 ? (
                             reading.map(doc => (
                                 <div key={doc.id} className="text-sm p-3 rounded-xl bg-secondary/40 border border-border/50 group">
-                                    <p className="text-foreground font-medium truncate">{doc.title}</p>
+                                    <p className="text-foreground font-medium break-words">{doc.title}</p>
                                     <p className="text-[10px] text-muted-foreground mt-0.5">
                                         Last read {new Date(doc.updated_at).toLocaleDateString()}
                                     </p>
@@ -113,7 +113,7 @@ export const UserProfile = ({ userId }: UserProfileProps) => {
                             {finished.length > 0 ? (
                                 finished.map(doc => (
                                     <div key={doc.id} className="text-sm p-2.5 rounded-lg bg-secondary/20 border border-transparent hover:border-border/50 transition-all duration-200">
-                                        <p className="text-foreground/80 truncate">{doc.title}</p>
+                                        <p className="text-foreground/80 break-words">{doc.title}</p>
                                         <p className="text-[10px] text-muted-foreground mt-0.5">
                                             Finished {doc.completed_at ? new Date(doc.completed_at).toLocaleDateString() : 'recently'}
                                         </p>
