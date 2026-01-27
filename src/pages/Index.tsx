@@ -13,6 +13,7 @@ import { KinLayout } from '@/components/kin/KinLayout';
 import { KinPongGame } from '@/components/kin/KinPongGame';
 import { Notifications } from '@/components/kin/Notifications';
 import { UserProfile } from '@/components/kin/UserProfile';
+import { KinProfileLayout } from '@/components/kin/KinProfileLayout';
 import { ShareModal } from '@/components/kin/ShareModal';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -623,6 +624,11 @@ const Index = () => {
             }}
           />
         </div>
+      )}
+
+      {/* KiN-Profile - Top Right (right-52) */}
+      {!activeDocument && (
+        <KinProfileLayout />
       )}
 
       {/* KiN-Network - Top Right (right-40) */}
