@@ -179,6 +179,10 @@
     transition: box-shadow 0.3s ease, border-color 0.3s ease;
   }
 
+  .toolbar-button {
+    @apply p-2 sm:p-3 rounded-full bg-card/80 backdrop-blur-sm border border-border/50 hover:bg-card transition-colors text-foreground flex items-center justify-center;
+  }
+
   .glass-panel:hover {
     box-shadow: var(--shadow-elevated);
     border-color: hsl(var(--border) / 0.5);

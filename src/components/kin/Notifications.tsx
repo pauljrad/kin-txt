@@ -197,18 +197,18 @@ export const Notifications = ({ onOpenDocument }: { onOpenDocument?: (id: string
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="group relative">
-                    <Bell className="h-5 w-5 text-white/50 group-hover:text-white transition-colors" />
+                <button className="toolbar-button group relative">
+                    <Bell className="h-4 w-4 sm:h-5 sm:w-5 group-hover:scale-110 transition-transform" />
                     {unreadCount > 0 && (
-                        <Badge className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center bg-red-500 text-[10px]">
+                        <Badge className="absolute -top-1 -right-1 h-3.5 w-3.5 sm:h-4 sm:w-4 p-0 flex items-center justify-center bg-red-500 text-[8px] sm:text-[10px] text-white border-none">
                             {unreadCount}
                         </Badge>
                     )}
-                </Button>
+                </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-80 bg-zinc-950 border-white/10 text-white">
+            <DropdownMenuContent align="end" className="w-80 bg-card border-border text-card-foreground">
                 <DropdownMenuLabel>Notifications</DropdownMenuLabel>
-                <DropdownMenuSeparator className="bg-white/10" />
+                <DropdownMenuSeparator className="bg-border" />
                 {notifications.length === 0 ? (
                     <div className="p-4 text-center text-sm text-white/40">
                         No notifications yet

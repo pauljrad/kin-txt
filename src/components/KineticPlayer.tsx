@@ -1246,7 +1246,7 @@ export function KineticPlayer({
                   void persistReadingTime(true);
                   onBack();
                 }}
-                className="p-1.5 sm:p-3 glass-panel hover:bg-card/90 transition-colors"
+                className="toolbar-button"
                 title="Back"
               >
                 <ChevronLeft className="w-4 h-4 sm:w-6 sm:h-6" />
@@ -1259,7 +1259,7 @@ export function KineticPlayer({
                   setIsPlaying(false);
                   setShowFullText(true);
                 }}
-                className="p-1.5 sm:p-3 glass-panel hover:bg-card/90 transition-colors"
+                className="toolbar-button"
                 title="View full text"
               >
                 <BookOpen className="w-4 h-4 sm:w-6 sm:h-6" />
@@ -1272,7 +1272,7 @@ export function KineticPlayer({
                   setIsPlaying(false);
                   setIsNavOpen((v) => !v);
                 }}
-                className="p-2 sm:p-3 glass-panel hover:bg-card/90 transition-colors"
+                className="toolbar-button"
                 title="Chapter navigation"
               >
                 <svg
@@ -1299,7 +1299,7 @@ export function KineticPlayer({
                   e.stopPropagation();
                   setFocusMode(!focusMode);
                 }}
-                className={`p-1.5 sm:p-3 glass-panel hover:bg-card/90 transition-all duration-300 ${focusMode ? "ring-2 ring-primary" : ""
+                className={`toolbar-button transition-all duration-300 ${focusMode ? "ring-2 ring-primary" : ""
                   }`}
                 title={focusMode ? "Exit focus mode" : "Focus mode: hide controls for immersive reading"}
               >
@@ -1311,8 +1311,8 @@ export function KineticPlayer({
             <motion.div
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="pointer-events-none absolute right-16 sm:right-24 glass-panel px-2 py-1 sm:px-4 sm:py-2"
-              style={{ top: 'calc(1rem + env(safe-area-inset-top, 0px))' }}
+              className="pointer-events-none absolute right-16 sm:right-24 glass-panel px-2 py-1 sm:px-4 sm:py-2 flex items-center justify-center"
+              style={{ top: 'calc(1rem + env(safe-area-inset-top, 0px))', height: 'fit-content', minHeight: '3rem' }}
             >
               <span className="text-[10px] sm:text-sm text-muted-foreground">
                 {rhythmMode ? 'Rhythm: ' : 'Speed: '}
