@@ -476,7 +476,7 @@ const Index = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="w-full flex flex-col items-center px-4 pt-16 sm:pt-20"
+            className="w-full flex flex-col items-center px-4 pt-24 sm:pt-28"
           >
             {/* Main Content Area */}
             <div className="w-full max-w-2xl mx-auto flex flex-col items-center">
