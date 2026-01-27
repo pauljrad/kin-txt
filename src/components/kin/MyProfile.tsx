@@ -183,12 +183,12 @@ export const MyProfile = () => {
                     <div className="p-3 rounded-xl bg-secondary/20 border border-border/40 flex flex-col items-center justify-center text-center">
                         <Users className="h-4 w-4 text-primary mb-1.5 opacity-70" />
                         <span className="text-xl font-display text-foreground">{stats.kinCount}</span>
-                        <span className="text-[10px] text-muted-foreground uppercase tracking-wider">KiNs</span>
+                        <span className="text-[10px] text-muted-foreground tracking-wider font-bold">K<span className="lowercase font-sans text-[10px] relative -top-[0.5px]">i</span>N<span className="lowercase font-sans">s</span></span>
                     </div>
                     <div className="p-3 rounded-xl bg-secondary/20 border border-border/40 flex flex-col items-center justify-center text-center">
                         <BookOpen className="h-4 w-4 text-primary mb-1.5 opacity-70" />
                         <span className="text-xl font-display text-foreground">{stats.txtReadCount}</span>
-                        <span className="text-[10px] text-muted-foreground uppercase tracking-wider">TXTs Read</span>
+                        <span className="text-[10px] text-muted-foreground tracking-wider font-bold">TXT<span className="lowercase font-sans">s</span> READ</span>
                     </div>
                 </div>
 
