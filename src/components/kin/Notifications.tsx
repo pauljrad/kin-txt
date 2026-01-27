@@ -210,39 +210,39 @@ export const Notifications = ({ onOpenDocument }: { onOpenDocument?: (id: string
                 <DropdownMenuLabel>Notifications</DropdownMenuLabel>
                 <DropdownMenuSeparator className="bg-border" />
                 {notifications.length === 0 ? (
-                    <div className="p-4 text-center text-sm text-white/40">
+                    <div className="p-4 text-center text-sm text-muted-foreground">
                         No notifications yet
                     </div>
                 ) : (
                     notifications.map((notification) => (
                         <div
                             key={notification.id}
-                            className={`flex flex-col items-start p-3 border-b border-white/5 last:border-0 ${!notification.is_read ? 'bg-white/5' : ''}`}
+                            className={`flex flex-col items-start p-3 border-b border-border last:border-0 ${!notification.is_read ? 'bg-secondary/30' : ''}`}
                             onClick={() => !notification.is_read && handleRead(notification.id)}
                         >
                             <div className="flex w-full justify-between items-start mb-1">
-                                <span className="font-medium text-xs uppercase tracking-wider text-white/70">
+                                <span className="font-medium text-[10px] uppercase tracking-wider text-muted-foreground">
                                     {notification.type.replace('_', ' ')}
                                 </span>
-                                <span className="text-[10px] text-white/30">
+                                <span className="text-[10px] text-muted-foreground opacity-70">
                                     {new Date(notification.created_at).toLocaleDateString()}
                                 </span>
                             </div>
-                            <p className="text-sm mb-2">
+                            <p className="text-sm mb-2 text-foreground">
                                 {notification.type === 'kin_request' && (
                                     <>
-                                        <span className="font-bold text-white">{notification.senderProfile?.display_name || 'Someone'}</span> wants to connect.
+                                        <span className="font-bold text-foreground">{notification.senderProfile?.display_name || 'Someone'}</span> wants to connect.
                                     </>
                                 )}
                                 {notification.type === 'kin_accepted' && 'Your connection request was accepted.'}
                                 {notification.type === 'shared_item' && (
                                     <>
-                                        <span className="font-bold text-white">{notification.senderProfile?.display_name || 'Someone'}</span> wants to send you a TXT.
+                                        <span className="font-bold text-foreground">{notification.senderProfile?.display_name || 'Someone'}</span> wants to send you a TXT.
                                     </>
                                 )}
                                 {notification.type === 'pong_challenge' && (
                                     <>
-                                        <span className="font-bold text-white">{notification.senderProfile?.display_name || 'Someone'}</span> challenged you to Pong!
+                                        <span className="font-bold text-foreground">{notification.senderProfile?.display_name || 'Someone'}</span> challenged you to Pong!
                                     </>
                                 )}
                             </p>
@@ -252,7 +252,7 @@ export const Notifications = ({ onOpenDocument }: { onOpenDocument?: (id: string
                                 <div className="flex gap-2 w-full mt-1">
                                     <Button
                                         size="sm"
-                                        className="h-7 bg-white text-black hover:bg-white/90 flex-1"
+                                        className="h-7 bg-primary text-primary-foreground hover:bg-primary/90 flex-1"
                                         onClick={(e) => { e.stopPropagation(); handleAction(notification, 'accept'); }}
                                     >
                                         <Check className="w-3 h-3 mr-1" /> Accept
@@ -260,7 +260,7 @@ export const Notifications = ({ onOpenDocument }: { onOpenDocument?: (id: string
                                     <Button
                                         size="sm"
                                         variant="outline"
-                                        className="h-7 border-white/20 text-white hover:bg-white/10 flex-1"
+                                        className="h-7 border-border text-foreground hover:bg-secondary flex-1"
                                         onClick={(e) => { e.stopPropagation(); handleAction(notification, 'decline'); }}
                                     >
                                         <X className="w-3 h-3 mr-1" /> Decline

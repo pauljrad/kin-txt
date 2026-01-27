@@ -6,6 +6,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/components/ui/use-toast";
+import { getInitials } from "@/lib/utils";
 
 export const KinLayout = ({ onViewProfile }: { onViewProfile?: (userId: string) => void }) => {
     const [open, setOpen] = useState(false);
@@ -63,38 +64,44 @@ export const KinLayout = ({ onViewProfile }: { onViewProfile?: (userId: string) 
             <SheetContent className="bg-card border-l border-border text-foreground w-full sm:max-w-md p-0 overflow-hidden flex flex-col items-stretch [&>button]:top-[calc(env(safe-area-inset-top)+2.4rem)] [&>button]:right-6">
                 {/* Header with Safe Area support */}
                 <div className="pt-[calc(env(safe-area-inset-top)+2rem)] px-6 pb-6 border-b border-border">
-                    <h2 className="text-2xl font-bold font-display tracking-wide">K<span className="lowercase">i</span>N-Network</h2>
+                    <h2 className="text-2xl font-bold font-display tracking-wide uppercase">
+                        K<span className="lowercase font-sans text-xl relative -top-[1px]">i</span>N-Network
+                    </h2>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-6">
+                <div className="flex-1 overflow-y-auto p-6 text-foreground">
 
                     <div className="space-y-6">
                         <section>
-                            <h3 className="text-sm font-medium text-white/50 mb-3 uppercase tracking-wider">Find KiNs</h3>
+                            <h3 className="text-sm font-medium text-muted-foreground mb-3 uppercase tracking-wider">Find KiNs</h3>
                             <UserSearch />
                         </section>
 
                         <section>
-                            <h3 className="text-sm font-medium text-white/50 mb-3 uppercase tracking-wider">My KiNs</h3>
+                            <h3 className="text-sm font-medium text-muted-foreground mb-3 uppercase tracking-wider">My KiNs</h3>
                             {kins.length === 0 ? (
-                                <div className="p-4 rounded-lg bg-white/5 border border-white/10 text-center text-white/40 text-sm">
+                                <div className="p-4 rounded-lg bg-secondary/50 border border-border text-center text-muted-foreground text-sm italic">
                                     You haven't connected with anyone yet.
                                 </div>
                             ) : (
                                 <div className="space-y-2">
                                     {kins.map(kin => (
                                         <div key={kin.id}
-                                            className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 cursor-pointer transition-colors"
+                                            className="flex items-center justify-between p-3 rounded-lg bg-secondary/30 border border-border/50 hover:bg-secondary/60 hover:border-border cursor-pointer transition-colors"
                                             onClick={() => {
                                                 onViewProfile?.(kin.id);
                                                 setOpen(false);
                                             }}
                                         >
                                             <div className="flex items-center gap-3">
-                                                <div className="h-8 w-8 rounded-full bg-zinc-800 flex items-center justify-center text-xs">
-                                                    {kin.avatar_url ? <img src={kin.avatar_url} className="rounded-full" /> : kin.display_name?.substring(0, 2).toUpperCase()}
+                                                <div className="h-8 w-8 rounded-full bg-primary/10 border border-primary/5 flex items-center justify-center text-[10px] font-bold text-primary">
+                                                    {kin.avatar_url ? (
+                                                        <img src={kin.avatar_url} className="rounded-full w-full h-full object-cover" />
+                                                    ) : (
+                                                        getInitials(kin.display_name)
+                                                    )}
                                                 </div>
-                                                <span className="font-medium">{kin.display_name}</span>
+                                                <span className="font-medium text-sm">{kin.display_name}</span>
                                             </div>
                                         </div>
                                     ))}

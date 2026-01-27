@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
 import { Search, UserPlus } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { getInitials } from "@/lib/utils";
 
 interface Profile {
     id: string;
@@ -101,45 +102,47 @@ export const UserSearch = () => {
     };
 
     return (
-        <div className="space-y-4 p-4">
+        <div className="space-y-4">
             <div className="flex gap-2">
                 <Input
-                    placeholder="Search for KiNs by display name..."
+                    placeholder="Search by name..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                    className="bg-black/20 border-white/10 text-white placeholder:text-white/40"
+                    className="bg-secondary/50 border-border text-foreground placeholder:text-muted-foreground"
                 />
-                <Button onClick={handleSearch} disabled={loading} variant="secondary">
+                <Button onClick={handleSearch} disabled={loading} variant="secondary" size="icon" className="shrink-0">
                     <Search className="h-4 w-4" />
                 </Button>
             </div>
 
             <div className="space-y-2">
                 {results.map((profile) => (
-                    <div key={profile.id} className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/10">
+                    <div key={profile.id} className="flex items-center justify-between p-3 rounded-xl bg-card border border-border hover:bg-secondary/20 transition-colors">
                         <div className="flex items-center gap-3">
-                            <Avatar>
-                                <AvatarImage src={profile.avatar_url || ''} />
-                                <AvatarFallback>{profile.display_name?.substring(0, 2).toUpperCase()}</AvatarFallback>
+                            <Avatar className="h-9 w-9 border border-border">
+                                <AvatarImage src={profile.avatar_url || ''} className="object-cover" />
+                                <AvatarFallback className="bg-primary/5 text-primary text-xs font-bold">
+                                    {getInitials(profile.display_name)}
+                                </AvatarFallback>
                             </Avatar>
                             <div>
-                                <p className="font-medium text-white">{profile.display_name || 'Anonymous'}</p>
+                                <p className="font-medium text-sm text-foreground">{profile.display_name || 'Anonymous'}</p>
                             </div>
                         </div>
                         <Button
                             size="sm"
                             variant="ghost"
-                            className="hover:bg-white/10"
+                            className="text-primary hover:text-primary hover:bg-primary/10"
                             onClick={() => sendKinRequest(profile.id)}
                         >
-                            <UserPlus className="h-4 w-4 mr-2" />
+                            <UserPlus className="h-3.5 w-3.5 mr-2" />
                             Add KiN
                         </Button>
                     </div>
                 ))}
                 {results.length === 0 && searchTerm && !loading && (
-                    <p className="text-center text-white/40 py-4">No users found</p>
+                    <p className="text-center text-muted-foreground py-4 text-sm italic">No users found</p>
                 )}
             </div>
         </div>
