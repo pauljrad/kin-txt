@@ -584,14 +584,6 @@ const Index = () => {
           {activeProfile && (
             <div className="space-y-6">
               <UserProfile userId={activeProfile} />
-              <div className="flex gap-3">
-                <Button
-                  className="flex-1 bg-primary text-primary-foreground hover:opacity-90"
-                  onClick={handleSendChallenge}
-                >
-                  Challenge to Pong
-                </Button>
-              </div>
             </div>
           )}
         </DialogContent>
