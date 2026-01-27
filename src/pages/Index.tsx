@@ -30,6 +30,7 @@ type TabMode = 'my-texts' | 'library' | 'news';
 
 interface ActiveDocument {
   parsedText: ParsedText;
+  title: string;
   id?: string;
   initialProgress?: { paragraph: number; word: number };
   emphasisWords?: string[];
@@ -277,6 +278,7 @@ const Index = () => {
 
     setActiveDocument({
       parsedText: parsed,
+      title,
       id: saved.id,
       emphasisWords: filteredEmphasisWords,
       whisperedWords,
@@ -339,6 +341,7 @@ const Index = () => {
 
     setActiveDocument({
       parsedText: cleanedText,
+      title,
       id: saved.id,
       emphasisWords: finalEmphasisWords,
       whisperedWords: finalWhisperedWords,
@@ -404,6 +407,7 @@ const Index = () => {
 
     setActiveDocument({
       parsedText: cleanedText,
+      title,
       id: saved.id,
       emphasisWords: finalEmphasisWords,
       whisperedWords: finalWhisperedWords,
@@ -449,6 +453,7 @@ const Index = () => {
 
     setActiveDocument({
       parsedText: cleanedText, // Use the CLEANED text (With KiN-TXT fixed)
+      title: doc.title,
       id: doc.id,
       initialProgress: doc.progress,
       emphasisWords: finalEmphasisWords,
@@ -493,8 +498,7 @@ const Index = () => {
     if (!docToShare || !user) return;
 
     try {
-      // Heuristic title if missing (ActiveDocument doesn't have title)
-      const title = sharingDoc ? sharingDoc.title : (docToShare.parsedText.paragraphs[0]?.[0] || 'Shared Text');
+      const title = docToShare.title;
 
       // Create shared item with FULL content
       const { error } = await supabase
