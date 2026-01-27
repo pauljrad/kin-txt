@@ -73,12 +73,12 @@ export const KinLayout = ({ onViewProfile }: { onViewProfile?: (userId: string) 
 
                     <div className="space-y-6">
                         <section>
-                            <h3 className="text-sm font-medium text-muted-foreground mb-3 uppercase tracking-wider">Find KiNs</h3>
+                            <h3 className="text-sm font-medium text-muted-foreground mb-3 uppercase tracking-wider">Find K<span className="lowercase font-sans text-xs relative -top-[0.5px]">i</span>Ns</h3>
                             <UserSearch />
                         </section>
 
                         <section>
-                            <h3 className="text-sm font-medium text-muted-foreground mb-3 uppercase tracking-wider">My KiNs</h3>
+                            <h3 className="text-sm font-medium text-muted-foreground mb-3 uppercase tracking-wider">My K<span className="lowercase font-sans text-xs relative -top-[0.5px]">i</span>Ns</h3>
                             {kins.length === 0 ? (
                                 <div className="p-4 rounded-lg bg-secondary/50 border border-border text-center text-muted-foreground text-sm italic">
                                     You haven't connected with anyone yet.
