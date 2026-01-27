@@ -81,62 +81,29 @@ const Index = () => {
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${user.id}` },
         async (payload) => {
-          if (payload.new.type === 'pong_challenge') {
+          // pong_ready notification means both players are ready - start the game!
+          if (payload.new.type === 'pong_ready') {
             const data = payload.new.payload;
-            toast("Challenged to Pong!", {
-              action: {
-                label: "Accept",
-                onClick: async () => {
-                  // When accepting:
-                  // 1. Join game session
-                  setKinSession({
-                    id: data.sessionId,
-                    isHost: false, // Challenger is host
-                    opponentId: data.challengerId
-                  });
-                  // 2. Notify Challenger we accepted (so they can start)
-                  await supabase.from('notifications').insert({
-                    user_id: data.challengerId,
-                    type: 'pong_accept' as any, // Type definition update pending
-                    payload: { accepterId: user.id, sessionId: data.sessionId }
-                  });
 
-                  // 3. Start game locally
-                  setIsPongGameActive(true);
-
-                  // 4. Mark notification read
-                  await supabase.from('notifications').update({ is_read: true }).eq('id', payload.new.id);
-                }
-              }
+            // Set up the session and start the game
+            setKinSession({
+              id: data.sessionId,
+              isHost: false, // We are the accepter
+              opponentId: data.challengerId
             });
-          } else if (payload.new.type === 'pong_accept') {
-            // We are the host, and opponent accepted!
-            const data = payload.new.payload;
-            if (kinSession && kinSession.id === data.sessionId) {
-              toast.success("Challenge Accepted! Starting Game...");
-              setIsPongGameActive(true);
-            } else {
-              // Should technically verify session ID, but if we are waiting for THIS session:
-              // Auto-start for host
-              toast.success("Challenge Accepted! Starting Game in 3...");
-              // Delay slightly for effect?
-              setKinSession({
-                id: data.sessionId,
-                isHost: true,
-                opponentId: data.accepterId
-              });
-              setIsPongGameActive(true);
 
-              // Mark notification read
-              await supabase.from('notifications').update({ is_read: true }).eq('id', payload.new.id);
-            }
+            setIsPongGameActive(true);
+            toast.success("Game Starting!");
+
+            // Mark notification read
+            await supabase.from('notifications').update({ is_read: true }).eq('id', payload.new.id);
           }
         }
       )
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [user, kinSession]);
+  }, [user]);
 
   const handleSendChallenge = async () => {
     if (!activeProfile || !user) return;
@@ -656,7 +623,13 @@ const Index = () => {
           className="fixed right-28 z-50 flex items-center justify-center p-0"
           style={{ top: 'calc(1rem + env(safe-area-inset-top, 0px))' }}
         >
-          <Notifications onOpenDocument={handleOpenDocumentById} />
+          <Notifications
+            onOpenDocument={handleOpenDocumentById}
+            onStartPongGame={(sessionId, opponentId, isHost) => {
+              setKinSession({ id: sessionId, opponentId, isHost });
+              setIsPongGameActive(true);
+            }}
+          />
         </div>
       )}
 

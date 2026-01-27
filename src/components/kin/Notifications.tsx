@@ -23,7 +23,10 @@ interface Notification {
     senderProfile?: { display_name: string }; // Enriched data
 }
 
-export const Notifications = ({ onOpenDocument }: { onOpenDocument?: (id: string) => void }) => {
+export const Notifications = ({ onOpenDocument, onStartPongGame }: {
+    onOpenDocument?: (id: string) => void;
+    onStartPongGame?: (sessionId: string, opponentId: string, isHost: boolean) => void;
+}) => {
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const { user } = useAuth();
     const { toast } = useToast();
@@ -192,6 +195,53 @@ export const Notifications = ({ onOpenDocument }: { onOpenDocument?: (id: string
         }
     };
 
+    const handlePongAction = async (notification: Notification, action: 'accept' | 'decline' | 'ready') => {
+        if (notification.type !== 'pong_challenge' && notification.type !== 'pong_accept') return;
+        const payload = notification.payload as any;
+
+        try {
+            if (notification.type === 'pong_challenge') {
+                if (action === 'accept') {
+                    // Send pong_accept notification to challenger
+                    await supabase.from('notifications').insert({
+                        user_id: payload.challengerId,
+                        type: 'pong_accept' as any,
+                        payload: {
+                            accepterId: user?.id,
+                            sessionId: payload.sessionId
+                        }
+                    });
+                    toast({ title: "Challenge Accepted!", description: "Click Ready when you're prepared to play." });
+                } else if (action === 'decline') {
+                    toast({ title: "Challenge Declined" });
+                }
+            } else if (notification.type === 'pong_accept' && action === 'ready') {
+                // Challenger clicks Ready - notify the accepter to start the game
+                await supabase.from('notifications').insert({
+                    user_id: payload.accepterId,
+                    type: 'pong_ready' as any,
+                    payload: {
+                        challengerId: user?.id,
+                        sessionId: payload.sessionId
+                    }
+                });
+
+                // Start the game for the challenger immediately
+                onStartPongGame?.(payload.sessionId, payload.accepterId, true);
+
+                toast({ title: "Ready!", description: "Starting game..." });
+            }
+
+            // Mark notification as read and remove
+            await handleRead(notification.id);
+            setNotifications(prev => prev.filter(n => n.id !== notification.id));
+
+        } catch (e) {
+            console.error(e);
+            toast({ title: "Error", description: "Failed to process Pong action.", variant: "destructive" });
+        }
+    };
+
     const unreadCount = notifications.filter(n => !n.is_read).length;
 
     return (
@@ -245,6 +295,11 @@ export const Notifications = ({ onOpenDocument }: { onOpenDocument?: (id: string
                                         <span className="font-bold text-foreground">{notification.senderProfile?.display_name || 'Someone'}</span> challenged you to Pong!
                                     </>
                                 )}
+                                {notification.type === 'pong_accept' && (
+                                    <>
+                                        <span className="font-bold text-foreground">{notification.senderProfile?.display_name || 'Someone'}</span> accepted your challenge and is ready to play!
+                                    </>
+                                )}
                             </p>
 
                             {/* Actions for Request & Share */}
@@ -264,6 +319,40 @@ export const Notifications = ({ onOpenDocument }: { onOpenDocument?: (id: string
                                         onClick={(e) => { e.stopPropagation(); handleAction(notification, 'decline'); }}
                                     >
                                         <X className="w-3 h-3 mr-1" /> Decline
+                                    </Button>
+                                </div>
+                            )}
+
+                            {/* Actions for Pong Challenge */}
+                            {notification.type === 'pong_challenge' && (
+                                <div className="flex gap-2 w-full mt-1">
+                                    <Button
+                                        size="sm"
+                                        className="h-7 bg-primary text-primary-foreground hover:bg-primary/90 flex-1"
+                                        onClick={(e) => { e.stopPropagation(); handlePongAction(notification, 'accept'); }}
+                                    >
+                                        <Check className="w-3 h-3 mr-1" /> Accept
+                                    </Button>
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className="h-7 border-border text-foreground hover:bg-secondary flex-1"
+                                        onClick={(e) => { e.stopPropagation(); handlePongAction(notification, 'decline'); }}
+                                    >
+                                        <X className="w-3 h-3 mr-1" /> Decline
+                                    </Button>
+                                </div>
+                            )}
+
+                            {/* Ready button for Pong Accept */}
+                            {notification.type === 'pong_accept' && (
+                                <div className="flex gap-2 w-full mt-1">
+                                    <Button
+                                        size="sm"
+                                        className="h-7 bg-green-600 text-white hover:bg-green-700 flex-1"
+                                        onClick={(e) => { e.stopPropagation(); handlePongAction(notification, 'ready'); }}
+                                    >
+                                        Ready to Play!
                                     </Button>
                                 </div>
                             )}
