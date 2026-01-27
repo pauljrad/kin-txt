@@ -573,7 +573,7 @@ const Index = () => {
           }}
           transition={{ duration: 0.4 }}
           className="fixed left-4 z-50 p-2 rounded-lg bg-card/50 hover:bg-card transition-colors text-muted-foreground hover:text-foreground"
-          style={{ top: 'calc(4rem + env(safe-area-inset-top, 0px))', pointerEvents: isPongGameActive ? 'none' : 'auto' }}
+          style={{ top: 'calc(1rem + env(safe-area-inset-top, 0px))', pointerEvents: isPongGameActive ? 'none' : 'auto' }}
           title="Sign out"
         >
           <LogOut className="w-5 h-5" />
@@ -583,7 +583,7 @@ const Index = () => {
       {!activeDocument && (
         <div
           className="fixed right-28 z-50"
-          style={{ top: 'calc(4rem + env(safe-area-inset-top, 0px))' }}
+          style={{ top: 'calc(1rem + env(safe-area-inset-top, 0px))' }}
         >
           <Notifications onOpenDocument={handleOpenDocumentById} />
         </div>
@@ -592,7 +592,7 @@ const Index = () => {
         <KinLayout onViewProfile={setActiveProfile} />
       )}
 
-      {/* Info Button - Top Right (Moved below top row) */}
+      {/* Info Button - Top Right (Moved to main top row) */}
       {!activeDocument && (
         <motion.button
           onClick={() => setShowInfoMenu(true)}
@@ -603,8 +603,8 @@ const Index = () => {
             filter: isPongGameActive ? 'blur(6px)' : 'blur(0px)',
           }}
           transition={{ duration: 0.4 }}
-          className="fixed right-4 z-50 p-2 rounded-lg bg-card/50 hover:bg-card transition-colors text-foreground"
-          style={{ top: 'calc(7rem + env(safe-area-inset-top, 0px))', pointerEvents: isPongGameActive ? 'none' : 'auto' }}
+          className="fixed right-40 z-50 p-2 rounded-lg bg-card/50 hover:bg-card transition-colors text-foreground"
+          style={{ top: 'calc(1rem + env(safe-area-inset-top, 0px))', pointerEvents: isPongGameActive ? 'none' : 'auto' }}
           title="Information & Instructions"
         >
           {/* Logo "i" Style Icon */}
