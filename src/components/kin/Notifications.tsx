@@ -34,6 +34,7 @@ export const Notifications = () => {
             .from('notifications')
             .select('*')
             .eq('user_id', user.id)
+            .eq('is_read', false)
             .order('created_at', { ascending: false })
             .limit(10);
 
@@ -130,14 +131,48 @@ export const Notifications = () => {
                 }
             } else if (notification.type === 'shared_item') {
                 if (action === 'accept') {
-                    // Logic to "accept" share: maybe just toast and mark read
-                    toast({ title: "Accepted", description: "TXTs added to your notifications." });
+                    // Fetch full content from shared_items
+                    const { data: sharedItem, error: fetchErr } = await supabase
+                        .from('shared_items')
+                        .select('*')
+                        .eq('sender_id', requesterId)
+                        .eq('receiver_id', user?.id)
+                        .order('created_at', { ascending: false })
+                        .limit(1)
+                        .single();
+
+                    if (fetchErr || !sharedItem) throw fetchErr || new Error("Shared item not found");
+
+                    const content = sharedItem.content as any;
+
+                    // Save to user's library
+                    const { error: saveErr } = await supabase
+                        .from('documents')
+                        .insert({
+                            user_id: user?.id,
+                            title: content.title || 'Shared TXT',
+                            content: JSON.stringify(content.parsedText),
+                            preview: content.preview || '',
+                            word_count: content.parsedText.paragraphs.flat().length,
+                            current_word_index: 0,
+                            progress: 0,
+                            source: 'paste', // Logic: It's shared text, treating as paste for storage purposes
+                            file_type: null
+                        });
+
+                    if (saveErr) throw saveErr;
+
+                    toast({ title: "TXT Added!", description: "Document added to your library." });
+
+                    // Mark as read in notifications and shared_items
+                    await supabase.from('shared_items').update({ is_read: true }).eq('id', sharedItem.id);
                 } else {
-                    // Logic to "decline" share: delete from shared_items
-                    await supabase.from('shared_items').delete().eq('sender_id', requesterId).eq('receiver_id', user?.id);
-                    toast({ title: "Declined", description: "Shared item removed." });
+                    // Decline: mark shared item read/handled
+                    await supabase.from('shared_items').update({ is_read: true }).eq('sender_id', requesterId).eq('receiver_id', user?.id);
+                    toast({ title: "Declined", description: "Shared item ignored." });
                 }
             }
+
 
             // Mark notification as read and handled
             await handleRead(notification.id);

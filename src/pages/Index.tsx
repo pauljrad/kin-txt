@@ -480,28 +480,34 @@ const Index = () => {
   };
 
   const [isShareOpen, setIsShareOpen] = useState(false);
-  const handleShareClick = () => setIsShareOpen(true);
+  const [sharingDoc, setSharingDoc] = useState<SavedDocument | null>(null);
+
+  const handleShareClick = (doc?: SavedDocument) => {
+    if (doc) setSharingDoc(doc);
+    else setSharingDoc(null);
+    setIsShareOpen(true);
+  };
 
   const handleConfirmShare = async (recipientId: string) => {
-    if (!activeDocument || !user) return;
+    const docToShare = sharingDoc || activeDocument;
+    if (!docToShare || !user) return;
 
     try {
-      // Create shared item
+      // Heuristic title if missing (ActiveDocument doesn't have title)
+      const title = sharingDoc ? sharingDoc.title : (docToShare.parsedText.paragraphs[0]?.[0] || 'Shared Text');
+
+      // Create shared item with FULL content
       const { error } = await supabase
         .from('shared_items')
         .insert({
           sender_id: user.id,
           receiver_id: recipientId,
-          item_type: 'txt', // Defaulting to txt for now, could be 'link' or 'news' if meta available
+          item_type: 'txt',
           content: {
-            title: activeDocument.parsedText.paragraphs[0]?.[0] || 'Shared Text', // Heuristic title if missing
-            // Ideally we should share the STORAGE ID or the full text. 
-            // Sharing full text for now as 'content'.
-            // Optimization: Sharing a reference if it was a saved doc. 
-            // activeDocument has ID if saved.
-            documentId: activeDocument.id,
-            preview: activeDocument.parsedText.paragraphs[0]?.slice(0, 20).join(' ') + '...',
-          }
+            title,
+            parsedText: docToShare.parsedText,
+            preview: docToShare.parsedText.paragraphs[0]?.slice(0, 20).join(' ') + '...',
+          } as any
         });
 
       if (error) throw error;
@@ -510,10 +516,14 @@ const Index = () => {
       await supabase.from('notifications').insert({
         user_id: recipientId,
         type: 'shared_item',
-        payload: { senderId: user.id, documentTitle: 'Shared Text' }
+        payload: {
+          senderId: user.id,
+          documentTitle: title,
+        }
       });
 
       toast.success("Sent to KiN!");
+      setSharingDoc(null);
     } catch (e) {
       console.error(e);
       toast.error("Failed to share.");
@@ -741,7 +751,11 @@ const Index = () => {
                           <TextInput onTextParsed={handleTextParsed} />
 
                           {/* Document History */}
-                          <DocumentHistory onSelectDocument={handleSelectDocument} refreshTrigger={refreshTrigger} />
+                          <DocumentHistory
+                            onSelectDocument={handleSelectDocument}
+                            onShare={handleShareClick}
+                            refreshTrigger={refreshTrigger}
+                          />
                         </motion.div>
                       ) : activeTab === 'library' ? (
                         <motion.div

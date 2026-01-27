@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { FileText, Clock, Trash2, Play, Pencil, Check, X, CheckCircle2, BookCheck, Calendar, BookOpen, Newspaper, File, ChevronDown, Undo2 } from 'lucide-react';
+import { FileText, Clock, Trash2, Play, Pencil, Check, X, CheckCircle2, BookCheck, Calendar, BookOpen, Newspaper, File, ChevronDown, Undo2, Share2 } from 'lucide-react';
 import { SavedDocument, DocumentCategory, getDocuments, deleteDocument, renameDocument, markDocumentCompleted } from '@/lib/documentDatabase';
 import { useState, useEffect, useMemo, useCallback, forwardRef, useRef } from 'react';
 import { toast } from '@/hooks/use-toast';
@@ -7,11 +7,12 @@ import { Button } from '@/components/ui/button';
 
 interface DocumentHistoryProps {
   onSelectDocument: (doc: SavedDocument) => void;
+  onShare?: (doc: SavedDocument) => void;
   refreshTrigger?: number;
 }
 
 export const DocumentHistory = forwardRef<HTMLDivElement, DocumentHistoryProps>(function DocumentHistory(
-  { onSelectDocument, refreshTrigger }: DocumentHistoryProps,
+  { onSelectDocument, onShare, refreshTrigger }: DocumentHistoryProps,
   ref
 ) {
   const [documents, setDocuments] = useState<SavedDocument[]>([]);
@@ -62,12 +63,12 @@ export const DocumentHistory = forwardRef<HTMLDivElement, DocumentHistoryProps>(
 
   const handleDeleteClick = (e: React.MouseEvent, doc: SavedDocument) => {
     e.stopPropagation();
-    
+
     // Clear any existing pending delete
     if (deleteTimeoutRef.current) {
       clearTimeout(deleteTimeoutRef.current);
     }
-    
+
     // Set up the pending delete with a timeout
     const timeoutId = setTimeout(async () => {
       await deleteDocument(doc.id);
@@ -76,10 +77,10 @@ export const DocumentHistory = forwardRef<HTMLDivElement, DocumentHistoryProps>(
       // Reload documents after deletion
       loadDocuments();
     }, 5000);
-    
+
     deleteTimeoutRef.current = timeoutId;
     setPendingDelete({ doc, timeoutId });
-    
+
     // Show toast with undo option
     toast({
       title: "Item deleted",
@@ -151,8 +152,8 @@ export const DocumentHistory = forwardRef<HTMLDivElement, DocumentHistoryProps>(
 
   const formatDate = (timestamp: number) => {
     const date = new Date(timestamp);
-    return date.toLocaleDateString(undefined, { 
-      month: 'short', 
+    return date.toLocaleDateString(undefined, {
+      month: 'short',
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit'
@@ -161,8 +162,8 @@ export const DocumentHistory = forwardRef<HTMLDivElement, DocumentHistoryProps>(
 
   const formatDateShort = (timestamp: number) => {
     const date = new Date(timestamp);
-    return date.toLocaleDateString(undefined, { 
-      month: 'short', 
+    return date.toLocaleDateString(undefined, {
+      month: 'short',
       day: 'numeric',
       year: 'numeric'
     });
@@ -189,7 +190,7 @@ export const DocumentHistory = forwardRef<HTMLDivElement, DocumentHistoryProps>(
   };
 
   // Filter out pending delete item from display
-  const visibleDocuments = useMemo(() => 
+  const visibleDocuments = useMemo(() =>
     documents.filter(d => !pendingDelete || d.id !== pendingDelete.doc.id),
     [documents, pendingDelete]
   );
@@ -204,7 +205,7 @@ export const DocumentHistory = forwardRef<HTMLDivElement, DocumentHistoryProps>(
       { key: 'article', label: 'Articles', icon: Newspaper, docs: [] },
       { key: 'document', label: 'Documents', icon: File, docs: [] },
     ];
-    
+
     activeDocuments.forEach(doc => {
       const category = categories.find(c => c.key === doc.category);
       if (category) {
@@ -213,34 +214,34 @@ export const DocumentHistory = forwardRef<HTMLDivElement, DocumentHistoryProps>(
         categories[2].docs.push(doc);
       }
     });
-    
+
     return categories.filter(c => c.docs.length > 0);
   }, [activeDocuments]);
 
   // Group completed documents by month, then by category within each month
   const completedByMonth = useMemo(() => {
     const monthGroups: Map<string, { label: string; timestamp: number; categories: Map<DocumentCategory, SavedDocument[]> }> = new Map();
-    
+
     completedDocuments
       .sort((a, b) => (b.completedAt || 0) - (a.completedAt || 0))
       .forEach(doc => {
         const date = new Date(doc.completedAt || doc.updatedAt);
         const monthKey = `${date.getFullYear()}-${String(date.getMonth()).padStart(2, '0')}`;
         const monthLabel = date.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
-        
+
         if (!monthGroups.has(monthKey)) {
-          monthGroups.set(monthKey, { 
-            label: monthLabel, 
+          monthGroups.set(monthKey, {
+            label: monthLabel,
             timestamp: date.getTime(),
             categories: new Map([['book', []], ['article', []], ['document', []]])
           });
         }
-        
+
         const group = monthGroups.get(monthKey)!;
         const category = doc.category || 'document';
         group.categories.get(category)?.push(doc);
       });
-    
+
     return Array.from(monthGroups.entries())
       .sort((a, b) => b[1].timestamp - a[1].timestamp)
       .map(([key, value]) => ({
@@ -350,13 +351,13 @@ export const DocumentHistory = forwardRef<HTMLDivElement, DocumentHistoryProps>(
             )}
           </div>
         </div>
-        
+
         {/* Right side - Progress and actions */}
         <div className="flex items-center gap-2 sm:gap-3 ml-13 sm:ml-0">
           {/* Progress indicator */}
           <div className="flex items-center gap-1.5 flex-shrink-0">
             <div className="w-12 sm:w-16 h-1.5 bg-muted rounded-full overflow-hidden">
-              <div 
+              <div
                 className={`h-full transition-all ${doc.completed ? 'bg-primary' : 'bg-accent'}`}
                 style={{ width: `${doc.completed ? 100 : getProgress(doc)}%` }}
               />
@@ -371,11 +372,10 @@ export const DocumentHistory = forwardRef<HTMLDivElement, DocumentHistoryProps>(
             {/* Mark as completed/uncompleted */}
             <button
               onClick={(e) => handleMarkCompleted(e, doc.id, !doc.completed)}
-              className={`p-1.5 sm:p-2 rounded-lg transition-colors ${
-                doc.completed 
-                  ? 'bg-primary/20 text-primary hover:bg-primary/30' 
-                  : 'hover:bg-muted text-muted-foreground hover:text-foreground'
-              }`}
+              className={`p-1.5 sm:p-2 rounded-lg transition-colors ${doc.completed
+                ? 'bg-primary/20 text-primary hover:bg-primary/30'
+                : 'hover:bg-muted text-muted-foreground hover:text-foreground'
+                }`}
               title={doc.completed ? "Mark as unread" : "Mark as read"}
             >
               <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
@@ -390,8 +390,17 @@ export const DocumentHistory = forwardRef<HTMLDivElement, DocumentHistoryProps>(
               <Pencil className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </button>
 
+            {/* Share button */}
+            <button
+              onClick={(e) => { e.stopPropagation(); onShare?.(doc); }}
+              className="p-1.5 sm:p-2 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+              title="Share with KiN"
+            >
+              <Share2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            </button>
+
             {/* Play button */}
-            <button 
+            <button
               className="p-1.5 sm:p-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
               onClick={(e) => { e.stopPropagation(); onSelectDocument(doc); }}
               title="Play"
@@ -421,140 +430,136 @@ export const DocumentHistory = forwardRef<HTMLDivElement, DocumentHistoryProps>(
         transition={{ duration: 0.4, delay: 0.3 }}
       >
         {/* Active/Reading Documents grouped by category */}
-      {documentsByCategory.length > 0 && (
-        <div className="space-y-4">
-          {documentsByCategory.map(category => (
-            <div key={category.key}>
-              <button
-                onClick={() => toggleCategory(category.key)}
-                className="text-lg font-medium text-foreground mb-3 flex items-center gap-2 hover:text-primary transition-colors w-full text-left"
-              >
-                <category.icon className="w-5 h-5 text-muted-foreground" />
-                {category.label}
-                <span className="text-sm text-muted-foreground">({category.docs.length})</span>
-                <ChevronDown 
-                  className={`w-4 h-4 ml-auto text-muted-foreground transition-transform ${
-                    collapsedCategories.has(category.key) ? '-rotate-90' : ''
-                  }`} 
-                />
-              </button>
-              <AnimatePresence initial={false}>
-                {!collapsedCategories.has(category.key) && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: 'auto', opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.2 }}
-                    className="overflow-hidden"
-                  >
-                    <div className="space-y-2">
-                      {category.docs.map(doc => renderDocumentCard(doc, false))}
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          ))}
-        </div>
-      )}
+        {documentsByCategory.length > 0 && (
+          <div className="space-y-4">
+            {documentsByCategory.map(category => (
+              <div key={category.key}>
+                <button
+                  onClick={() => toggleCategory(category.key)}
+                  className="text-lg font-medium text-foreground mb-3 flex items-center gap-2 hover:text-primary transition-colors w-full text-left"
+                >
+                  <category.icon className="w-5 h-5 text-muted-foreground" />
+                  {category.label}
+                  <span className="text-sm text-muted-foreground">({category.docs.length})</span>
+                  <ChevronDown
+                    className={`w-4 h-4 ml-auto text-muted-foreground transition-transform ${collapsedCategories.has(category.key) ? '-rotate-90' : ''
+                      }`}
+                  />
+                </button>
+                <AnimatePresence initial={false}>
+                  {!collapsedCategories.has(category.key) && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="space-y-2">
+                        {category.docs.map(doc => renderDocumentCard(doc, false))}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            ))}
+          </div>
+        )}
 
-      {/* Completed Documents */}
-      {completedDocuments.length > 0 && (
-        <div className="mt-6">
-          <button
-            onClick={() => setShowCompleted(!showCompleted)}
-            className="text-lg font-medium text-foreground mb-4 flex items-center gap-2 hover:text-primary transition-colors"
-          >
-            <BookCheck className="w-5 h-5 text-primary" />
-            Finished ({completedDocuments.length})
-            <ChevronDown 
-              className={`w-4 h-4 ml-2 text-muted-foreground transition-transform ${
-                !showCompleted ? '-rotate-90' : ''
-              }`} 
-            />
-          </button>
-          
-          <AnimatePresence initial={false}>
-            {showCompleted && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.2 }}
-                className="overflow-hidden"
-              >
-                <div className="space-y-6">
-                  {completedByMonth.map(month => (
-                    <div key={month.key}>
-                      <button
-                        onClick={() => toggleReadCategory(month.key)}
-                        className="text-base font-medium text-foreground mb-3 flex items-center gap-2 hover:text-primary transition-colors w-full text-left"
-                      >
-                        <Calendar className="w-4 h-4 text-muted-foreground" />
-                        {month.label}
-                        <span className="text-sm text-muted-foreground">
-                          ({month.categories.reduce((sum, c) => sum + c.docs.length, 0)})
-                        </span>
-                        <ChevronDown 
-                          className={`w-4 h-4 ml-auto text-muted-foreground transition-transform ${
-                            collapsedReadCategories.has(month.key) ? '-rotate-90' : ''
-                          }`} 
-                        />
-                      </button>
-                      <AnimatePresence initial={false}>
-                        {!collapsedReadCategories.has(month.key) && (
-                          <motion.div
-                            initial={{ height: 0, opacity: 0 }}
-                            animate={{ height: 'auto', opacity: 1 }}
-                            exit={{ height: 0, opacity: 0 }}
-                            transition={{ duration: 0.2 }}
-                            className="overflow-hidden"
-                          >
-                            <div className="space-y-3 ml-4">
-                              {month.categories.map(category => (
-                                <div key={`${month.key}-${category.key}`}>
-                                  <button
-                                    onClick={() => toggleReadCategory(`${month.key}-${category.key}`)}
-                                    className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-2 hover:text-foreground transition-colors w-full text-left"
-                                  >
-                                    <category.icon className="w-4 h-4" />
-                                    {category.label}
-                                    <span className="text-xs">({category.docs.length})</span>
-                                    <ChevronDown 
-                                      className={`w-4 h-4 ml-auto text-muted-foreground transition-transform ${
-                                        collapsedReadCategories.has(`${month.key}-${category.key}`) ? '-rotate-90' : ''
-                                      }`} 
-                                    />
-                                  </button>
-                                  <AnimatePresence initial={false}>
-                                    {!collapsedReadCategories.has(`${month.key}-${category.key}`) && (
-                                      <motion.div
-                                        initial={{ height: 0, opacity: 0 }}
-                                        animate={{ height: 'auto', opacity: 1 }}
-                                        exit={{ height: 0, opacity: 0 }}
-                                        transition={{ duration: 0.2 }}
-                                        className="overflow-hidden"
-                                      >
-                                        <div className="space-y-2">
-                                          {category.docs.map(doc => renderDocumentCard(doc, true))}
-                                        </div>
-                                      </motion.div>
-                                    )}
-                                  </AnimatePresence>
-                                </div>
-                              ))}
-                            </div>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </div>
-                  ))}
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-      )}
+        {/* Completed Documents */}
+        {completedDocuments.length > 0 && (
+          <div className="mt-6">
+            <button
+              onClick={() => setShowCompleted(!showCompleted)}
+              className="text-lg font-medium text-foreground mb-4 flex items-center gap-2 hover:text-primary transition-colors"
+            >
+              <BookCheck className="w-5 h-5 text-primary" />
+              Finished ({completedDocuments.length})
+              <ChevronDown
+                className={`w-4 h-4 ml-2 text-muted-foreground transition-transform ${!showCompleted ? '-rotate-90' : ''
+                  }`}
+              />
+            </button>
+
+            <AnimatePresence initial={false}>
+              {showCompleted && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="overflow-hidden"
+                >
+                  <div className="space-y-6">
+                    {completedByMonth.map(month => (
+                      <div key={month.key}>
+                        <button
+                          onClick={() => toggleReadCategory(month.key)}
+                          className="text-base font-medium text-foreground mb-3 flex items-center gap-2 hover:text-primary transition-colors w-full text-left"
+                        >
+                          <Calendar className="w-4 h-4 text-muted-foreground" />
+                          {month.label}
+                          <span className="text-sm text-muted-foreground">
+                            ({month.categories.reduce((sum, c) => sum + c.docs.length, 0)})
+                          </span>
+                          <ChevronDown
+                            className={`w-4 h-4 ml-auto text-muted-foreground transition-transform ${collapsedReadCategories.has(month.key) ? '-rotate-90' : ''
+                              }`}
+                          />
+                        </button>
+                        <AnimatePresence initial={false}>
+                          {!collapsedReadCategories.has(month.key) && (
+                            <motion.div
+                              initial={{ height: 0, opacity: 0 }}
+                              animate={{ height: 'auto', opacity: 1 }}
+                              exit={{ height: 0, opacity: 0 }}
+                              transition={{ duration: 0.2 }}
+                              className="overflow-hidden"
+                            >
+                              <div className="space-y-3 ml-4">
+                                {month.categories.map(category => (
+                                  <div key={`${month.key}-${category.key}`}>
+                                    <button
+                                      onClick={() => toggleReadCategory(`${month.key}-${category.key}`)}
+                                      className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-2 hover:text-foreground transition-colors w-full text-left"
+                                    >
+                                      <category.icon className="w-4 h-4" />
+                                      {category.label}
+                                      <span className="text-xs">({category.docs.length})</span>
+                                      <ChevronDown
+                                        className={`w-4 h-4 ml-auto text-muted-foreground transition-transform ${collapsedReadCategories.has(`${month.key}-${category.key}`) ? '-rotate-90' : ''
+                                          }`}
+                                      />
+                                    </button>
+                                    <AnimatePresence initial={false}>
+                                      {!collapsedReadCategories.has(`${month.key}-${category.key}`) && (
+                                        <motion.div
+                                          initial={{ height: 0, opacity: 0 }}
+                                          animate={{ height: 'auto', opacity: 1 }}
+                                          exit={{ height: 0, opacity: 0 }}
+                                          transition={{ duration: 0.2 }}
+                                          className="overflow-hidden"
+                                        >
+                                          <div className="space-y-2">
+                                            {category.docs.map(doc => renderDocumentCard(doc, true))}
+                                          </div>
+                                        </motion.div>
+                                      )}
+                                    </AnimatePresence>
+                                  </div>
+                                ))}
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        )}
       </motion.div>
     </div>
   );
