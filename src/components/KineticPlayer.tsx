@@ -43,11 +43,52 @@ export function KineticPlayer({
   onShare
 }: KineticPlayerProps) {
   const { textSize, setTextSize } = useTextSize();
+
+  // Settings Persistence Logic
+  const STORAGE_KEY = 'kin_reader_settings';
+
+  interface ReaderSettings {
+    startSpeed: number;
+    endSpeed: number;
+    rhythmMode: boolean;
+    rhythmPreset: 'slower' | 'normal' | 'faster';
+    accelerationMode: boolean;
+    adaptiveSpeed: boolean;
+    resetInterval: 'start' | '1' | '2' | '3' | '4' | 'end' | 'paragraph';
+    focusMode: boolean;
+    targetMode: boolean;
+    targetColor: string;
+  }
+
+  const loadSettings = (): Partial<ReaderSettings> => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      return saved ? JSON.parse(saved) : {};
+    } catch (e) {
+      console.error('Failed to load settings', e);
+      return {};
+    }
+  };
+
+  // Initialize state from local storage or defaults
+  const initialSettings = loadSettings();
+
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentParagraph, setCurrentParagraph] = useState(initialProgress?.paragraph || 0);
   const [currentWord, setCurrentWord] = useState(initialProgress?.word || 0);
-  const [startSpeed, setStartSpeed] = useState(0.5);
-  const [endSpeed, setEndSpeed] = useState(1.4);
+
+  // Persisted Stats
+  const [startSpeed, setStartSpeed] = useState(initialSettings.startSpeed ?? 0.5);
+  const [endSpeed, setEndSpeed] = useState(initialSettings.endSpeed ?? 1.4);
+  const [rhythmMode, setRhythmMode] = useState(initialSettings.rhythmMode ?? true);
+  const [rhythmPreset, setRhythmPreset] = useState<'slower' | 'normal' | 'faster'>(initialSettings.rhythmPreset ?? 'normal');
+  const [accelerationMode, setAccelerationMode] = useState(initialSettings.accelerationMode ?? false);
+  const [adaptiveSpeed, setAdaptiveSpeed] = useState(initialSettings.adaptiveSpeed ?? true);
+  const [resetInterval, setResetInterval] = useState<'start' | '1' | '2' | '3' | '4' | 'end' | 'paragraph'>(initialSettings.resetInterval ?? '3');
+  const [focusMode, setFocusMode] = useState(initialSettings.focusMode ?? false);
+  const [targetMode, setTargetMode] = useState(initialSettings.targetMode ?? false);
+  const [targetColor, setTargetColor] = useState(initialSettings.targetColor ?? '#FFD600');
+
   const [showControls, setShowControls] = useState(true);
   const [isComplete, setIsComplete] = useState(false);
   const [sentenceCount, setSentenceCount] = useState(0);
@@ -60,19 +101,11 @@ export function KineticPlayer({
   const [sessionTime, setSessionTime] = useState(0);
   const [totalReadingTime, setTotalReadingTime] = useState(initialTotalReadingTime);
   const [currentWordDelayMs, setCurrentWordDelayMs] = useState(300);
-  const [rhythmMode, setRhythmMode] = useState(true); // Start enabled by default
   const [rhythmSpeeds, setRhythmSpeeds] = useState<WordSpeed[]>([]);
-  const [rhythmPreset, setRhythmPreset] = useState<'slower' | 'normal' | 'faster'>('normal');
-  const [accelerationMode, setAccelerationMode] = useState(false); // start-slow-get-faster mode
-  const [adaptiveSpeed, setAdaptiveSpeed] = useState(true); // Adaptive speed that increases as user reads
-  const [wordsReadInSession, setWordsReadInSession] = useState(0); // Track words read for adaptive mode
-  const [resetInterval, setResetInterval] = useState<'start' | '1' | '2' | '3' | '4' | 'end' | 'paragraph'>('3'); // Sentence count for reset
+  const [wordsReadInSession, setWordsReadInSession] = useState(0);
   const [showSettingsPopover, setShowSettingsPopover] = useState(false);
   const [showingChapterTitle, setShowingChapterTitle] = useState<string | null>(null);
   const [lastChapterIndex, setLastChapterIndex] = useState(-1);
-  const [focusMode, setFocusMode] = useState(false);
-  const [targetMode, setTargetMode] = useState(false); // RSVP Target Mode (visual overlay)
-  const [targetColor, setTargetColor] = useState('#FFD600'); // Default Yellow
   const [atmospherePlaying, setAtmospherePlaying] = useState(false);
   const atmosphereAudioRef = useRef<HTMLAudioElement>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -81,6 +114,26 @@ export function KineticPlayer({
   const chapterTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastSaveTimeRef = useRef<number>(0);
   const totalReadingTimeRef = useRef<number>(initialTotalReadingTime);
+
+  // Persist settings whenever they change
+  useEffect(() => {
+    const settings: ReaderSettings = {
+      startSpeed,
+      endSpeed,
+      rhythmMode,
+      rhythmPreset,
+      accelerationMode,
+      adaptiveSpeed,
+      resetInterval,
+      focusMode,
+      targetMode,
+      targetColor
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+  }, [
+    startSpeed, endSpeed, rhythmMode, rhythmPreset, accelerationMode,
+    adaptiveSpeed, resetInterval, focusMode, targetMode, targetColor
+  ]);
 
   // Keep a ref updated so we can persist the latest value on exit/unmount without stale closures.
   useEffect(() => {
