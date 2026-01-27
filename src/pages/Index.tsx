@@ -637,8 +637,6 @@ const Index = () => {
       {!activeDocument && (
         <motion.button
           onClick={handleSignOut}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
           animate={{
             opacity: isPongGameActive ? 0 : 1,
             filter: isPongGameActive ? 'blur(6px)' : 'blur(0px)',
@@ -671,8 +669,6 @@ const Index = () => {
       {!activeDocument && (
         <motion.button
           onClick={() => setShowInfoMenu(true)}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
           animate={{
             opacity: isPongGameActive ? 0 : 1,
             filter: isPongGameActive ? 'blur(6px)' : 'blur(0px)',
