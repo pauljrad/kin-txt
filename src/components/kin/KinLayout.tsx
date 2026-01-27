@@ -52,19 +52,21 @@ export const KinLayout = ({ onViewProfile }: { onViewProfile?: (userId: string) 
     return (
         <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger asChild>
-                <Button
-                    variant="ghost"
-                    size="icon"
+                <button
                     className="fixed right-40 z-50 toolbar-button"
                     style={{ top: 'calc(1rem + env(safe-area-inset-top, 0px))' }}
                 >
-                    <Users className="h-5 w-5" />
+                    <Users className="h-4 w-4 sm:h-5 sm:w-5" />
                     <span className="sr-only">KiN Network</span>
-                </Button>
+                </button>
             </SheetTrigger>
-            <SheetContent className="bg-zinc-950 border-white/10 text-white w-full sm:max-w-md p-0 overflow-y-auto">
-                <div className="p-6">
-                    <h2 className="text-2xl font-bold mb-6 font-display tracking-wide">K<span className="lowercase">i</span>N Network</h2>
+            <SheetContent className="bg-card border-l border-border text-foreground w-full sm:max-w-md p-0 overflow-hidden flex flex-col">
+                {/* Header with Safe Area support */}
+                <div className="pt-[calc(env(safe-area-inset-top)+2rem)] px-6 pb-6 border-b border-border">
+                    <h2 className="text-2xl font-bold font-display tracking-wide">K<span className="lowercase">i</span>N Network</h2>
+                </div>
+
+                <div className="flex-1 overflow-y-auto p-6">
 
                     <div className="space-y-6">
                         <section>
