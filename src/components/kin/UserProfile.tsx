@@ -20,6 +20,7 @@ interface ReadingHistory {
     title: string;
     completed_at: string | null;
     is_completed: boolean;
+    updated_at: string;
 }
 
 export const UserProfile = ({ userId }: UserProfileProps) => {
@@ -37,15 +38,15 @@ export const UserProfile = ({ userId }: UserProfileProps) => {
         };
 
         const fetchHistory = async () => {
-            const { data } = await supabase
+            const { data, error } = await supabase
                 .from('documents')
-                .select('id, title, completed_at, is_completed')
+                .select('id, title, completed_at, is_completed, updated_at')
                 .eq('user_id', userId)
-                .eq('is_completed', true) // Only show completed books
-                .order('completed_at', { ascending: false })
-                .limit(5);
+                .order('updated_at', { ascending: false })
+                .limit(10);
 
-            if (data) setHistory(data);
+            if (error) console.error("Error fetching history:", error);
+            if (data) setHistory(data as ReadingHistory[]);
         };
 
         fetchProfile();
@@ -53,6 +54,9 @@ export const UserProfile = ({ userId }: UserProfileProps) => {
     }, [userId]);
 
     if (!profile) return <div className="p-8 text-center text-muted-foreground animate-pulse">Loading Profile...</div>;
+
+    const reading = history.filter(doc => !doc.is_completed);
+    const finished = history.filter(doc => doc.is_completed);
 
     return (
         <div className="flex flex-col">
@@ -63,32 +67,55 @@ export const UserProfile = ({ userId }: UserProfileProps) => {
                         {getInitials(profile.display_name)}
                     </AvatarFallback>
                 </Avatar>
-                <h3 className="text-xl font-display text-foreground">{profile.display_name}</h3>
-                <p className="text-xs text-muted-foreground">Member since {new Date(profile.created_at).getFullYear()}</p>
+                <h3 className="text-xl font-display text-foreground uppercase tracking-tight">{profile.display_name}</h3>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-widest mt-1">KiN since {new Date(profile.created_at).getFullYear()}</p>
             </div>
 
             <Separator className="mb-4" />
 
-            <div>
-                <h4 className="text-[10px] font-bold text-muted-foreground mb-3 uppercase tracking-[0.2em]">Recently Read</h4>
-                <ScrollArea className="h-40 pr-4">
-                    {history.length > 0 ? (
-                        <div className="space-y-1.5">
-                            {history.map(doc => (
-                                <div key={doc.id} className="text-sm p-2.5 rounded-lg bg-secondary/30 border border-transparent hover:border-border hover:bg-secondary/50 transition-all duration-200 group">
-                                    <p className="text-foreground font-medium truncate group-hover:text-primary transition-colors">{doc.title}</p>
+            <div className="space-y-6">
+                {/* Currently Reading */}
+                <div>
+                    <h4 className="text-[10px] font-bold text-primary mb-3 uppercase tracking-[0.2em] flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                        Currently Reading
+                    </h4>
+                    <div className="space-y-1.5">
+                        {reading.length > 0 ? (
+                            reading.map(doc => (
+                                <div key={doc.id} className="text-sm p-3 rounded-xl bg-secondary/40 border border-border/50 group">
+                                    <p className="text-foreground font-medium truncate">{doc.title}</p>
                                     <p className="text-[10px] text-muted-foreground mt-0.5">
-                                        {doc.completed_at ? new Date(doc.completed_at).toLocaleDateString() : 'Recently'}
+                                        Last read {new Date(doc.updated_at).toLocaleDateString()}
                                     </p>
                                 </div>
-                            ))}
+                            ))
+                        ) : (
+                            <p className="text-xs text-muted-foreground italic px-2">Nothing in the library right now.</p>
+                        )}
+                    </div>
+                </div>
+
+                {/* Recently Finished */}
+                <div>
+                    <h4 className="text-[10px] font-bold text-muted-foreground mb-3 uppercase tracking-[0.2em]">Recently Finished</h4>
+                    <ScrollArea className={finished.length > 3 ? "h-32 pr-2" : ""}>
+                        <div className="space-y-1.5">
+                            {finished.length > 0 ? (
+                                finished.map(doc => (
+                                    <div key={doc.id} className="text-sm p-2.5 rounded-lg bg-secondary/20 border border-transparent hover:border-border/50 transition-all duration-200">
+                                        <p className="text-foreground/80 truncate">{doc.title}</p>
+                                        <p className="text-[10px] text-muted-foreground mt-0.5">
+                                            Finished {doc.completed_at ? new Date(doc.completed_at).toLocaleDateString() : 'recently'}
+                                        </p>
+                                    </div>
+                                ))
+                            ) : (
+                                <p className="text-xs text-muted-foreground italic px-2">No finished TXTs to show.</p>
+                            )}
                         </div>
-                    ) : (
-                        <div className="flex flex-col items-center justify-center py-8 text-center grayscale opacity-50">
-                            <p className="text-xs text-muted-foreground italic">No reading history shared.</p>
-                        </div>
-                    )}
-                </ScrollArea>
+                    </ScrollArea>
+                </div>
             </div>
         </div>
     );
