@@ -601,6 +601,11 @@ const Index = () => {
       <ThemeToggle />
 
       {/* Sign out button - Top Left */}
+      {/* Deployment Marker */}
+      <div className="fixed bottom-2 right-2 text-[8px] text-muted-foreground/20 pointer-events-none select-none z-[999]">
+        v12pm-restored
+      </div>
+
       {!activeDocument && (
         <motion.button
           onClick={handleSignOut}
