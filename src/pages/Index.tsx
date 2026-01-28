@@ -10,6 +10,7 @@ import { InfoMenu } from '@/components/InfoMenu';
 
 // KiN Components
 import { KinLayout } from '@/components/kin/KinLayout';
+import { KinClubsLayout } from '@/components/kin/KinClubsLayout';
 import { KinPongGame } from '@/components/kin/KinPongGame';
 import { Notifications } from '@/components/kin/Notifications';
 import { UserProfile } from '@/components/kin/UserProfile';
@@ -738,7 +739,10 @@ const Index = () => {
 
       {/* KiN-Network - Top Right (right-40) */}
       {!activeDocument && !isPongGameActive && (
-        <KinLayout onViewProfile={setActiveProfile} />
+        <>
+          <KinLayout onViewProfile={setActiveProfile} />
+          <KinClubsLayout />
+        </>
       )}
 
       {/* Info Button - Top Right (right-16) */}

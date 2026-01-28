@@ -1,0 +1,444 @@
+import { supabase } from '@/integrations/supabase/client';
+
+export interface Club {
+    id: string;
+    name: string;
+    description: string | null;
+    created_by: string;
+    created_at: string;
+}
+
+export interface ClubMembership {
+    id: string;
+    club_id: string;
+    user_id: string;
+    status: 'pending' | 'accepted' | 'declined';
+    joined_at: string;
+}
+
+export interface ClubBookSuggestion {
+    id: string;
+    club_id: string;
+    suggested_by: string;
+    document_id: string;
+    title: string;
+    status: 'pending' | 'active' | 'completed';
+    created_at: string;
+}
+
+export interface ClubMemberProgress {
+    id: string;
+    suggestion_id: string;
+    user_id: string;
+    document_id: string | null;
+    status: 'invited' | 'accepted' | 'declined';
+    progress: number;
+    current_word_index: number;
+    updated_at: string;
+}
+
+/**
+ * Create a new reading club
+ */
+export async function createClub(
+    name: string,
+    description: string | null,
+    memberIds: string[]
+): Promise<{ club: Club | null; error: Error | null }> {
+    try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+            return { club: null, error: new Error('User not authenticated') };
+        }
+
+        // Create the club
+        const { data: club, error: clubError } = await supabase
+            .from('kin_clubs' as any)
+            .insert({
+                name,
+                description,
+                created_by: user.id
+            })
+            .select()
+            .single();
+
+        if (clubError) throw clubError;
+
+        // Add creator as accepted member
+        await supabase.from('club_memberships' as any).insert({
+            club_id: club.id,
+            user_id: user.id,
+            status: 'accepted'
+        });
+
+        // Invite other members
+        if (memberIds.length > 0) {
+            await inviteMembers(club.id, memberIds);
+        }
+
+        return { club, error: null };
+    } catch (error) {
+        console.error('Error creating club:', error);
+        return { club: null, error: error as Error };
+    }
+}
+
+/**
+ * Invite members to a club
+ */
+export async function inviteMembers(
+    clubId: string,
+    userIds: string[]
+): Promise<{ success: boolean; error: Error | null }> {
+    try {
+        const memberships = userIds.map(userId => ({
+            club_id: clubId,
+            user_id: userId,
+            status: 'pending'
+        }));
+
+        const { error } = await supabase
+            .from('club_memberships' as any)
+            .insert(memberships);
+
+        if (error) throw error;
+
+        // Create notifications for invited users
+        const notifications = userIds.map(userId => ({
+            user_id: userId,
+            type: 'club_invitation',
+            title: 'New Club Invitation',
+            message: `You've been invited to join a reading club`,
+            data: { club_id: clubId }
+        }));
+
+        await supabase.from('notifications' as any).insert(notifications);
+
+        return { success: true, error: null };
+    } catch (error) {
+        console.error('Error inviting members:', error);
+        return { success: false, error: error as Error };
+    }
+}
+
+/**
+ * Accept or decline a club invitation
+ */
+export async function updateMembershipStatus(
+    membershipId: string,
+    status: 'accepted' | 'declined'
+): Promise<{ success: boolean; error: Error | null }> {
+    try {
+        const { error } = await supabase
+            .from('club_memberships' as any)
+            .update({ status })
+            .eq('id', membershipId);
+
+        if (error) throw error;
+        return { success: true, error: null };
+    } catch (error) {
+        console.error('Error updating membership:', error);
+        return { success: false, error: error as Error };
+    }
+}
+
+/**
+ * Get clubs for current user
+ */
+export async function getUserClubs(): Promise<{
+    clubs: (Club & { membership_status: string })[];
+    error: Error | null;
+}> {
+    try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+            return { clubs: [], error: new Error('User not authenticated') };
+        }
+
+        const { data, error } = await supabase
+            .from('club_memberships' as any)
+            .select(`
+        status,
+        kin_clubs (
+          id,
+          name,
+          description,
+          created_by,
+          created_at
+        )
+      `)
+            .eq('user_id', user.id);
+
+        if (error) throw error;
+
+        const clubs = data
+            ?.filter(m => m.kin_clubs)
+            .map(m => ({
+                ...m.kin_clubs,
+                membership_status: m.status
+            })) || [];
+
+        return { clubs, error: null };
+    } catch (error) {
+        console.error('Error getting user clubs:', error);
+        return { clubs: [], error: error as Error };
+    }
+}
+
+/**
+ * Get club members
+ */
+export async function getClubMembers(clubId: string): Promise<{
+    members: any[];
+    error: Error | null;
+}> {
+    try {
+        const { data, error } = await supabase
+            .from('club_memberships' as any)
+            .select(`
+        id,
+        status,
+        joined_at,
+        profiles:user_id (
+          id,
+          display_name,
+          email,
+          avatar_url
+        )
+      `)
+            .eq('club_id', clubId);
+
+        if (error) throw error;
+        return { members: data || [], error: null };
+    } catch (error) {
+        console.error('Error getting club members:', error);
+        return { members: [], error: error as Error };
+    }
+}
+
+/**
+ * Suggest a book for the club to read
+ */
+export async function suggestBook(
+    clubId: string,
+    documentId: string,
+    title: string
+): Promise<{ suggestion: ClubBookSuggestion | null; error: Error | null }> {
+    try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+            return { suggestion: null, error: new Error('User not authenticated') };
+        }
+
+        // Create suggestion
+        const { data: suggestion, error: suggestionError } = await supabase
+            .from('club_book_suggestions' as any)
+            .insert({
+                club_id: clubId,
+                suggested_by: user.id,
+                document_id: documentId,
+                title,
+                status: 'pending'
+            })
+            .select()
+            .single();
+
+        if (suggestionError) throw suggestionError;
+
+        // Get all accepted club members
+        const { data: members } = await supabase
+            .from('club_memberships' as any)
+            .select('user_id')
+            .eq('club_id', clubId)
+            .eq('status', 'accepted')
+            .neq('user_id', user.id);
+
+        if (members && members.length > 0) {
+            // Create progress records for all members
+            const progressRecords = members.map(m => ({
+                suggestion_id: suggestion.id,
+                user_id: m.user_id,
+                status: 'invited'
+            }));
+
+            await supabase
+                .from('club_member_progress' as any)
+                .insert(progressRecords);
+
+            // Send notifications
+            const notifications = members.map(m => ({
+                user_id: m.user_id,
+                type: 'book_suggestion',
+                title: 'New Book Suggestion',
+                message: `A new book has been suggested for your club: ${title}`,
+                data: { suggestion_id: suggestion.id, club_id: clubId }
+            }));
+
+            await supabase.from('notifications' as any).insert(notifications);
+        }
+
+        return { suggestion, error: null };
+    } catch (error) {
+        console.error('Error suggesting book:', error);
+        return { suggestion: null, error: error as Error };
+    }
+}
+
+/**
+ * Accept a book suggestion and clone it to user's library
+ */
+export async function acceptBookSuggestion(
+    suggestionId: string
+): Promise<{ document: any | null; error: Error | null }> {
+    try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+            return { document: null, error: new Error('User not authenticated') };
+        }
+
+        // Get suggestion details
+        const { data: suggestion, error: suggestionError } = await supabase
+            .from('club_book_suggestions' as any)
+            .select('document_id, title')
+            .eq('id', suggestionId)
+            .single();
+
+        if (suggestionError) throw suggestionError;
+
+        // Clone document to user's library
+        const { data: sourceDoc, error: docError } = await supabase
+            .from('documents' as any)
+            .select('*')
+            .eq('id', suggestion.document_id)
+            .single();
+
+        if (docError) throw docError;
+
+        // Create new document for user
+        const { data: newDoc, error: insertError } = await supabase
+            .from('documents' as any)
+            .insert({
+                user_id: user.id,
+                title: sourceDoc.title,
+                content: sourceDoc.content,
+                preview: sourceDoc.preview,
+                word_count: sourceDoc.word_count,
+                source: 'club_book',
+                file_type: sourceDoc.file_type,
+                current_word_index: 0,
+                progress: 0
+            })
+            .select()
+            .single();
+
+        if (insertError) throw insertError;
+
+        // Update progress record
+        await supabase
+            .from('club_member_progress' as any)
+            .update({
+                status: 'accepted',
+                document_id: newDoc.id
+            })
+            .eq('suggestion_id', suggestionId)
+            .eq('user_id', user.id);
+
+        return { document: newDoc, error: null };
+    } catch (error) {
+        console.error('Error accepting book suggestion:', error);
+        return { document: null, error: error as Error };
+    }
+}
+
+/**
+ * Get club reading progress for all members
+ */
+export async function getClubProgress(
+    clubId: string,
+    suggestionId: string
+): Promise<{ progress: any[]; error: Error | null }> {
+    try {
+        const { data, error } = await supabase
+            .from('club_member_progress' as any)
+            .select(`
+        id,
+        status,
+        progress,
+        current_word_index,
+        updated_at,
+        profiles:user_id (
+          id,
+          display_name,
+          avatar_url
+        )
+      `)
+            .eq('suggestion_id', suggestionId);
+
+        if (error) throw error;
+        return { progress: data || [], error: null };
+    } catch (error) {
+        console.error('Error getting club progress:', error);
+        return { progress: [], error: error as Error };
+    }
+}
+
+/**
+ * Update member's reading progress
+ */
+export async function updateMemberProgress(
+    suggestionId: string,
+    progress: number,
+    currentWordIndex: number
+): Promise<{ success: boolean; error: Error | null }> {
+    try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+            return { success: false, error: new Error('User not authenticated') };
+        }
+
+        const { error } = await supabase
+            .from('club_member_progress' as any)
+            .update({
+                progress,
+                current_word_index: currentWordIndex,
+                updated_at: new Date().toISOString()
+            })
+            .eq('suggestion_id', suggestionId)
+            .eq('user_id', user.id);
+
+        if (error) throw error;
+        return { success: true, error: null };
+    } catch (error) {
+        console.error('Error updating progress:', error);
+        return { success: false, error: error as Error };
+    }
+}
+
+/**
+ * Get active book suggestion for a club
+ */
+export async function getActiveBookSuggestion(
+    clubId: string
+): Promise<{ suggestion: any | null; error: Error | null }> {
+    try {
+        const { data, error } = await supabase
+            .from('club_book_suggestions' as any)
+            .select(`
+        *,
+        profiles:suggested_by (
+          display_name
+        )
+      `)
+            .eq('club_id', clubId)
+            .in('status', ['pending', 'active'])
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+        if (error) throw error;
+        return { suggestion: data, error: null };
+    } catch (error) {
+        console.error('Error getting active suggestion:', error);
+        return { suggestion: null, error: error as Error };
+    }
+}

@@ -16,11 +16,12 @@ import { useToast } from "@/components/ui/use-toast";
 
 interface Notification {
     id: string;
-    type: string;
+    type: 'kin_request' | 'kin_accepted' | 'shared_item' | 'pong_challenge' | 'pong_accept' | 'club_invitation' | 'book_suggestion';
     payload: any;
     is_read: boolean;
     created_at: string;
     senderProfile?: { display_name: string }; // Enriched data
+    clubName?: string; // Enriched data for club notifications
 }
 
 export const Notifications = ({ onOpenDocument, onStartPongGame }: {
@@ -68,6 +69,22 @@ export const Notifications = ({ onOpenDocument, onStartPongGame }: {
                         .single();
                     return { ...n, senderProfile: profile };
                 }
+                if (n.type === 'club_invitation' && payload?.club_id) {
+                    const { data: club } = await supabase
+                        .from('kin_clubs' as any)
+                        .select('name')
+                        .eq('id', payload.club_id)
+                        .single();
+                    return { ...n, clubName: club?.name };
+                }
+                if (n.type === 'book_suggestion' && payload?.club_id) {
+                    const { data: club } = await supabase
+                        .from('kin_clubs' as any)
+                        .select('name')
+                        .eq('id', payload.club_id)
+                        .single();
+                    return { ...n, clubName: club?.name };
+                }
                 return n;
             }));
             setNotifications(enriched as Notification[]);
@@ -109,7 +126,7 @@ export const Notifications = ({ onOpenDocument, onStartPongGame }: {
     };
 
     const handleAction = async (notification: Notification, action: 'accept' | 'decline') => {
-        if (notification.type !== 'kin_request' && notification.type !== 'shared_item') return;
+        if (!['kin_request', 'shared_item', 'club_invitation', 'book_suggestion'].includes(notification.type)) return;
         const payload = notification.payload as any;
         const requesterId = payload.requester_id || payload.senderId;
 
@@ -179,6 +196,40 @@ export const Notifications = ({ onOpenDocument, onStartPongGame }: {
                     // Decline: mark shared item read/handled
                     await supabase.from('shared_items').update({ is_read: true }).eq('sender_id', requesterId).eq('receiver_id', user?.id);
                     toast({ title: "Declined", description: "Shared item ignored." });
+                }
+            } else if (notification.type === 'club_invitation') {
+                const { updateMembershipStatus } = await import('@/lib/clubDatabase');
+                const membership = await supabase
+                    .from('club_memberships' as any)
+                    .select('id')
+                    .eq('club_id', payload.club_id)
+                    .eq('user_id', user?.id)
+                    .single();
+
+                if (membership.data) {
+                    await updateMembershipStatus(membership.data.id, action === 'accept' ? 'accepted' : 'declined');
+                    toast({
+                        title: action === 'accept' ? "Club Joined!" : "Invitation Declined",
+                        description: action === 'accept' ? "You're now a member of this club." : "Club invitation declined."
+                    });
+                }
+            } else if (notification.type === 'book_suggestion') {
+                if (action === 'accept') {
+                    const { acceptBookSuggestion } = await import('@/lib/clubDatabase');
+                    const { document, error: acceptErr } = await acceptBookSuggestion(payload.suggestion_id);
+                    if (acceptErr) throw acceptErr;
+                    toast({ title: "Book Added!", description: "The book has been added to your library." });
+                    if (document) {
+                        onOpenDocument?.(document.id);
+                    }
+                } else {
+                    // Update progress status to declined
+                    await supabase
+                        .from('club_member_progress' as any)
+                        .update({ status: 'declined' })
+                        .eq('suggestion_id', payload.suggestion_id)
+                        .eq('user_id', user?.id);
+                    toast({ title: "Declined", description: "Book suggestion declined." });
                 }
             }
 
