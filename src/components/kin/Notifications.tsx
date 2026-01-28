@@ -43,7 +43,8 @@ export const Notifications = ({ onOpenDocument, onStartPongGame }: {
             .limit(10);
 
         if (data) {
-            const enriched = await Promise.all(data.map(async (n) => {
+            const notificationsData = data as unknown as Notification[];
+            const enriched = await Promise.all(notificationsData.map(async (n) => {
                 const payload = n.payload as any;
                 if (n.type === 'kin_request' && payload?.requester_id) {
                     const { data: profile } = await supabase
@@ -75,7 +76,7 @@ export const Notifications = ({ onOpenDocument, onStartPongGame }: {
                         .select('name')
                         .eq('id', payload.club_id)
                         .single();
-                    return { ...n, clubName: club?.name };
+                    return { ...n, clubName: (club as any)?.name };
                 }
                 if (n.type === 'book_suggestion' && payload?.club_id) {
                     const { data: club } = await supabase
@@ -83,7 +84,7 @@ export const Notifications = ({ onOpenDocument, onStartPongGame }: {
                         .select('name')
                         .eq('id', payload.club_id)
                         .single();
-                    return { ...n, clubName: club?.name };
+                    return { ...n, clubName: (club as any)?.name };
                 }
                 return n;
             }));
@@ -207,7 +208,7 @@ export const Notifications = ({ onOpenDocument, onStartPongGame }: {
                     .single();
 
                 if (membership.data) {
-                    await updateMembershipStatus(membership.data.id, action === 'accept' ? 'accepted' : 'declined');
+                    await updateMembershipStatus((membership.data as any).id, action === 'accept' ? 'accepted' : 'declined');
                     toast({
                         title: action === 'accept' ? "Club Joined!" : "Invitation Declined",
                         description: action === 'accept' ? "You're now a member of this club." : "Club invitation declined."
@@ -351,10 +352,20 @@ export const Notifications = ({ onOpenDocument, onStartPongGame }: {
                                         <span className="font-bold text-foreground">{notification.senderProfile?.display_name || 'Someone'}</span> accepted your challenge and is ready to play!
                                     </>
                                 )}
+                                {notification.type === 'club_invitation' && (
+                                    <>
+                                        You have been invited to join <span className="font-bold text-foreground">{notification.clubName || 'a club'}</span>.
+                                    </>
+                                )}
+                                {notification.type === 'book_suggestion' && (
+                                    <>
+                                        New book suggestion for <span className="font-bold text-foreground">{notification.clubName || 'your club'}</span>: <span className="italic">{notification.payload?.message?.split(': ')?.[1] || 'A book'}</span>
+                                    </>
+                                )}
                             </p>
 
-                            {/* Actions for Request & Share */}
-                            {(notification.type === 'kin_request' || notification.type === 'shared_item') && (
+                            {/* Actions for Request & Share & Club */}
+                            {['kin_request', 'shared_item', 'club_invitation', 'book_suggestion'].includes(notification.type) && (
                                 <div className="flex gap-2 w-full mt-1">
                                     <Button
                                         size="sm"

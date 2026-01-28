@@ -107,12 +107,12 @@ export async function inviteMembers(
         const notifications = userIds.map(userId => ({
             user_id: userId,
             type: 'club_invitation',
-            title: 'New Club Invitation',
-            message: `You've been invited to join a reading club`,
-            data: { club_id: clubId }
+            payload: { club_id: clubId }
         }));
 
         await supabase.from('notifications' as any).insert(notifications);
+
+
 
         return { success: true, error: null };
     } catch (error) {
@@ -269,9 +269,11 @@ export async function suggestBook(
             const notifications = members.map(m => ({
                 user_id: m.user_id,
                 type: 'book_suggestion',
-                title: 'New Book Suggestion',
-                message: `A new book has been suggested for your club: ${title}`,
-                data: { suggestion_id: suggestion.id, club_id: clubId }
+                payload: {
+                    suggestion_id: suggestion.id,
+                    club_id: clubId,
+                    message: `A new book has been suggested for your club: ${title}`
+                }
             }));
 
             await supabase.from('notifications' as any).insert(notifications);
