@@ -76,7 +76,22 @@ export const Notifications = ({ onOpenDocument, onStartPongGame }: {
                         .select('name')
                         .eq('id', payload.club_id)
                         .single();
-                    return { ...n, clubName: (club as any)?.name };
+
+                    let senderProfile = null;
+                    if (payload.sender_id) {
+                        const { data: profile } = await supabase
+                            .from('profiles')
+                            .select('display_name')
+                            .eq('id', payload.sender_id)
+                            .single();
+                        senderProfile = profile;
+                    }
+
+                    return {
+                        ...n,
+                        clubName: (club as any)?.name || payload.club_name,
+                        senderProfile
+                    };
                 }
                 if (n.type === 'book_suggestion' && payload?.club_id) {
                     const { data: club } = await supabase
@@ -354,7 +369,7 @@ export const Notifications = ({ onOpenDocument, onStartPongGame }: {
                                 )}
                                 {notification.type === 'club_invitation' && (
                                     <>
-                                        You have been invited to join <span className="font-bold text-foreground">{notification.clubName || 'a club'}</span>.
+                                        <span className="font-bold text-foreground">{notification.senderProfile?.display_name || 'Someone'}</span> invited you to join <span className="font-bold text-foreground">{notification.clubName || 'a club'}</span>.
                                     </>
                                 )}
                                 {notification.type === 'book_suggestion' && (

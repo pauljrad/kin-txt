@@ -104,10 +104,22 @@ export async function inviteMembers(
         if (error) throw error;
 
         // Create notifications for invited users
+        const { data: { user } } = await supabase.auth.getUser();
+        // Fetch club name for the payload (optimization)
+        const { data: club } = await supabase
+            .from('kin_clubs' as any)
+            .select('name')
+            .eq('id', clubId)
+            .single();
+
         const notifications = userIds.map(userId => ({
             user_id: userId,
             type: 'club_invitation',
-            payload: { club_id: clubId }
+            payload: {
+                club_id: clubId,
+                sender_id: user?.id,
+                club_name: (club as any)?.name
+            }
         }));
 
         await supabase.from('notifications' as any).insert(notifications);
