@@ -183,7 +183,7 @@ export const SuggestBookModal = ({ open, onOpenChange, clubId, onBookSuggested }
                         </TabsContent>
 
                         <TabsContent value="library" className="flex-1 overflow-y-auto py-4 px-6 mt-0">
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-3 gap-2">
                                 {AVAILABLE_EBOOKS.map(book => (
                                     <div
                                         key={book.id}
@@ -193,13 +193,13 @@ export const SuggestBookModal = ({ open, onOpenChange, clubId, onBookSuggested }
                                             }`}
                                         onClick={() => setSelectedBookId(book.id)}
                                     >
-                                        <div className="aspect-[2/3] bg-background border border-border/20 rounded-md mb-3 flex flex-col items-center justify-center p-2 text-center overflow-hidden">
-                                            <span className="text-[10px] uppercase font-bold tracking-wider leading-tight">
+                                        <div className="aspect-[2/3] bg-background border border-border/20 rounded-md mb-2 flex flex-col items-center justify-center p-1.5 text-center overflow-hidden">
+                                            <span className="text-[8px] uppercase font-bold tracking-wider leading-tight line-clamp-4">
                                                 {book.title}
                                             </span>
                                         </div>
-                                        <h4 className="font-medium text-xs leading-tight mb-1">{book.title}</h4>
-                                        <p className="text-[10px] text-muted-foreground">{book.author}</p>
+                                        <h4 className="font-medium text-[10px] leading-tight mb-0.5 line-clamp-2">{book.title}</h4>
+                                        <p className="text-[8px] text-muted-foreground line-clamp-1">{book.author}</p>
                                     </div>
                                 ))}
                             </div>
