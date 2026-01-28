@@ -42,7 +42,7 @@ export const KinClubsLayout = () => {
             <Sheet open={open} onOpenChange={setOpen}>
                 <SheetTrigger asChild>
                     <button
-                        className="fixed right-28 z-50 toolbar-button"
+                        className="fixed right-64 z-50 toolbar-button"
                         style={{ top: 'calc(1rem + env(safe-area-inset-top, 0px))' }}
                     >
                         <BookMarked className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -82,8 +82,8 @@ export const KinClubsLayout = () => {
                                         <div
                                             key={club.id}
                                             className={`p-3 rounded-lg border cursor-pointer transition-colors ${selectedClubId === club.id
-                                                    ? 'bg-primary/10 border-primary/50'
-                                                    : 'bg-secondary/30 border-border/50 hover:bg-secondary/60 hover:border-border'
+                                                ? 'bg-primary/10 border-primary/50'
+                                                : 'bg-secondary/30 border-border/50 hover:bg-secondary/60 hover:border-border'
                                                 }`}
                                             onClick={() => setSelectedClubId(club.id)}
                                         >
