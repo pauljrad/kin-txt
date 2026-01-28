@@ -23,7 +23,13 @@ export const ClubDetails = ({ club, onRefresh }: ClubDetailsProps) => {
 
     const loadClubData = async () => {
         // Load members
-        const { members: clubMembers } = await getClubMembers(club.id);
+        const { members: clubMembers, error } = await getClubMembers(club.id);
+        if (error) {
+            console.error("FAILED TO LOAD MEMBERS:", error);
+            toast.error("Failed to load members. Check console for details.");
+        } else {
+            console.log("LOADED MEMBERS:", clubMembers);
+        }
         setMembers(clubMembers.filter(m => m.status === 'accepted'));
 
         // Load active book suggestion

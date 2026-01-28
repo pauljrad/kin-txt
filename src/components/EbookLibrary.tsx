@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { BookOpen, Loader2 } from 'lucide-react';
 import { parseFile, ParsedText } from '@/lib/textParser';
 
-interface Ebook {
+export interface Ebook {
   id: string;
   title: string;
   author: string;
@@ -11,7 +11,7 @@ interface Ebook {
   filePath: string;
 }
 
-const AVAILABLE_EBOOKS: Ebook[] = [
+export const AVAILABLE_EBOOKS: Ebook[] = [
   {
     id: 'jekyll-hyde',
     title: 'Strange Case of Dr Jekyll and Mr Hyde',
