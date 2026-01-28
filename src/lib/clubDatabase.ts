@@ -392,24 +392,33 @@ export async function getClubProgress(
     suggestionId: string
 ): Promise<{ progress: any[]; error: Error | null }> {
     try {
-        const { data, error } = await supabase
+        // First, get all progress records
+        const { data: progressRecords, error: progressError } = await supabase
             .from('club_member_progress' as any)
-            .select(`
-        id,
-        status,
-        progress,
-        current_word_index,
-        updated_at,
-        profiles:user_id (
-          id,
-          display_name,
-          avatar_url
-        )
-      `)
+            .select('id, user_id, status, progress, current_word_index, updated_at')
             .eq('suggestion_id', suggestionId);
 
-        if (error) throw error;
-        return { progress: data || [], error: null };
+        if (progressError) throw progressError;
+        if (!progressRecords || progressRecords.length === 0) {
+            return { progress: [], error: null };
+        }
+
+        // Then, get all profiles for these users
+        const userIds = progressRecords.map((p: any) => p.user_id);
+        const { data: profiles, error: profileError } = await supabase
+            .from('profiles')
+            .select('id, display_name, avatar_url')
+            .in('id', userIds);
+
+        if (profileError) throw profileError;
+
+        // Combine the data
+        const progress = progressRecords.map((record: any) => ({
+            ...record,
+            profiles: profiles?.find((p: any) => p.id === record.user_id) || null
+        }));
+
+        return { progress, error: null };
     } catch (error) {
         console.error('Error getting club progress:', error);
         return { progress: [], error: error as Error };
@@ -455,22 +464,39 @@ export async function getActiveBookSuggestion(
     clubId: string
 ): Promise<{ suggestion: any | null; error: Error | null }> {
     try {
-        const { data, error } = await supabase
+        // First, get the suggestion
+        const { data: suggestion, error: suggestionError } = await supabase
             .from('club_book_suggestions' as any)
-            .select(`
-        *,
-        profiles:suggested_by (
-          display_name
-        )
-      `)
+            .select('*')
             .eq('club_id', clubId)
             .in('status', ['pending', 'active'])
             .order('created_at', { ascending: false })
             .limit(1)
             .maybeSingle();
 
-        if (error) throw error;
-        return { suggestion: data, error: null };
+        if (suggestionError) throw suggestionError;
+        if (!suggestion) {
+            return { suggestion: null, error: null };
+        }
+
+        // Then, get the profile of the suggester
+        const { data: profile, error: profileError } = await supabase
+            .from('profiles')
+            .select('display_name')
+            .eq('id', suggestion.suggested_by)
+            .single();
+
+        if (profileError) {
+            console.warn('Could not fetch suggester profile:', profileError);
+        }
+
+        // Combine the data
+        const enrichedSuggestion = {
+            ...suggestion,
+            profiles: profile || null
+        };
+
+        return { suggestion: enrichedSuggestion, error: null };
     } catch (error) {
         console.error('Error getting active suggestion:', error);
         return { suggestion: null, error: error as Error };
