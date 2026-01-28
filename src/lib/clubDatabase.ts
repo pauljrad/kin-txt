@@ -205,23 +205,32 @@ export async function getClubMembers(clubId: string): Promise<{
     error: Error | null;
 }> {
     try {
+        console.log('[getClubMembers] Starting query for clubId:', clubId);
+
         // First, get all memberships for this club
         const { data: memberships, error: membershipError } = await supabase
             .from('club_memberships' as any)
             .select('id, user_id, status, joined_at')
             .eq('club_id', clubId);
 
+        console.log('[getClubMembers] Memberships query result:', { memberships, membershipError });
+
         if (membershipError) throw membershipError;
         if (!memberships || memberships.length === 0) {
+            console.log('[getClubMembers] No memberships found');
             return { members: [], error: null };
         }
 
         // Then, get all profiles for these users
         const userIds = memberships.map((m: any) => m.user_id);
+        console.log('[getClubMembers] Fetching profiles for userIds:', userIds);
+
         const { data: profiles, error: profileError } = await supabase
             .from('profiles')
             .select('id, display_name, email, avatar_url')
             .in('id', userIds);
+
+        console.log('[getClubMembers] Profiles query result:', { profiles, profileError });
 
         if (profileError) throw profileError;
 
@@ -231,9 +240,10 @@ export async function getClubMembers(clubId: string): Promise<{
             profiles: profiles?.find((p: any) => p.id === membership.user_id) || null
         }));
 
+        console.log('[getClubMembers] Final combined members:', members);
         return { members, error: null };
     } catch (error) {
-        console.error('Error getting club members:', error);
+        console.error('[getClubMembers] Error getting club members:', error);
         return { members: [], error: error as Error };
     }
 }

@@ -133,97 +133,96 @@ export const SuggestBookModal = ({ open, onOpenChange, clubId, onBookSuggested }
                     <DialogTitle>Suggest a Book</DialogTitle>
                 </DialogHeader>
 
-                <div className="flex-1 overflow-hidden">
-                    <Tabs defaultValue="uploads" className="flex flex-col h-full">
-                        <div className="px-6">
-                            <TabsList className="w-full grid grid-cols-2">
-                                <TabsTrigger value="uploads" className="gap-2">
-                                    <Upload className="w-4 h-4" /> My Uploads
-                                </TabsTrigger>
-                                <TabsTrigger value="library" className="gap-2">
-                                    <Library className="w-4 h-4" /> KiN-TXT Library
-                                </TabsTrigger>
-                            </TabsList>
-                        </div>
+                <Tabs defaultValue="uploads" className="flex-1 flex flex-col overflow-hidden">
+                    <div className="px-6">
+                        <TabsList className="w-full grid grid-cols-2">
+                            <TabsTrigger value="uploads" className="gap-2">
+                                <Upload className="w-4 h-4" /> My Uploads
+                            </TabsTrigger>
+                            <TabsTrigger value="library" className="gap-2">
+                                <Library className="w-4 h-4" /> KiN-TXT Library
+                            </TabsTrigger>
+                        </TabsList>
+                    </div>
 
-                        <TabsContent value="uploads" className="flex-1 overflow-y-auto py-4 px-6 mt-0">
-                            {ebooks.length === 0 ? (
-                                <div className="p-8 rounded-lg bg-secondary/50 border border-border text-center text-muted-foreground text-sm">
-                                    You don't have any ebooks in your library yet. Upload one first!
-                                </div>
-                            ) : (
-                                <div className="space-y-2">
-                                    {ebooks.map(book => (
-                                        <div
-                                            key={book.id}
-                                            className={`p-4 rounded-lg border cursor-pointer transition-colors ${selectedBookId === book.id
-                                                ? 'bg-primary/10 border-primary'
-                                                : 'bg-secondary/30 border-border/50 hover:bg-secondary/60 hover:border-border'
-                                                }`}
-                                            onClick={() => setSelectedBookId(book.id)}
-                                        >
-                                            <div className="flex items-start gap-3">
-                                                <BookOpen className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-                                                <div className="flex-1 min-w-0">
-                                                    <h4 className="font-medium text-sm">{book.title}</h4>
-                                                    {book.preview && (
-                                                        <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                                                            {book.preview}
-                                                        </p>
-                                                    )}
-                                                    <div className="text-xs text-muted-foreground mt-2">
-                                                        {book.word_count?.toLocaleString()} words
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </TabsContent>
-
-                        <TabsContent value="library" className="flex-1 overflow-y-auto py-4 px-6 mt-0">
-                            <div className="grid grid-cols-3 gap-2">
-                                {AVAILABLE_EBOOKS.map(book => (
+                    <TabsContent value="uploads" className="flex-1 overflow-y-auto py-4 px-6 mt-0">
+                        {ebooks.length === 0 ? (
+                            <div className="p-8 rounded-lg bg-secondary/50 border border-border text-center text-muted-foreground text-sm">
+                                You don't have any ebooks in your library yet. Upload one first!
+                            </div>
+                        ) : (
+                            <div className="space-y-2">
+                                {ebooks.map(book => (
                                     <div
                                         key={book.id}
-                                        className={`p-3 rounded-lg border cursor-pointer transition-colors relative flex flex-col ${selectedBookId === book.id
+                                        className={`p-4 rounded-lg border cursor-pointer transition-colors ${selectedBookId === book.id
                                             ? 'bg-primary/10 border-primary'
                                             : 'bg-secondary/30 border-border/50 hover:bg-secondary/60 hover:border-border'
                                             }`}
                                         onClick={() => setSelectedBookId(book.id)}
                                     >
-                                        <div className="aspect-[2/3] bg-background border border-border/20 rounded-md mb-2 flex flex-col items-center justify-center p-1.5 text-center overflow-hidden">
-                                            <span className="text-[8px] uppercase font-bold tracking-wider leading-tight line-clamp-4">
-                                                {book.title}
-                                            </span>
+                                        <div className="flex items-start gap-3">
+                                            <BookOpen className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                                            <div className="flex-1 min-w-0">
+                                                <h4 className="font-medium text-sm">{book.title}</h4>
+                                                {book.preview && (
+                                                    <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                                                        {book.preview}
+                                                    </p>
+                                                )}
+                                                <div className="text-xs text-muted-foreground mt-2">
+                                                    {book.word_count?.toLocaleString()} words
+                                                </div>
+                                            </div>
                                         </div>
-                                        <h4 className="font-medium text-[10px] leading-tight mb-0.5 line-clamp-2">{book.title}</h4>
-                                        <p className="text-[8px] text-muted-foreground line-clamp-1">{book.author}</p>
                                     </div>
                                 ))}
                             </div>
-                        </TabsContent>
-                    </Tabs>
-                </div>
+                        )}
+                    </TabsContent>
 
-                <div className="flex justify-end gap-3 pt-4 border-t">
-                    <Button
-                        variant="outline"
-                        onClick={() => onOpenChange(false)}
-                        disabled={isSuggesting}
-                    >
-                        Cancel
-                    </Button>
-                    <Button
-                        onClick={handleSuggest}
-                        disabled={!selectedBookId || isSuggesting}
-                    >
-                        {isSuggesting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Suggest to Club
-                    </Button>
-                </div>
-            </DialogContent>
-        </Dialog>
+                    <TabsContent value="library" className="flex-1 overflow-y-auto py-4 px-6 mt-0">
+                        <div className="grid grid-cols-3 gap-2">
+                            {AVAILABLE_EBOOKS.map(book => (
+                                <div
+                                    key={book.id}
+                                    className={`p-3 rounded-lg border cursor-pointer transition-colors relative flex flex-col ${selectedBookId === book.id
+                                        ? 'bg-primary/10 border-primary'
+                                        : 'bg-secondary/30 border-border/50 hover:bg-secondary/60 hover:border-border'
+                                        }`}
+                                    onClick={() => setSelectedBookId(book.id)}
+                                >
+                                    <div className="aspect-[2/3] bg-background border border-border/20 rounded-md mb-2 flex flex-col items-center justify-center p-1.5 text-center overflow-hidden">
+                                        <span className="text-[8px] uppercase font-bold tracking-wider leading-tight line-clamp-4">
+                                            {book.title}
+                                        </span>
+                                    </div>
+                                    <h4 className="font-medium text-[10px] leading-tight mb-0.5 line-clamp-2">{book.title}</h4>
+                                    <p className="text-[8px] text-muted-foreground line-clamp-1">{book.author}</p>
+                                </div>
+                            ))}
+                        </div>
+                    </TabsContent>
+                </Tabs>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-4 border-t">
+                <Button
+                    variant="outline"
+                    onClick={() => onOpenChange(false)}
+                    disabled={isSuggesting}
+                >
+                    Cancel
+                </Button>
+                <Button
+                    onClick={handleSuggest}
+                    disabled={!selectedBookId || isSuggesting}
+                >
+                    {isSuggesting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Suggest to Club
+                </Button>
+            </div>
+        </DialogContent>
+        </Dialog >
     );
 };
