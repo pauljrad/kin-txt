@@ -104,33 +104,33 @@ export const UserProfile = ({ userId }: UserProfileProps) => {
     const finished = history.filter(doc => doc.is_completed);
 
     return (
-        <div className="flex flex-col gap-5">
+        <div className="flex flex-col gap-5 w-full h-full max-h-[60vh] overflow-hidden">
             {/* Header: Horizontal Layout */}
-            <div className="flex items-center gap-4">
-                <Avatar className="h-16 w-16 border-2 border-border shadow-sm">
+            <div className="flex items-start gap-4 shrink-0 w-full">
+                <Avatar className="h-16 w-16 border-2 border-border shadow-sm shrink-0">
                     <AvatarImage src={profile.avatar_url || ''} className="object-cover" />
                     <AvatarFallback className="text-lg bg-primary/10 text-primary font-bold">
                         {getInitials(profile.display_name)}
                     </AvatarFallback>
                 </Avatar>
 
-                <div className="flex-1 min-w-0">
-                    <h3 className="text-lg font-display font-bold leading-none mb-1.5 tracking-tight">{profile.display_name}</h3>
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-medium">
+                <div className="flex-1 min-w-0 flex flex-col justify-center pt-1">
+                    <h3 className="text-lg font-display font-bold leading-tight mb-1 tracking-tight break-words pr-2">{profile.display_name}</h3>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-medium truncate">
                         K<span className="lowercase font-sans text-[10px] relative -top-[0.5px]">i</span>N since {new Date(profile.created_at).getFullYear()}
                     </p>
                 </div>
 
-                <div className="text-right px-2">
+                <div className="text-right pl-2 shrink-0 pt-1">
                     <span className="block text-3xl font-display font-bold text-primary leading-none">{stats.total}</span>
                     <span className="text-[8px] font-bold uppercase tracking-wider text-muted-foreground">Read</span>
                 </div>
             </div>
 
             {/* Stats Bar */}
-            <div className="grid grid-cols-4 gap-2">
+            <div className="grid grid-cols-4 gap-2 shrink-0 w-full">
                 {[
-                    { label: 'Arts', count: stats.byType.article },
+                    { label: 'Articles', count: stats.byType.article },
                     { label: 'Books', count: stats.byType.ebook },
                     { label: 'Docs', count: stats.byType.document },
                     { label: 'Links', count: stats.byType.link }
@@ -142,9 +142,9 @@ export const UserProfile = ({ userId }: UserProfileProps) => {
                 ))}
             </div>
 
-            <Separator className="bg-border/40" />
+            <Separator className="bg-border/40 shrink-0" />
 
-            <div className="space-y-5">
+            <div className="space-y-5 overflow-y-auto pr-1">
                 {/* Currently Reading */}
                 <div>
                     <h4 className="flex items-center gap-2 text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2.5">
@@ -155,7 +155,7 @@ export const UserProfile = ({ userId }: UserProfileProps) => {
                         {reading.length > 0 ? (
                             reading.map(doc => (
                                 <div key={doc.id} className="text-sm p-3 rounded-lg bg-secondary/30 border border-border/40 group hover:border-primary/30 transition-colors">
-                                    <p className="text-foreground font-medium truncate leading-tight">{doc.title}</p>
+                                    <p className="text-foreground font-medium leading-tight break-words">{doc.title}</p>
                                     <p className="text-[10px] text-muted-foreground mt-1.5">
                                         Last read {new Date(doc.updated_at).toLocaleDateString()}
                                     </p>
@@ -172,22 +172,20 @@ export const UserProfile = ({ userId }: UserProfileProps) => {
                 {/* Recently Finished */}
                 <div>
                     <h4 className="text-[10px] font-bold text-muted-foreground/70 mb-2.5 uppercase tracking-widest pl-0.5">History</h4>
-                    <ScrollArea className="h-32 pr-3 -mr-2">
-                        <div className="space-y-1">
-                            {finished.length > 0 ? (
-                                finished.map(doc => (
-                                    <div key={doc.id} className="flex items-center justify-between text-xs p-2 rounded-md hover:bg-secondary/40 transition-colors group cursor-default">
-                                        <p className="text-foreground/80 truncate flex-1 min-w-0 pr-3 group-hover:text-primary transition-colors">{doc.title}</p>
-                                        <span className="text-[9px] text-muted-foreground/60 whitespace-nowrap tabular-nums">
-                                            {doc.completed_at ? new Date(doc.completed_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : '-'}
-                                        </span>
-                                    </div>
-                                ))
-                            ) : (
-                                <p className="text-xs text-muted-foreground italic p-1">No reading history yet.</p>
-                            )}
-                        </div>
-                    </ScrollArea>
+                    <div className="space-y-1">
+                        {finished.length > 0 ? (
+                            finished.map(doc => (
+                                <div key={doc.id} className="flex items-start justify-between text-xs p-2 rounded-md hover:bg-secondary/40 transition-colors group cursor-default">
+                                    <p className="text-foreground/80 flex-1 min-w-0 pr-3 group-hover:text-primary transition-colors break-words leading-tight">{doc.title}</p>
+                                    <span className="text-[9px] text-muted-foreground/60 whitespace-nowrap tabular-nums mt-0.5 shrink-0">
+                                        {doc.completed_at ? new Date(doc.completed_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : '-'}
+                                    </span>
+                                </div>
+                            ))
+                        ) : (
+                            <p className="text-xs text-muted-foreground italic p-1">No reading history yet.</p>
+                        )}
+                    </div>
                 </div>
             </div>
         </div>
