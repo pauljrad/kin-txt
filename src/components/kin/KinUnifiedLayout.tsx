@@ -52,7 +52,7 @@ export const KinUnifiedLayout = ({ onViewProfile }: { onViewProfile?: (userId: s
                         </div>
 
                         <TabsList className="w-full grid grid-cols-2">
-                            <TabsTrigger value="network">Kins</TabsTrigger>
+                            <TabsTrigger value="network">KiNs</TabsTrigger>
                             <TabsTrigger value="clubs">KiN-Clubs</TabsTrigger>
                         </TabsList>
                     </div>
