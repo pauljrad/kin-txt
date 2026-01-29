@@ -200,7 +200,7 @@ const Index = () => {
     // Save the document to database with ebook file type and CLEANED text
     const saved = await saveDocument({
       title,
-      source: 'file',
+      source: 'ebook',
       parsedText: cleanedText,
       progress: startProgress,
       fileType: 'epub',
@@ -261,7 +261,7 @@ const Index = () => {
     // Save the document to database as an article with CLEANED text
     const saved = await saveDocument({
       title,
-      source: 'url',
+      source: 'article',
       parsedText: cleanedText,
       progress: { paragraph: 0, word: 0 },
       // Ensure this never gets treated as an ebook

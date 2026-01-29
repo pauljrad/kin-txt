@@ -68,11 +68,11 @@ export const UserProfile = ({ userId }: UserProfileProps) => {
                     const words = d.word_count || 0;
 
                     // Logic: Ebooks are explicit 'ebook' source OR documents > 15k words
-                    if (['ebook', 'epub', 'club_book', 'book'].includes(s) || (['document', 'text', 'txt', 'file'].includes(s) && words > 15000)) {
+                    if (['ebook', 'epub', 'club_book', 'book'].includes(s) || (['document', 'text', 'txt', 'file', 'paste'].includes(s) && words > 15000)) {
                         statsByType.ebook++;
                     } else if (['article', 'web'].includes(s)) {
                         statsByType.article++;
-                    } else if (['document', 'text', 'txt', 'file'].includes(s)) {
+                    } else if (['document', 'text', 'txt', 'file', 'paste'].includes(s)) {
                         statsByType.document++;
                     } else if (['link', 'url'].includes(s)) {
                         statsByType.link++;
