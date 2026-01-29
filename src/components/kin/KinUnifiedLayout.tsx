@@ -35,22 +35,10 @@ export const KinUnifiedLayout = ({ onViewProfile }: { onViewProfile?: (userId: s
                     <div className="pt-[calc(env(safe-area-inset-top)+2rem)] px-6 pb-4 border-b border-border flex flex-col gap-4 bg-background z-50">
                         <div className="flex justify-between items-center">
                             <h2 className="text-2xl font-bold font-display tracking-wide uppercase shrink-0">
-                                K<span className="lowercase font-sans text-xl relative -top-[1px]">i</span>N
+                                K<span className="lowercase font-sans text-xl relative -top-[1px]">i</span>N-Network
                             </h2>
 
                             <div className="flex items-center gap-2">
-                                {activeTab === "clubs" && (
-                                    <Button
-                                        onClick={() => setCreateClubOpen(true)}
-                                        size="sm"
-                                        className="gap-2"
-                                    >
-                                        <Plus className="h-4 w-4" />
-                                        <span className="hidden sm:inline">Create Club</span>
-                                        <span className="sm:hidden">Create</span>
-                                    </Button>
-                                )}
-
                                 <Button
                                     onClick={() => setOpen(false)}
                                     variant="ghost"
@@ -64,8 +52,8 @@ export const KinUnifiedLayout = ({ onViewProfile }: { onViewProfile?: (userId: s
                         </div>
 
                         <TabsList className="w-full grid grid-cols-2">
-                            <TabsTrigger value="network">Network</TabsTrigger>
-                            <TabsTrigger value="clubs">Clubs</TabsTrigger>
+                            <TabsTrigger value="network">Kins</TabsTrigger>
+                            <TabsTrigger value="clubs">KiN-Clubs</TabsTrigger>
                         </TabsList>
                     </div>
 
