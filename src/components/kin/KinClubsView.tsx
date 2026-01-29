@@ -45,34 +45,43 @@ export const KinClubsView = ({ createModalOpen, setCreateModalOpen }: KinClubsVi
                         ${selectedClubId ? '-translate-x-full md:translate-x-0' : 'translate-x-0'}
                     `}
                 >
-                    <h3 className="text-sm font-medium text-muted-foreground mb-3 uppercase tracking-wider">
-                        My Clubs
-                    </h3>
-                    {clubs.length === 0 ? (
-                        <div className="p-4 rounded-lg bg-secondary/50 border border-border text-center text-muted-foreground text-sm italic">
-                            No clubs yet. Create one to get started!
+                    <div className="mb-6">
+                        <div
+                            className="bg-primary/5 border border-primary/20 hover:bg-primary/10 transition-colors rounded-lg p-3 flex items-center justify-center gap-2 cursor-pointer text-primary mb-6"
+                            onClick={() => setCreateModalOpen(true)}
+                        >
+                            <span className="font-bold uppercase tracking-wider text-sm">Create K<span className="lowercase font-sans text-xs relative -top-[0.5px]">i</span>N-Club</span>
                         </div>
-                    ) : (
-                        <div className="space-y-2">
-                            {clubs.map(club => (
-                                <div
-                                    key={club.id}
-                                    className={`p-3 rounded-lg border cursor-pointer transition-colors ${selectedClubId === club.id
-                                        ? 'bg-primary/10 border-primary/50'
-                                        : 'bg-secondary/30 border-border/50 hover:bg-secondary/60 hover:border-border'
-                                        }`}
-                                    onClick={() => setSelectedClubId(club.id)}
-                                >
-                                    <div className="font-medium text-sm">{club.name}</div>
-                                    {club.description && (
-                                        <div className="text-xs text-muted-foreground mt-1 line-clamp-1">
-                                            {club.description}
-                                        </div>
-                                    )}
-                                </div>
-                            ))}
-                        </div>
-                    )}
+
+                        <h3 className="text-sm font-medium text-muted-foreground mb-3 uppercase tracking-wider">
+                            My Clubs
+                        </h3>
+                        {clubs.length === 0 ? (
+                            <div className="p-4 rounded-lg bg-secondary/50 border border-border text-center text-muted-foreground text-sm italic">
+                                No clubs yet. Create one to get started!
+                            </div>
+                        ) : (
+                            <div className="space-y-2">
+                                {clubs.map(club => (
+                                    <div
+                                        key={club.id}
+                                        className={`p-3 rounded-lg border cursor-pointer transition-colors ${selectedClubId === club.id
+                                            ? 'bg-primary/10 border-primary/50'
+                                            : 'bg-secondary/30 border-border/50 hover:bg-secondary/60 hover:border-border'
+                                            }`}
+                                        onClick={() => setSelectedClubId(club.id)}
+                                    >
+                                        <div className="font-medium text-sm">{club.name}</div>
+                                        {club.description && (
+                                            <div className="text-xs text-muted-foreground mt-1 line-clamp-1">
+                                                {club.description}
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
                 </div>
 
                 {/* Club Details Panel */}
