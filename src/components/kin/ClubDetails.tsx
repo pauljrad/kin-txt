@@ -172,14 +172,14 @@ export const ClubDetails = ({ club, onRefresh }: ClubDetailsProps) => {
                                         <div className="flex justify-between text-sm mb-1">
                                             <span>{p.profiles?.display_name}</span>
                                             <span className="text-muted-foreground">
-                                                {p.status === 'accepted' ? `${Math.round(p.progress)}%` : p.status}
+                                                {p.status === 'invited' ? 'Invited' : `${Math.round(p.progress || 0)}%`}
                                             </span>
                                         </div>
-                                        {p.status === 'accepted' && (
+                                        {p.status !== 'invited' && (
                                             <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
                                                 <div
                                                     className="h-full bg-primary transition-all"
-                                                    style={{ width: `${p.progress}%` }}
+                                                    style={{ width: `${p.progress || 0}%` }}
                                                 />
                                             </div>
                                         )}
