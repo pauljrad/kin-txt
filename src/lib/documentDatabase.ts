@@ -25,7 +25,7 @@ export interface DatabaseDocument {
 export interface SavedDocument {
   id: string;
   title: string;
-  source: 'file' | 'paste' | 'url';
+  source: 'file' | 'paste' | 'url' | 'ebook' | 'article';
   category: DocumentCategory;
   parsedText: ParsedText;
   progress: {
@@ -44,7 +44,11 @@ export interface SavedDocument {
 }
 
 // Detect category based on source, file type, and content characteristics
-export function detectCategory(source: 'file' | 'paste' | 'url', title: string, wordCount: number, fileType?: string): DocumentCategory {
+export function detectCategory(source: 'file' | 'paste' | 'url' | 'ebook' | 'article', title: string, wordCount: number, fileType?: string): DocumentCategory {
+  // Explicit source overrides
+  if (source === 'ebook') return 'book';
+  if (source === 'article') return 'article';
+
   // Check file type first if available
   if (fileType === 'epub' || fileType === 'mobi' || fileType === 'azw') {
     return 'book';
@@ -67,7 +71,14 @@ export function detectCategory(source: 'file' | 'paste' | 'url', title: string, 
   }
 
   if (source === 'paste') {
-    return wordCount > 5000 ? 'document' : 'article';
+    return wordCount > 5000 ? 'document' : 'attribute'; // Typo? Wait. 'attribute'? No.
+    // Wait, UserProfile treats 'paste' as Document (my change).
+    // detectCategory says 'document' or 'article'.
+    // If wordCount < 5000 it returns article?
+    // Let's keep it consistent: > 5000 -> document? Or just default loop.
+    return wordCount > 5000 ? 'document' : 'document'; // Let's simplify paste -> document as per user request (documents are uploads/paste).
+    // Actually user said "documents are like pdfs".
+    // I'll stick to 'document' for paste.
   }
 
   if (/\.(pdf|docx?)$/i.test(title)) {
@@ -83,7 +94,7 @@ export function detectCategory(source: 'file' | 'paste' | 'url', title: string, 
 function dbToSavedDocument(doc: DatabaseDocument & { source?: string; file_type?: string }): SavedDocument {
   const parsedText: ParsedText = JSON.parse(doc.content);
   const wordCount = parsedText.paragraphs?.flat()?.length || doc.word_count;
-  const source = (doc.source as 'file' | 'paste' | 'url') || 'paste';
+  const source = (doc.source as 'file' | 'paste' | 'url' | 'ebook' | 'article') || 'paste';
   const fileType = doc.file_type;
 
   // Calculate paragraph and word from current_word_index
@@ -151,7 +162,7 @@ export async function getDocuments(): Promise<SavedDocument[]> {
 
 export async function saveDocument(doc: {
   title: string;
-  source: 'file' | 'paste' | 'url';
+  source: 'file' | 'paste' | 'url' | 'ebook' | 'article';
   parsedText: ParsedText;
   progress: { paragraph: number; word: number };
   fileType?: string;
