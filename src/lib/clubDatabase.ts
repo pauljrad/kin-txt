@@ -286,11 +286,10 @@ export async function suggestBook(
 
         if (members && members.length > 0) {
             // Create progress records for ALL members (including suggester)
-            // All members are auto-accepted since this is a club book
             const progressRecords = members.map(m => ({
                 suggestion_id: suggestion.id,
                 user_id: m.user_id,
-                status: 'accepted', // Auto-accept all members for club books
+                status: m.user_id === user.id ? 'accepted' : 'invited',
                 progress: 0,
                 current_word_index: 0
             }));
@@ -632,6 +631,36 @@ export async function updateClubProgress(
         return { success: true, error: null };
     } catch (error) {
         console.error('Error updating club progress:', error);
+        return { success: false, error: error as Error };
+    }
+}
+
+/**
+ * Accept or decline a book suggestion
+ */
+export async function respondToBookSuggestion(
+    suggestionId: string,
+    accept: boolean
+): Promise<{ success: boolean; error: Error | null }> {
+    try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+            return { success: false, error: new Error('User not authenticated') };
+        }
+
+        const { error } = await supabase
+            .from('club_member_progress' as any)
+            .update({
+                status: accept ? 'accepted' : 'declined'
+            })
+            .eq('suggestion_id', suggestionId)
+            .eq('user_id', user.id);
+
+        if (error) throw error;
+
+        return { success: true, error: null };
+    } catch (error) {
+        console.error('Error responding to book suggestion:', error);
         return { success: false, error: error as Error };
     }
 }

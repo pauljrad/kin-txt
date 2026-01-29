@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { BookOpen, Plus, Users, LogOut } from "lucide-react";
-import { getClubMembers, getActiveBookSuggestion, getClubProgress, leaveClub } from "@/lib/clubDatabase";
+import { getClubMembers, getActiveBookSuggestion, getClubProgress, leaveClub, respondToBookSuggestion } from "@/lib/clubDatabase";
 import { getInitials } from "@/lib/utils";
 import { SuggestBookModal } from "./SuggestBookModal";
 import {
@@ -25,6 +25,7 @@ export const ClubDetails = ({ club, onRefresh }: ClubDetailsProps) => {
     const [members, setMembers] = useState<any[]>([]);
     const [activeSuggestion, setActiveSuggestion] = useState<any | null>(null);
     const [progress, setProgress] = useState<any[]>([]);
+    const [userProgress, setUserProgress] = useState<any | null>(null);
     const [suggestModalOpen, setSuggestModalOpen] = useState(false);
     const [leaveDialogOpen, setLeaveDialogOpen] = useState(false);
 
@@ -51,6 +52,10 @@ export const ClubDetails = ({ club, onRefresh }: ClubDetailsProps) => {
         if (suggestion) {
             const { progress: memberProgress } = await getClubProgress(club.id, suggestion.id);
             setProgress(memberProgress);
+            // Find current user's progress
+            const { data: { user } } = await (await import('@/integrations/supabase/client')).supabase.auth.getUser();
+            const userProg = memberProgress.find((p: any) => p.user_id === user?.id);
+            setUserProgress(userProg || null);
         }
     };
 
@@ -69,6 +74,17 @@ export const ClubDetails = ({ club, onRefresh }: ClubDetailsProps) => {
         toast.success("Left club successfully");
         setLeaveDialogOpen(false);
         onRefresh();
+    };
+
+    const handleRespondToSuggestion = async (accept: boolean) => {
+        if (!activeSuggestion) return;
+        const { success, error } = await respondToBookSuggestion(activeSuggestion.id, accept);
+        if (error) {
+            toast.error(`Failed to ${accept ? 'accept' : 'decline'} book suggestion`);
+            return;
+        }
+        toast.success(accept ? "Book accepted!" : "Book declined");
+        loadClubData();
     };
 
     return (
@@ -151,6 +167,28 @@ export const ClubDetails = ({ club, onRefresh }: ClubDetailsProps) => {
                                 Suggested by {activeSuggestion.profiles?.display_name}
                             </p>
                         </div>
+
+                        {/* Show accept/decline buttons if user hasn't responded */}
+                        {userProgress && userProgress.status === 'invited' && (
+                            <div className="flex gap-2">
+                                <Button
+                                    size="sm"
+                                    variant="default"
+                                    onClick={() => handleRespondToSuggestion(true)}
+                                    className="flex-1"
+                                >
+                                    Accept Book
+                                </Button>
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => handleRespondToSuggestion(false)}
+                                    className="flex-1"
+                                >
+                                    Decline
+                                </Button>
+                            </div>
+                        )}
 
                         {/* Progress Visualization */}
                         <div className="space-y-2">
