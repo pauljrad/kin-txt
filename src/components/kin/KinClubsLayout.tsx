@@ -1,6 +1,6 @@
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { BookMarked, Plus } from "lucide-react";
+import { BookMarked, Plus, X } from "lucide-react";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -49,20 +49,34 @@ export const KinClubsLayout = () => {
                         <span className="sr-only">KiN-Clubs</span>
                     </button>
                 </SheetTrigger>
-                <SheetContent className="bg-card border-l border-border text-foreground w-full sm:max-w-4xl p-0 overflow-hidden flex flex-col items-stretch [&>button]:top-[calc(env(safe-area-inset-top)+2.4rem)] [&>button]:right-6">
+                <SheetContent className="bg-card border-l border-border text-foreground w-full sm:max-w-4xl p-0 overflow-hidden flex flex-col items-stretch focus-visible:outline-none focus:outline-none">
                     {/* Header */}
-                    <div className="pt-[calc(env(safe-area-inset-top)+2rem)] px-6 pb-6 border-b border-border flex justify-between items-center">
-                        <h2 className="text-2xl font-bold font-display tracking-wide uppercase">
+                    <div className="pt-[calc(env(safe-area-inset-top)+2rem)] px-6 pb-6 border-b border-border flex justify-between items-center gap-4">
+                        <h2 className="text-2xl font-bold font-display tracking-wide uppercase shrink-0">
                             K<span className="lowercase font-sans text-xl relative -top-[1px]">i</span>N-Clubs
                         </h2>
-                        <Button
-                            onClick={() => setCreateModalOpen(true)}
-                            size="sm"
-                            className="gap-2"
-                        >
-                            <Plus className="h-4 w-4" />
-                            Create Club
-                        </Button>
+
+                        <div className="flex items-center gap-2">
+                            <Button
+                                onClick={() => setCreateModalOpen(true)}
+                                size="sm"
+                                className="gap-2"
+                            >
+                                <Plus className="h-4 w-4" />
+                                <span className="hidden sm:inline">Create Club</span>
+                                <span className="sm:hidden">Create</span>
+                            </Button>
+
+                            <Button
+                                onClick={() => setOpen(false)}
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 -mr-2"
+                            >
+                                <X className="h-5 w-5" />
+                                <span className="sr-only">Close</span>
+                            </Button>
+                        </div>
                     </div>
 
                     {/* Content */}
