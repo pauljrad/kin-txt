@@ -9,8 +9,7 @@ import { NewsLibrary } from '@/components/NewsLibrary';
 import { InfoMenu } from '@/components/InfoMenu';
 
 // KiN Components
-import { KinLayout } from '@/components/kin/KinLayout';
-import { KinClubsLayout } from '@/components/kin/KinClubsLayout';
+import { KinUnifiedLayout } from '@/components/kin/KinUnifiedLayout';
 import { KinPongGame } from '@/components/kin/KinPongGame';
 import { Notifications } from '@/components/kin/Notifications';
 import { UserProfile } from '@/components/kin/UserProfile';
@@ -737,12 +736,9 @@ const Index = () => {
         <KinProfileLayout />
       )}
 
-      {/* KiN-Network - Top Right (right-40) */}
+      {/* KiN - Unified Menu - Top Right (right-40) */}
       {!activeDocument && !isPongGameActive && (
-        <>
-          <KinLayout onViewProfile={setActiveProfile} />
-          <KinClubsLayout />
-        </>
+        <KinUnifiedLayout onViewProfile={setActiveProfile} />
       )}
 
       {/* Info Button - Top Right (right-16) */}
