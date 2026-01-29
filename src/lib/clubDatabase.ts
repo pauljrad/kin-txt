@@ -617,7 +617,7 @@ export async function updateClubProgress(
                 user_id: user.id,
                 progress,
                 current_word_index: currentWordIndex,
-                status: 'reading'
+                status: 'accepted' // Valid statuses: 'invited', 'accepted', 'declined'
             }, {
                 onConflict: 'suggestion_id,user_id'
             });
