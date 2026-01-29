@@ -89,6 +89,22 @@ export const ClubDetails = ({ club, onRefresh, onBack }: ClubDetailsProps) => {
         loadClubData();
     };
 
+    // Add missing import via replace if needed or assume it's there? 
+    // The previous replace added imports but in the wrong place? No, I commented them.
+    // I need to add import { useNavigate } from "react-router-dom" at the top of the file properly if not present.
+    // But I can use window.location.href as I did before, avoiding the import dependency specific to react-router version quirks if lazy.
+    // However, the cleanest way is correctly placing `handleReadBook`.
+
+    const handleReadBook = () => {
+        if (userProgress?.document_id) {
+            window.location.href = `/home?read=${userProgress.document_id}`;
+        } else if (userProgress?.status === 'invited') {
+            toast("Please accept the book first to start reading.");
+        } else {
+            toast("You don't have this book in your library yet.");
+        }
+    };
+
     return (
         <div className="space-y-6">
             {/* Mobile Back Button */}
@@ -179,11 +195,26 @@ export const ClubDetails = ({ club, onRefresh, onBack }: ClubDetailsProps) => {
 
                 {activeSuggestion ? (
                     <div className="space-y-4">
-                        <div className="p-4 rounded-lg bg-secondary/30 border border-border">
-                            <h5 className="font-medium mb-1">{activeSuggestion.title}</h5>
-                            <p className="text-xs text-muted-foreground">
-                                Suggested by {activeSuggestion.profiles?.display_name}
-                            </p>
+                        <div
+                            onClick={handleReadBook}
+                            className={`p-4 rounded-lg bg-secondary/30 border border-border group transition-all ${userProgress?.document_id ? 'cursor-pointer hover:bg-secondary/50 hover:border-primary/50' : ''}`}
+                        >
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <h5 className="font-medium mb-1 group-hover:text-primary transition-colors flex items-center gap-2">
+                                        {activeSuggestion.title}
+                                        {userProgress?.document_id && <BookOpen className="w-3 h-3 opacity-50" />}
+                                    </h5>
+                                    <p className="text-xs text-muted-foreground">
+                                        Suggested by {activeSuggestion.profiles?.display_name}
+                                    </p>
+                                </div>
+                                {userProgress?.document_id && (
+                                    <span className="text-[10px] uppercase font-bold tracking-wider text-primary border border-primary/20 px-1.5 py-0.5 rounded bg-primary/5">
+                                        Reading
+                                    </span>
+                                )}
+                            </div>
                         </div>
 
                         {/* Show accept/decline buttons if user hasn't responded */}

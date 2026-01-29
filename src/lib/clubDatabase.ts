@@ -399,7 +399,7 @@ export async function getClubProgress(
         // First, get all progress records
         const { data: progressRecords, error: progressError } = await supabase
             .from('club_member_progress' as any)
-            .select('id, user_id, status, progress, current_word_index, updated_at')
+            .select('id, user_id, status, progress, current_word_index, updated_at, document_id')
             .eq('suggestion_id', suggestionId);
 
         if (progressError) throw progressError;
