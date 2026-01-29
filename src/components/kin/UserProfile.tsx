@@ -44,7 +44,7 @@ export const UserProfile = ({ userId }: UserProfileProps) => {
         const fetchHistory = async () => {
             const { data, error } = await supabase
                 .from('documents')
-                .select('id, title, completed_at, is_completed, updated_at, source')
+                .select('id, title, completed_at, is_completed, updated_at, source, word_count')
                 .eq('user_id', userId);
 
             if (error) {
@@ -55,28 +55,37 @@ export const UserProfile = ({ userId }: UserProfileProps) => {
             if (data) {
                 // Calculate Stats
                 const completed = data.filter(d => d.is_completed);
-                const newStats = {
-                    total: completed.length,
-                    byType: {
-                        article: completed.filter(d => {
-                            const s = (d.source || '').toLowerCase();
-                            return ['article', 'web', 'link', 'url'].includes(s);
-                        }).length,
-                        ebook: completed.filter(d => {
-                            const s = (d.source || '').toLowerCase();
-                            return ['ebook', 'epub', 'club_book', 'book'].includes(s);
-                        }).length,
-                        document: completed.filter(d => {
-                            const s = (d.source || '').toLowerCase();
-                            return ['document', 'text', 'txt', 'file'].includes(s);
-                        }).length,
-                        link: completed.filter(d => {
-                            const s = (d.source || '').toLowerCase();
-                            return !['article', 'web', 'link', 'url', 'ebook', 'epub', 'club_book', 'book', 'document', 'text', 'txt', 'file'].includes(s);
-                        }).length,
-                    }
+
+                const statsByType = {
+                    article: 0,
+                    ebook: 0,
+                    document: 0,
+                    link: 0
                 };
-                setStats(newStats);
+
+                completed.forEach(d => {
+                    const s = (d.source || '').toLowerCase();
+                    const words = d.word_count || 0;
+
+                    // Logic: Ebooks are explicit 'ebook' source OR documents > 15k words
+                    if (['ebook', 'epub', 'club_book', 'book'].includes(s) || (['document', 'text', 'txt', 'file'].includes(s) && words > 15000)) {
+                        statsByType.ebook++;
+                    } else if (['article', 'web'].includes(s)) {
+                        statsByType.article++;
+                    } else if (['document', 'text', 'txt', 'file'].includes(s)) {
+                        statsByType.document++;
+                    } else if (['link', 'url'].includes(s)) {
+                        statsByType.link++;
+                    } else {
+                        // Fallback for unclassified sources, put into 'link'
+                        statsByType.link++;
+                    }
+                });
+
+                setStats({
+                    total: completed.length,
+                    byType: statsByType
+                });
 
                 // Set History Lists
                 // Sort by update time for both
