@@ -51,7 +51,7 @@ export const KinNetworkView = ({ onViewProfile }: KinNetworkViewProps) => {
 
     return (
         <div className="flex-1 overflow-y-auto p-6 text-foreground h-full">
-            <div className="space-y-6 max-w-md mx-auto">
+            <div className="space-y-6 max-w-2xl">
                 <section>
                     <h3 className="text-sm font-medium text-muted-foreground mb-3 uppercase tracking-wider">Find K<span className="lowercase font-sans text-xs relative -top-[0.5px]">i</span>Ns</h3>
                     <UserSearch />

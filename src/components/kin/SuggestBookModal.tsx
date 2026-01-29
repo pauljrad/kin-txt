@@ -17,30 +17,43 @@ interface SuggestBookModalProps {
     onBookSuggested: () => void;
 }
 
+// Reusing Book Cover style from EbookLibrary
+const BookCover = ({ title, index }: { title: string; index: number }) => {
+    const isDark = index % 2 === 0;
+    const bgColor = isDark ? 'bg-[#000000]' : 'bg-[#ffffff]';
+    const textColor = isDark ? 'text-white' : 'text-black';
+    const logoColor = isDark ? 'bg-white' : 'bg-black';
+
+    return (
+        <div className={`aspect-[2/3] mb-2 rounded-md ${bgColor} flex flex-col items-center justify-between p-2 relative border border-border/10 shadow-inner group-hover:shadow-lg transition-all duration-500 overflow-hidden`}>
+            {/* Centered KiN-TXT "i -" Logo */}
+            <div className="flex-1 flex items-center justify-center">
+                <div className="flex items-center gap-1.5">
+                    <div className="relative flex flex-col items-center justify-center w-3 h-5">
+                        <span className={`w-1 h-1 rounded-full ${logoColor} mb-0.5`} />
+                        <span className={`w-1 h-2.5 ${logoColor} rounded-sm`} />
+                    </div>
+                    <div className={`w-2.5 h-0.5 ${logoColor} rounded-full opacity-80`} />
+                </div>
+            </div>
+
+            {/* Title at the bottom */}
+            <div className="w-full">
+                <h4 className={`text-center font-display font-medium text-[8px] leading-tight uppercase tracking-widest ${textColor} line-clamp-3`}>
+                    {title}
+                </h4>
+            </div>
+        </div>
+    );
+};
+
 export const SuggestBookModal = ({ open, onOpenChange, clubId, onBookSuggested }: SuggestBookModalProps) => {
+    // ... existing state ...
     const [ebooks, setEbooks] = useState<any[]>([]);
     const [selectedBookId, setSelectedBookId] = useState<string | null>(null);
     const [isSuggesting, setIsSuggesting] = useState(false);
     const { user } = useAuth();
-
-    useEffect(() => {
-        if (!user || !open) return;
-
-        const fetchEbooks = async () => {
-            const { data, error } = await supabase
-                .from('documents' as any)
-                .select('*')
-                .eq('user_id', user.id)
-                .eq('source', 'ebook')
-                .order('created_at', { ascending: false });
-
-            if (!error && data) {
-                setEbooks(data);
-            }
-        };
-
-        fetchEbooks();
-    }, [user, open]);
+    // ... existing useEffect ...
 
     const handleSuggest = async () => {
         if (!selectedBookId) {
@@ -62,8 +75,6 @@ export const SuggestBookModal = ({ open, onOpenChange, clubId, onBookSuggested }
                 const parsed = await parseFile(file);
 
                 // 2. Save to my documents first
-                // Note: parseFile returns { paragraphs }, not cleanedText directly. 
-                // We use paragraphs as the text content.
                 const content = {
                     title: selectedEbook.title,
                     parsedText: { paragraphs: parsed.paragraphs },
@@ -90,11 +101,8 @@ export const SuggestBookModal = ({ open, onOpenChange, clubId, onBookSuggested }
 
                 if (saveError) throw saveError;
 
-                // Assert newDoc to any to avoid strict type error if types aren't perfectly aligned
-                const doc = newDoc as any;
-
                 // 3. Suggest the newly created document
-                const { error: suggestError } = await suggestBook(clubId, doc.id, doc.title);
+                const { error: suggestError } = await suggestBook(clubId, (newDoc as any).id, (newDoc as any).title);
                 if (suggestError) throw suggestError;
 
                 toast.success("Book imported and suggested!");
@@ -146,6 +154,7 @@ export const SuggestBookModal = ({ open, onOpenChange, clubId, onBookSuggested }
                     </div>
 
                     <TabsContent value="uploads" className="flex-1 overflow-y-auto py-4 px-6 mt-0">
+                        {/* ... existing uploads content ... */}
                         {ebooks.length === 0 ? (
                             <div className="p-8 rounded-lg bg-secondary/50 border border-border text-center text-muted-foreground text-sm">
                                 You don't have any ebooks in your library yet. Upload one first!
@@ -182,23 +191,18 @@ export const SuggestBookModal = ({ open, onOpenChange, clubId, onBookSuggested }
                     </TabsContent>
 
                     <TabsContent value="library" className="flex-1 overflow-y-auto py-4 px-6 mt-0">
-                        <div className="grid grid-cols-3 gap-2">
-                            {AVAILABLE_EBOOKS.map(book => (
+                        <div className="grid grid-cols-3 gap-4">
+                            {AVAILABLE_EBOOKS.map((book, index) => (
                                 <div
                                     key={book.id}
-                                    className={`p-3 rounded-lg border cursor-pointer transition-colors relative flex flex-col ${selectedBookId === book.id
-                                        ? 'bg-primary/10 border-primary'
-                                        : 'bg-secondary/30 border-border/50 hover:bg-secondary/60 hover:border-border'
+                                    className={`group relative cursor-pointer transition-all duration-300 p-2 rounded-lg ${selectedBookId === book.id
+                                        ? 'ring-2 ring-primary/50 bg-primary/5'
+                                        : 'hover:bg-secondary/50'
                                         }`}
                                     onClick={() => setSelectedBookId(book.id)}
                                 >
-                                    <div className="aspect-[2/3] bg-background border border-border/20 rounded-md mb-2 flex flex-col items-center justify-center p-1.5 text-center overflow-hidden">
-                                        <span className="text-[8px] uppercase font-bold tracking-wider leading-tight line-clamp-4">
-                                            {book.title}
-                                        </span>
-                                    </div>
-                                    <h4 className="font-medium text-[10px] leading-tight mb-0.5 line-clamp-2">{book.title}</h4>
-                                    <p className="text-[8px] text-muted-foreground line-clamp-1">{book.author}</p>
+                                    <BookCover title={book.title} index={index} />
+                                    <h4 className="font-medium text-[10px] leading-tight text-center line-clamp-2 mt-1">{book.title}</h4>
                                 </div>
                             ))}
                         </div>
