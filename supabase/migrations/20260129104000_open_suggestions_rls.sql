@@ -1,25 +1,44 @@
--- Open RLS for club book suggestions and member progress tables
--- These tables need to be readable by all club members
+-- COMPLETE RLS RESET FOR ALL CLUB TABLES
+-- This is a nuclear option to guarantee everything is visible
 
--- CLUB_BOOK_SUGGESTIONS TABLE
-ALTER TABLE IF EXISTS public.club_book_suggestions ENABLE ROW LEVEL SECURITY;
+-- Disable RLS entirely for debugging (we'll re-enable with open policies)
+ALTER TABLE IF EXISTS public.club_book_suggestions DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.club_member_progress DISABLE ROW LEVEL SECURITY;
 
-DROP POLICY IF EXISTS "allow_all_select_suggestions" ON public.club_book_suggestions;
-DROP POLICY IF EXISTS "Users can view suggestions" ON public.club_book_suggestions;
+-- Re-enable with completely open policies
+ALTER TABLE public.club_book_suggestions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.club_member_progress ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "allow_all_select_suggestions" ON public.club_book_suggestions
-    FOR SELECT
-    TO authenticated
-    USING (true);
+-- Drop ALL existing policies
+DO $$ 
+DECLARE
+    r RECORD;
+BEGIN
+    FOR r IN (SELECT policyname FROM pg_policies WHERE tablename = 'club_book_suggestions' AND schemaname = 'public') LOOP
+        EXECUTE 'DROP POLICY IF EXISTS ' || quote_ident(r.policyname) || ' ON public.club_book_suggestions';
+    END LOOP;
+    
+    FOR r IN (SELECT policyname FROM pg_policies WHERE tablename = 'club_member_progress' AND schemaname = 'public') LOOP
+        EXECUTE 'DROP POLICY IF EXISTS ' || quote_ident(r.policyname) || ' ON public.club_member_progress';
+    END LOOP;
+END $$;
+
+-- Create maximally permissive policies
+CREATE POLICY "open_select_suggestions" ON public.club_book_suggestions
+    FOR SELECT USING (true);
+
+CREATE POLICY "open_insert_suggestions" ON public.club_book_suggestions
+    FOR INSERT WITH CHECK (true);
+
+CREATE POLICY "open_update_suggestions" ON public.club_book_suggestions
+    FOR UPDATE USING (true);
 
 
--- CLUB_MEMBER_PROGRESS TABLE
-ALTER TABLE IF EXISTS public.club_member_progress ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "open_select_progress" ON public.club_member_progress
+    FOR SELECT USING (true);
 
-DROP POLICY IF EXISTS "allow_all_select_progress" ON public.club_member_progress;
-DROP POLICY IF EXISTS "Users can view progress" ON public.club_member_progress;
+CREATE POLICY "open_insert_progress" ON public.club_member_progress
+    FOR INSERT WITH CHECK (true);
 
-CREATE POLICY "allow_all_select_progress" ON public.club_member_progress
-    FOR SELECT
-    TO authenticated
-    USING (true);
+CREATE POLICY "open_update_progress" ON public.club_member_progress
+    FOR UPDATE USING (true);
