@@ -19,9 +19,10 @@ import { toast } from "sonner";
 interface ClubDetailsProps {
     club: any;
     onRefresh: () => void;
+    onBack?: () => void;
 }
 
-export const ClubDetails = ({ club, onRefresh }: ClubDetailsProps) => {
+export const ClubDetails = ({ club, onRefresh, onBack }: ClubDetailsProps) => {
     const [members, setMembers] = useState<any[]>([]);
     const [activeSuggestion, setActiveSuggestion] = useState<any | null>(null);
     const [progress, setProgress] = useState<any[]>([]);
@@ -74,6 +75,7 @@ export const ClubDetails = ({ club, onRefresh }: ClubDetailsProps) => {
         toast.success("Left club successfully");
         setLeaveDialogOpen(false);
         onRefresh();
+        if (onBack) onBack();
     };
 
     const handleRespondToSuggestion = async (accept: boolean) => {
@@ -89,6 +91,19 @@ export const ClubDetails = ({ club, onRefresh }: ClubDetailsProps) => {
 
     return (
         <div className="space-y-6">
+            {/* Mobile Back Button */}
+            {onBack && (
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    className="md:hidden -ml-2 mb-2 gap-1 text-muted-foreground hover:text-foreground"
+                    onClick={onBack}
+                >
+                    <Users className="h-4 w-4 rotate-180" /> {/* Using generic back icon or rotate arrow */}
+                    Back to Clubs
+                </Button>
+            )}
+
             {/* Club Header */}
             <div className="flex items-start justify-between">
                 <div>
@@ -104,7 +119,7 @@ export const ClubDetails = ({ club, onRefresh }: ClubDetailsProps) => {
                     onClick={() => setLeaveDialogOpen(true)}
                 >
                     <LogOut className="h-4 w-4" />
-                    Leave Club
+                    <span className="hidden sm:inline">Leave Club</span>
                 </Button>
             </div>
 
@@ -148,15 +163,18 @@ export const ClubDetails = ({ club, onRefresh }: ClubDetailsProps) => {
                             Current Book
                         </h4>
                     </div>
-                    <Button
-                        size="sm"
-                        variant="outline"
-                        className="gap-2"
-                        onClick={() => setSuggestModalOpen(true)}
-                    >
-                        <Plus className="h-4 w-4" />
-                        Suggest Book
-                    </Button>
+                    {/* Only show suggest button if no active suggestion */}
+                    {!activeSuggestion && (
+                        <Button
+                            size="sm"
+                            variant="outline"
+                            className="gap-2"
+                            onClick={() => setSuggestModalOpen(true)}
+                        >
+                            <Plus className="h-4 w-4" />
+                            Suggest Book
+                        </Button>
+                    )}
                 </div>
 
                 {activeSuggestion ? (

@@ -66,9 +66,14 @@ export const KinClubsLayout = () => {
                     </div>
 
                     {/* Content */}
-                    <div className="flex-1 overflow-hidden flex">
+                    <div className="flex-1 overflow-hidden flex relative">
                         {/* Clubs List Sidebar */}
-                        <div className="w-64 border-r border-border overflow-y-auto p-4">
+                        <div
+                            className={`
+                                w-full md:w-72 border-r border-border overflow-y-auto p-4 absolute inset-0 md:static bg-card transition-transform duration-300 z-10
+                                ${selectedClubId ? '-translate-x-full md:translate-x-0' : 'translate-x-0'}
+                            `}
+                        >
                             <h3 className="text-sm font-medium text-muted-foreground mb-3 uppercase tracking-wider">
                                 My Clubs
                             </h3>
@@ -100,11 +105,20 @@ export const KinClubsLayout = () => {
                         </div>
 
                         {/* Club Details Panel */}
-                        <div className="flex-1 overflow-y-auto p-6">
+                        <div
+                            className={`
+                                flex-1 overflow-y-auto p-6 absolute inset-0 md:static bg-card transition-transform duration-300 z-20
+                                ${selectedClubId ? 'translate-x-0' : 'translate-x-full md:translate-x-0'}
+                            `}
+                        >
                             {selectedClub ? (
-                                <ClubDetails club={selectedClub} onRefresh={fetchClubs} />
+                                <ClubDetails
+                                    club={selectedClub}
+                                    onRefresh={fetchClubs}
+                                    onBack={() => setSelectedClubId(null)}
+                                />
                             ) : (
-                                <div className="h-full flex items-center justify-center text-muted-foreground">
+                                <div className="h-full flex items-center justify-center text-muted-foreground hidden md:flex">
                                     Select a club to view details
                                 </div>
                             )}
