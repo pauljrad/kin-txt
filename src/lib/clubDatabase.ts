@@ -464,6 +464,8 @@ export async function getActiveBookSuggestion(
     clubId: string
 ): Promise<{ suggestion: any | null; error: Error | null }> {
     try {
+        console.log('[getActiveBookSuggestion] Querying for clubId:', clubId);
+
         // First, get the suggestion
         const { data: suggestion, error: suggestionError } = await supabase
             .from('club_book_suggestions' as any)
@@ -474,8 +476,11 @@ export async function getActiveBookSuggestion(
             .limit(1)
             .maybeSingle();
 
+        console.log('[getActiveBookSuggestion] Suggestion query result:', { suggestion, suggestionError });
+
         if (suggestionError) throw suggestionError;
         if (!suggestion) {
+            console.log('[getActiveBookSuggestion] No active suggestion found');
             return { suggestion: null, error: null };
         }
 
@@ -496,9 +501,10 @@ export async function getActiveBookSuggestion(
             profiles: profile || null
         };
 
+        console.log('[getActiveBookSuggestion] Returning enriched suggestion:', enrichedSuggestion);
         return { suggestion: enrichedSuggestion, error: null };
     } catch (error) {
-        console.error('Error getting active suggestion:', error);
+        console.error('[getActiveBookSuggestion] Error getting active suggestion:', error);
         return { suggestion: null, error: error as Error };
     }
 }
