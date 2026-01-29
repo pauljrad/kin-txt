@@ -13,6 +13,8 @@ interface NewsItem {
   pubDate: string;
   source: string;
   imageUrl?: string;
+  author?: string; // Added author
+  content?: string; // Added full html content
 }
 
 interface Category {
@@ -21,20 +23,9 @@ interface Category {
 }
 
 interface NewsLibraryProps {
-  onSelectArticle: (parsed: ParsedText, title: string, meta: { link: string; source: string }) => void;
+  // onSelectArticle now might receive author in meta
+  onSelectArticle: (parsed: ParsedText, title: string, meta: { link: string; source: string; author?: string }) => void;
 }
-
-const SOURCE_COLORS: Record<string, string> = {
-  guardian: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
-  bbc: 'bg-red-500/20 text-red-400 border-red-500/30',
-  sky: 'bg-sky-500/20 text-sky-400 border-sky-500/30',
-};
-
-const SOURCE_NAMES: Record<string, string> = {
-  guardian: 'The Guardian',
-  bbc: 'BBC News',
-  sky: 'Sky News',
-};
 
 export function NewsLibrary({ onSelectArticle }: NewsLibraryProps) {
   const [news, setNews] = useState<NewsItem[]>([]);
@@ -43,7 +34,9 @@ export function NewsLibrary({ onSelectArticle }: NewsLibraryProps) {
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [activeCategory, setActiveCategory] = useState<string>('top');
-  const [activeSource, setActiveSource] = useState<string | null>(null);
+
+  // NOTE: filtering by source removed as we only have source="conversation" now mostly.
+  // Keeping activeSource state structure if needed later but removing UI filters for now.
 
   const fetchNews = useCallback(async (category: string = 'top') => {
     setIsLoading(true);
@@ -91,6 +84,52 @@ export function NewsLibrary({ onSelectArticle }: NewsLibraryProps) {
     setLoadingId(article.id);
 
     try {
+      // If we already have content from the feed (The Conversation Atom feed provides it)
+      if (article.content) {
+        // We must parse it locally safely.
+        // However, parseTextContent usually takes raw text, not HTML with pixel trackers.
+        // Wait, we need to extract the pixel tracker URL if possible OR keep it valid in parsed text?
+        // ParsedText is strictly text paragraphs.
+        // We might need to handle the pixel tracker separately in the `meta`.
+
+        // Extract pixel tracker if present
+        // (Looking for <img src="..." alt="The Conversation" ...> or similar 1x1)
+        const pixelMatch = article.content.match(/<img[^>]+src=["']([^"']+)["'][^>]*>/i);
+        // Actually, let's just use the provided content logic.
+
+        // We need to strip tags to get the text for the reader.
+        // We'll use a DOMParser to get text content while preserving structure?
+        // Or rely on `parseTextContent`. 
+        // `parseTextContent` in `lib/textParser` might not handle HTML string well directly if it expects raw text.
+        // Let's assume we need to clean it. 
+
+        // Basic strip tags but keep paragraphs
+        const cleanText = article.content
+          .replace(/<p>/gi, '\n')
+          .replace(/<\/p>/gi, '\n')
+          .replace(/<br\s*\/?>/gi, '\n')
+          .replace(/<[^>]+>/g, ' '); // Strip all other tags
+
+        const parsed = parseTextContent(cleanText);
+
+        // Pass FULL content (with tags potentially) or just the pixel URL to metadata?
+        // The user said: "The counter is a 1x1 pixel invisible image... ensure... included"
+        // If we only render text in KiN reader, the pixel won't fire.
+        // We need to fire it manually or mount a hidden image.
+        // Let's pass the raw HTML content in meta so the parent can extract/render the pixel.
+
+        onSelectArticle(parsed, article.title, {
+          link: article.link,
+          source: 'article', // Strict 'article' default
+          author: article.author,
+          // @ts-ignore - passing extra meta for pixel handling
+          rawHtml: article.content
+        });
+        setLoadingId(null);
+        return;
+      }
+
+      // Fallback to scrape-url if no content
       const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
       if (sessionError) throw sessionError;
 
@@ -115,7 +154,7 @@ export function NewsLibrary({ onSelectArticle }: NewsLibraryProps) {
 
       // Parse the scraped text
       const parsed = parseTextContent(data.text);
-      onSelectArticle(parsed, article.title, { link: article.link, source: article.source });
+      onSelectArticle(parsed, article.title, { link: article.link, source: 'article', author: article.author });
     } catch (err) {
       console.error('Error loading article:', err);
       toast.error(err instanceof Error ? err.message : 'Failed to load article.');
@@ -126,12 +165,9 @@ export function NewsLibrary({ onSelectArticle }: NewsLibraryProps) {
 
   const handleCategoryChange = useCallback((categoryId: string) => {
     setActiveCategory(categoryId);
-    setActiveSource(null); // Reset source filter when changing category
   }, []);
 
-  const filteredNews = activeSource 
-    ? news.filter(item => item.source === activeSource)
-    : news;
+  const filteredNews = news;
 
   const formatTime = (dateStr: string) => {
     try {
@@ -140,7 +176,7 @@ export function NewsLibrary({ onSelectArticle }: NewsLibraryProps) {
       const diffMs = now.getTime() - date.getTime();
       const diffMins = Math.floor(diffMs / 60000);
       const diffHours = Math.floor(diffMins / 60);
-      
+
       if (diffMins < 60) return `${diffMins}m ago`;
       if (diffHours < 24) return `${diffHours}h ago`;
       return date.toLocaleDateString();
@@ -191,11 +227,10 @@ export function NewsLibrary({ onSelectArticle }: NewsLibraryProps) {
               onClick={() => handleCategoryChange(cat.id)}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${
-                activeCategory === cat.id
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-secondary/50 text-secondary-foreground hover:bg-secondary'
-              }`}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${activeCategory === cat.id
+                ? 'bg-primary text-primary-foreground'
+                : 'bg-secondary/50 text-secondary-foreground hover:bg-secondary'
+                }`}
             >
               {cat.name}
             </motion.button>
@@ -203,37 +238,8 @@ export function NewsLibrary({ onSelectArticle }: NewsLibraryProps) {
         </div>
       </div>
 
-      {/* Source filters */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex gap-2 flex-wrap">
-          <motion.button
-            onClick={() => setActiveSource(null)}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all ${
-              activeSource === null
-                ? 'bg-muted text-foreground'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            All Sources
-          </motion.button>
-          {Object.entries(SOURCE_NAMES).map(([key, name]) => (
-            <motion.button
-              key={key}
-              onClick={() => setActiveSource(key)}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all ${
-                activeSource === key
-                  ? 'bg-muted text-foreground'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              {name}
-            </motion.button>
-          ))}
-        </div>
+      {/* Refresh button only, no source filters */}
+      <div className="flex items-center justify-end mb-4">
         <motion.button
           onClick={() => fetchNews(activeCategory)}
           whileHover={{ scale: 1.1, rotate: 180 }}
@@ -246,59 +252,53 @@ export function NewsLibrary({ onSelectArticle }: NewsLibraryProps) {
       </div>
 
       {/* News grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <AnimatePresence mode="popLayout">
           {filteredNews.map((article, index) => (
             <motion.button
               key={article.id}
               layout
-              initial={{ opacity: 0, scale: 0.9 }}
+              initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
+              exit={{ opacity: 0, scale: 0.95 }}
               transition={{ duration: 0.3, delay: index * 0.05 }}
               onClick={() => handleSelectArticle(article)}
               disabled={loadingId !== null}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className="group relative glass-panel p-3 text-left transition-all duration-300 hover:ring-2 hover:ring-primary/50 disabled:opacity-50 disabled:cursor-not-allowed"
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.99 }}
+              className="group relative glass-panel p-5 text-left transition-all duration-300 hover:ring-2 hover:ring-primary/50 disabled:opacity-50 disabled:cursor-not-allowed flex flex-col h-full justify-between"
             >
-              {/* Article image or placeholder */}
-              <div className="aspect-video mb-2 rounded-md bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center overflow-hidden">
-                {article.imageUrl ? (
-                  <img
-                    src={article.imageUrl}
-                    alt={article.title}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      e.currentTarget.style.display = 'none';
-                    }}
-                  />
-                ) : (
-                  <Newspaper className="w-8 h-8 text-muted-foreground/50" />
-                )}
+              <div>
+                {/* Source & Time Badge */}
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-1.5 h-1.5 rounded-full bg-primary/70" />
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/80">
+                    The Conversation
+                  </span>
+                  <span className="text-[10px] text-muted-foreground ml-auto">
+                    {formatTime(article.pubDate)}
+                  </span>
+                </div>
+
+                {/* Headline - KiN-TXT Font */}
+                <h3 className="font-display font-medium text-lg leading-snug text-foreground mb-3 group-hover:text-primary transition-colors line-clamp-4">
+                  {article.title}
+                </h3>
               </div>
 
-              {/* Source badge */}
-              <div className="flex items-center gap-2 mb-1">
-                <span className={`text-[10px] px-1.5 py-0.5 rounded border ${SOURCE_COLORS[article.source] || 'bg-muted text-muted-foreground'}`}>
-                  {SOURCE_NAMES[article.source] || article.source}
-                </span>
-                <span className="text-[10px] text-muted-foreground">
-                  {formatTime(article.pubDate)}
-                </span>
+              {/* Author Attribution */}
+              <div className="mt-2 pt-3 border-t border-border/40">
+                <p className="text-[11px] text-muted-foreground font-medium truncate">
+                  By <span className="text-foreground/90">{article.author || 'The Conversation'}</span>
+                </p>
               </div>
-
-              {/* Article info */}
-              <h3 className="font-medium text-xs text-foreground mb-1 line-clamp-3 group-hover:text-primary transition-colors">
-                {article.title}
-              </h3>
 
               {/* Loading overlay */}
               {loadingId === article.id && (
                 <div className="absolute inset-0 bg-background/80 backdrop-blur-sm rounded-lg flex items-center justify-center">
                   <div className="flex flex-col items-center gap-1">
                     <Loader2 className="w-5 h-5 animate-spin text-primary" />
-                    <span className="text-xs text-muted-foreground">Loading...</span>
+                    <span className="text-xs text-muted-foreground">Loading Article...</span>
                   </div>
                 </div>
               )}

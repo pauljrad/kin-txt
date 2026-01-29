@@ -247,10 +247,26 @@ const Index = () => {
     });
   }, []);
 
+  const [attributionData, setAttributionData] = useState<{
+    author: string;
+    pixelUrl?: string;
+    pendingDoc: ActiveDocument;
+  } | null>(null);
+
+  useEffect(() => {
+    if (attributionData) {
+      const timer = setTimeout(() => {
+        setActiveDocument(attributionData.pendingDoc);
+        setAttributionData(null);
+      }, 1500); // 1.5 seconds to be safe and readable
+      return () => clearTimeout(timer);
+    }
+  }, [attributionData]);
+
   const handleNewsSelect = useCallback(async (
     parsed: ParsedText,
     title: string,
-    meta?: { link: string; source: string }
+    meta?: { link: string; source: string; author?: string; rawHtml?: string }
   ) => {
     setIsAnalyzing(true);
     toast.info('Analyzing article for emphasis...');
@@ -282,7 +298,6 @@ const Index = () => {
     const finalWhisperedWords = Array.from(new Set([...detectedWhispered, ...aiWhispered]));
 
     // Filter emphasis to EXCLUDE any detected whispers (Deterministic whisper > AI emphasis)
-    // This ensures words like "mouse" or "whisper" don't get blown up if AI marks them as emphatic
     const rawEmphasis = [...detectedEmphasis, ...aiEmphasis];
     const finalEmphasisWords = filterEmphasis(Array.from(new Set(
       rawEmphasis.filter(w => !finalWhisperedWords.includes(w))
@@ -301,7 +316,8 @@ const Index = () => {
       toast.success(`Found ${finalEmphasisWords.length} emphasis and ${finalWhisperedWords.length} whispered words`);
     }
 
-    setActiveDocument({
+    // Prepare the document but don't set it active yet
+    const pendingDoc: ActiveDocument = {
       parsedText: cleanedText,
       title,
       id: saved.id,
@@ -309,7 +325,22 @@ const Index = () => {
       whisperedWords: finalWhisperedWords,
       totalReadingTime: 0,
       isEbook: false,
+    };
+
+    // Extract pixel URL from rawHtml if present
+    let pixelUrl: string | undefined;
+    if (meta?.rawHtml) {
+      const match = meta.rawHtml.match(/<img[^>]+src=["']([^"']+)["'][^>]*>/i);
+      if (match) pixelUrl = match[1];
+    }
+
+    // Trigger attribution splash
+    setAttributionData({
+      author: meta?.author || 'The Conversation',
+      pixelUrl,
+      pendingDoc
     });
+
   }, []);
 
   const analyzeEmphasis = async (text: string): Promise<EmphasisAnalysis> => {
@@ -575,7 +606,32 @@ const Index = () => {
       />
 
       <AnimatePresence mode="wait">
-        {!activeDocument ? (
+        {attributionData ? (
+          <motion.div
+            key="attribution"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] bg-background flex flex-col items-center justify-center p-8 text-center"
+          >
+            <div className="max-w-2xl space-y-6">
+              <h2 className="text-2xl md:text-3xl font-serif text-foreground">
+                Written by <span className="text-primary">{attributionData.author}</span>
+              </h2>
+              <p className="text-muted-foreground text-lg">
+                Originally published by The Conversation.
+              </p>
+              <p className="text-xs text-muted-foreground/60 uppercase tracking-widest mt-8">
+                Republished under CC BY-ND. No changes have been made to the text.
+              </p>
+            </div>
+
+            {/* Invisible Tracking Pixel */}
+            {attributionData.pixelUrl && (
+              <img src={attributionData.pixelUrl} alt="" className="w-[1px] h-[1px] opacity-0 absolute pointer-events-none" />
+            )}
+          </motion.div>
+        ) : !activeDocument ? (
           <motion.div
             key="input"
             initial={{ opacity: 0 }}

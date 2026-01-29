@@ -15,6 +15,8 @@ interface NewsItem {
   pubDate: string;
   source: string;
   imageUrl?: string;
+  author?: string;
+  content?: string;
 }
 
 interface RSSFeed {
@@ -25,128 +27,55 @@ interface RSSFeed {
 }
 
 const RSS_FEEDS: RSSFeed[] = [
-  // Top Stories / General
-  { name: "BBC News", url: "https://feeds.bbci.co.uk/news/rss.xml", source: "bbc", category: "top" },
-  { name: "The Guardian", url: "https://www.theguardian.com/uk/rss", source: "guardian", category: "top" },
-  { name: "Sky News", url: "https://feeds.skynews.com/feeds/rss/home.xml", source: "sky", category: "top" },
-  // Politics
-  { name: "BBC Politics", url: "https://feeds.bbci.co.uk/news/politics/rss.xml", source: "bbc", category: "politics" },
-  { name: "Guardian Politics", url: "https://www.theguardian.com/politics/rss", source: "guardian", category: "politics" },
-  // Business
-  { name: "BBC Business", url: "https://feeds.bbci.co.uk/news/business/rss.xml", source: "bbc", category: "business" },
-  { name: "Guardian Business", url: "https://www.theguardian.com/uk/business/rss", source: "guardian", category: "business" },
-  // Technology
-  { name: "BBC Tech", url: "https://feeds.bbci.co.uk/news/technology/rss.xml", source: "bbc", category: "tech" },
-  { name: "Guardian Tech", url: "https://www.theguardian.com/uk/technology/rss", source: "guardian", category: "tech" },
-  // Sports
-  { name: "BBC Sport", url: "https://feeds.bbci.co.uk/sport/rss.xml", source: "bbc", category: "sports" },
-  { name: "Guardian Sport", url: "https://www.theguardian.com/uk/sport/rss", source: "guardian", category: "sports" },
-  // Entertainment
-  { name: "BBC Entertainment", url: "https://feeds.bbci.co.uk/news/entertainment_and_arts/rss.xml", source: "bbc", category: "entertainment" },
-  { name: "Guardian Culture", url: "https://www.theguardian.com/uk/culture/rss", source: "guardian", category: "entertainment" },
-  // Science
-  { name: "BBC Science", url: "https://feeds.bbci.co.uk/news/science_and_environment/rss.xml", source: "bbc", category: "science" },
-  { name: "Guardian Science", url: "https://www.theguardian.com/science/rss", source: "guardian", category: "science" },
+  { name: "The Conversation", url: "https://theconversation.com/uk/articles.atom", source: "conversation", category: "top" },
+  { name: "Technology", url: "https://theconversation.com/uk/technology/articles.atom", source: "conversation", category: "tech" },
+  { name: "Business", url: "https://theconversation.com/uk/business/articles.atom", source: "conversation", category: "business" },
+  { name: "Science", url: "https://theconversation.com/uk/politics/articles.atom", source: "conversation", category: "politics" },
+  { name: "Environment", url: "https://theconversation.com/uk/environment/articles.atom", source: "conversation", category: "science" },
+  { name: "Health", url: "https://theconversation.com/uk/health/articles.atom", source: "conversation", category: "science" },
+  { name: "Arts", url: "https://theconversation.com/uk/arts/articles.atom", source: "conversation", category: "entertainment" },
 ];
 
-const CATEGORIES = [
-  { id: "top", name: "Top Stories" },
-  { id: "politics", name: "Politics" },
-  { id: "business", name: "Business" },
-  { id: "tech", name: "Technology" },
-  { id: "sports", name: "Sports" },
-  { id: "entertainment", name: "Entertainment" },
-  { id: "science", name: "Science" },
-];
-
-const ALLOWED_CATEGORIES = CATEGORIES.map(c => c.id);
-
-function decodeEntities(text: string): string {
-  return text
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&amp;/g, "&")
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/&apos;/g, "'");
+function extractAtomContent(xml: string, tag: string): string {
+  const pattern = new RegExp(`<${tag}[^>]*>([\\s\\S]*?)<\\/${tag}>`, "i");
+  const match = xml.match(pattern);
+  return match ? decodeEntities(stripTags(match[1])) : "";
 }
 
-function stripTags(text: string): string {
-  return text.replace(/<[^>]*>/g, "").trim();
+function extractAtomLink(xml: string): string {
+  const pattern = /<link[^>]*href=["']([^"']+)["'][^>]*\/>/i;
+  const match = xml.match(pattern);
+  return match ? parseEntity(match[1]) : "";
 }
 
-function extractContent(xml: string, tag: string): string {
-  // Handle CDATA wrapped content
-  const cdataPattern = new RegExp(`<${tag}[^>]*>\\s*<!\\[CDATA\\[([\\s\\S]*?)\\]\\]>\\s*</${tag}>`, "i");
-  const cdataMatch = xml.match(cdataPattern);
-  if (cdataMatch) return stripTags(decodeEntities(cdataMatch[1].trim()));
-
-  // Handle regular content  
-  const regularPattern = new RegExp(`<${tag}[^>]*>([\\s\\S]*?)</${tag}>`, "i");
-  const regularMatch = xml.match(regularPattern);
-  if (regularMatch) return stripTags(decodeEntities(regularMatch[1].trim()));
-
-  // Handle escaped CDATA (like &lt;![CDATA[)
-  const escapedPattern = new RegExp(`<${tag}[^>]*>&lt;!\\[CDATA\\[([\\s\\S]*?)\\]\\]&gt;</${tag}>`, "i");
-  const escapedMatch = xml.match(escapedPattern);
-  if (escapedMatch) return stripTags(decodeEntities(escapedMatch[1].trim()));
-
-  return "";
+function parseEntity(str: string): string {
+  return str.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'");
 }
 
-function extractLink(xml: string): string {
-  // Try getting link content
-  const linkPattern = /<link[^>]*>([^<]+)<\/link>/i;
-  const linkMatch = xml.match(linkPattern);
-  if (linkMatch) return decodeEntities(linkMatch[1].trim());
-
-  // Sometimes link is just text without closing tag properly
-  const simplePattern = /<link>([^\n<]+)/i;
-  const simpleMatch = xml.match(simplePattern);
-  if (simpleMatch) return decodeEntities(simpleMatch[1].trim());
-
-  // Self-closing link with href
-  const hrefPattern = /<link[^>]+href=["']([^"']+)["']/i;
-  const hrefMatch = xml.match(hrefPattern);
-  if (hrefMatch) return decodeEntities(hrefMatch[1]);
-
-  return "";
+function extractAtomAuthor(xml: string): string {
+  const pattern = /<author>\s*<name>([\s\S]*?)<\/name>\s*<\/author>/i;
+  const match = xml.match(pattern);
+  return match ? parseEntity(match[1].trim()) : "The Conversation";
 }
 
-function extractImage(xml: string): string | undefined {
-  // media:thumbnail (used by BBC)
-  {
-    const thumbPattern = /<media:thumbnail[^>]+url=["']([^"']+)["']/i;
-    const thumbMatch = xml.match(thumbPattern);
-    if (thumbMatch) return decodeEntities(thumbMatch[1]);
+// Extract full HTML content (preserving tags for pixel) but cleaning mostly
+function extractAtomHtmlContent(xml: string): string {
+  const pattern = /<content\s+type="html">([\s\S]*?)<\/content>/i;
+  const match = xml.match(pattern);
+  if (!match) return "";
+
+  // The content is already HTML escaped in XML usually, or CDATA
+  let content = match[1];
+
+  // Check for CDATA
+  const cdataMatch = content.match(/<!\[CDATA\[([\s\S]*?)\]\]>/i);
+  if (cdataMatch) {
+    content = cdataMatch[1];
+  } else {
+    content = parseEntity(content);
   }
 
-  // Prefer media:content that is explicitly an image (Guardian often uses this)
-  const mediaContentRegex = /<media:content[^>]+url=["']([^"']+)["'][^>]*>/gi;
-  const mediaMatches = Array.from(xml.matchAll(mediaContentRegex));
-  if (mediaMatches.length) {
-    // Try first: tags that declare image type/medium
-    for (const m of mediaMatches) {
-      const fullTag = m[0] || '';
-      if (/(?:type=["']image\/|medium=["']image["'])/i.test(fullTag)) {
-        return decodeEntities(m[1]);
-      }
-    }
-    // Fallback: first media:content url
-    return decodeEntities(mediaMatches[0][1]);
-  }
-
-  // enclosure with image type
-  const encPattern = /<enclosure[^>]+url=["']([^"']+)["'][^>]+type=["']image/i;
-  const encMatch = xml.match(encPattern);
-  if (encMatch) return decodeEntities(encMatch[1]);
-
-  // Look for image in description (some feeds embed img tags)
-  const imgInDescPattern = /<img[^>]+src=["']([^"']+)["']/i;
-  const imgMatch = xml.match(imgInDescPattern);
-  if (imgMatch) return decodeEntities(imgMatch[1]);
-
-  return undefined;
+  return content;
 }
 
 async function fetchRSSFeed(feed: RSSFeed): Promise<NewsItem[]> {
@@ -157,8 +86,8 @@ async function fetchRSSFeed(feed: RSSFeed): Promise<NewsItem[]> {
     const response = await fetch(feed.url, {
       signal: controller.signal,
       headers: {
-        "User-Agent": "Mozilla/5.0 (compatible; NewsBot/1.0)",
-        "Accept": "application/rss+xml, application/xml, text/xml, */*",
+        "User-Agent": "Mozilla/5.0 (compatible; KiN-Bot/1.0)",
+        "Accept": "application/atom+xml, application/xml, text/xml, */*",
       },
     });
 
@@ -172,32 +101,55 @@ async function fetchRSSFeed(feed: RSSFeed): Promise<NewsItem[]> {
     const xml = await response.text();
     const items: NewsItem[] = [];
 
-    // Split by <item> tags
-    const itemRegex = /<item[^>]*>([\s\S]*?)<\/item>/gi;
-    let match;
+    // Split by <entry> tags for Atom
+    const entries = xml.split('<entry>');
+    // Skip the first split part (header)
+    entries.shift();
+
     let count = 0;
+    for (const entryXml of entries) {
+      if (count >= 15) break; // Limit items per feed
 
-    while ((match = itemRegex.exec(xml)) !== null && count < 10) {
-      const itemXml = match[1];
-
-      const title = extractContent(itemXml, "title");
-      const link = extractLink(itemXml);
+      const title = extractAtomContent(entryXml, "title");
+      const link = extractAtomLink(entryXml);
 
       if (!title || !link) continue;
 
-      const description = extractContent(itemXml, "description");
-      const pubDate = extractContent(itemXml, "pubDate") || extractContent(itemXml, "pubdate");
-      const imageUrl = extractImage(itemXml);
+      const summary = extractAtomContent(entryXml, "summary");
+      const published = extractAtomContent(entryXml, "published");
+      const author = extractAtomAuthor(entryXml);
+      const fullContent = extractAtomHtmlContent(entryXml);
+
+      // We need to keep the 1x1 pixel image.
+      // Usually it's at the end or beginning.
+      // We will pass the RAW HTML (cleaned somewhat) to the frontend or parse it there.
+      // For now, let's store the full HTML in `description` or a new field.
+      // Since `NewsItem` interface needs update, we'll assume `description` holds the summary, 
+      // and we return raw content via a different mechanism or update the interface.
+      // Actually, let's just use the `description` for summary. 
+      // We need to send `content` to frontend.
+
+      // IMPORTANT: The existing NewsItem interface doesn't have `content` or `author`.
+      // I need to add them. But I can't modify the interface *inside* this function replacement easily if it's defined above.
+      // Wait, the interface IS defined above line 27. I should have updated it.
+      // I will update the interface in a separate call or overlapping call. 
+      // For now, I'll shove it into the object and cast it or hope TS is loose (it is Deno, so TS is strict).
+
+      // I'll update the return type logic below.
 
       items.push({
         id: `${feed.source}-${count}-${Date.now()}`,
         title,
-        description: description.length > 180 ? description.slice(0, 180) + "..." : description,
+        description: summary, // Use summary for the card
         link,
-        pubDate: pubDate || new Date().toISOString(),
+        pubDate: published || new Date().toISOString(),
         source: feed.source,
-        imageUrl,
-      });
+        imageUrl: undefined, // No images allowed
+        // @ts-ignore
+        author,
+        // @ts-ignore
+        content: fullContent
+      } as NewsItem);
 
       count++;
     }
