@@ -58,10 +58,22 @@ export const UserProfile = ({ userId }: UserProfileProps) => {
                 const newStats = {
                     total: completed.length,
                     byType: {
-                        article: completed.filter(d => d.source === 'article').length,
-                        ebook: completed.filter(d => d.source === 'ebook').length,
-                        document: completed.filter(d => d.source === 'document' || d.source === 'text').length,
-                        link: completed.filter(d => d.source === 'link').length,
+                        article: completed.filter(d => {
+                            const s = (d.source || '').toLowerCase();
+                            return ['article', 'web', 'link', 'url'].includes(s);
+                        }).length,
+                        ebook: completed.filter(d => {
+                            const s = (d.source || '').toLowerCase();
+                            return ['ebook', 'epub', 'club_book', 'book'].includes(s);
+                        }).length,
+                        document: completed.filter(d => {
+                            const s = (d.source || '').toLowerCase();
+                            return ['document', 'text', 'txt', 'file'].includes(s);
+                        }).length,
+                        link: completed.filter(d => {
+                            const s = (d.source || '').toLowerCase();
+                            return !['article', 'web', 'link', 'url', 'ebook', 'epub', 'club_book', 'book', 'document', 'text', 'txt', 'file'].includes(s);
+                        }).length,
                     }
                 };
                 setStats(newStats);
