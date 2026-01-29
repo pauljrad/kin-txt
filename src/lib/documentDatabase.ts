@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import { ParsedText } from './textParser';
+import { updateClubProgress } from './clubDatabase';
 
 export type DocumentCategory = 'book' | 'article' | 'document';
 
@@ -196,10 +197,11 @@ export async function updateDocumentProgress(id: string, paragraph: number, word
 
   let wordIndex = 0;
   let progress = 0;
+  let totalWords = 1;
 
   if (parsedText) {
     wordIndex = calculateWordIndex(parsedText, paragraph, word);
-    const totalWords = parsedText.paragraphs?.flat()?.length || 1;
+    totalWords = parsedText.paragraphs?.flat()?.length || 1;
     progress = Math.round((wordIndex / totalWords) * 100);
   }
 
@@ -215,6 +217,9 @@ export async function updateDocumentProgress(id: string, paragraph: number, word
   if (error) {
     console.error('Error updating progress:', error);
   }
+
+  // Also update club progress if this is a club book
+  await updateClubProgress(id, wordIndex, totalWords);
 }
 
 export async function updateDocumentReadingTime(id: string, totalSeconds: number): Promise<void> {

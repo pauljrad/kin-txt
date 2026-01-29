@@ -277,38 +277,42 @@ export async function suggestBook(
 
         if (suggestionError) throw suggestionError;
 
-        // Get all accepted club members
+        // Get ALL accepted club members (including the suggester)
         const { data: members } = await supabase
             .from('club_memberships' as any)
             .select('user_id')
             .eq('club_id', clubId)
-            .eq('status', 'accepted')
-            .neq('user_id', user.id);
+            .eq('status', 'accepted');
 
         if (members && members.length > 0) {
-            // Create progress records for all members
+            // Create progress records for ALL members (including suggester)
             const progressRecords = members.map(m => ({
                 suggestion_id: suggestion.id,
                 user_id: m.user_id,
-                status: 'invited'
+                status: m.user_id === user.id ? 'accepted' : 'invited',
+                progress: 0,
+                current_word_index: 0
             }));
 
             await supabase
                 .from('club_member_progress' as any)
                 .insert(progressRecords);
 
-            // Send notifications
-            const notifications = members.map(m => ({
-                user_id: m.user_id,
-                type: 'book_suggestion',
-                payload: {
-                    suggestion_id: suggestion.id,
-                    club_id: clubId,
-                    message: `A new book has been suggested for your club: ${title}`
-                }
-            }));
+            // Send notifications to other members (not the suggester)
+            const otherMembers = members.filter(m => m.user_id !== user.id);
+            if (otherMembers.length > 0) {
+                const notifications = otherMembers.map(m => ({
+                    user_id: m.user_id,
+                    type: 'book_suggestion',
+                    payload: {
+                        suggestion_id: suggestion.id,
+                        club_id: clubId,
+                        message: `A new book has been suggested for your club: ${title}`
+                    }
+                }));
 
-            await supabase.from('notifications' as any).insert(notifications);
+                await supabase.from('notifications' as any).insert(notifications);
+            }
         }
 
         return { suggestion, error: null };
@@ -561,6 +565,59 @@ export async function leaveClub(clubId: string): Promise<{ success: boolean; err
         return { success: true, error: null };
     } catch (error) {
         console.error('Error leaving club:', error);
+        return { success: false, error: error as Error };
+    }
+}
+
+/**
+ * Update club reading progress for a document
+ * Call this when a user makes progress reading a club book
+ */
+export async function updateClubProgress(
+    documentId: string,
+    currentWordIndex: number,
+    totalWords: number
+): Promise<{ success: boolean; error: Error | null }> {
+    try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+            return { success: false, error: new Error('User not authenticated') };
+        }
+
+        // Find active suggestion for this document
+        const { data: suggestion } = await supabase
+            .from('club_book_suggestions' as any)
+            .select('id')
+            .eq('document_id', documentId)
+            .in('status', ['pending', 'active'])
+            .maybeSingle();
+
+        if (!suggestion) {
+            // Not a club book, skip
+            return { success: true, error: null };
+        }
+
+        // Calculate progress percentage
+        const progress = totalWords > 0 ? Math.round((currentWordIndex / totalWords) * 100) : 0;
+
+        // Update or create progress record
+        const { error: updateError } = await supabase
+            .from('club_member_progress' as any)
+            .upsert({
+                suggestion_id: suggestion.id,
+                user_id: user.id,
+                progress,
+                current_word_index: currentWordIndex,
+                status: 'reading'
+            }, {
+                onConflict: 'suggestion_id,user_id'
+            });
+
+        if (updateError) throw updateError;
+
+        return { success: true, error: null };
+    } catch (error) {
+        console.error('Error updating club progress:', error);
         return { success: false, error: error as Error };
     }
 }
