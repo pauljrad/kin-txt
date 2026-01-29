@@ -219,7 +219,9 @@ export async function updateDocumentProgress(id: string, paragraph: number, word
   }
 
   // Also update club progress if this is a club book
-  await updateClubProgress(id, wordIndex, totalWords);
+  console.log('[documentDatabase] Calling updateClubProgress for document:', id);
+  const clubResult = await updateClubProgress(id, wordIndex, totalWords);
+  console.log('[documentDatabase] updateClubProgress result:', clubResult);
 }
 
 export async function updateDocumentReadingTime(id: string, totalSeconds: number): Promise<void> {
