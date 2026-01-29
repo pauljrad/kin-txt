@@ -508,3 +508,59 @@ export async function getActiveBookSuggestion(
         return { suggestion: null, error: error as Error };
     }
 }
+
+/**
+ * Leave a club
+ * If the user is the last member, delete the club and all related data
+ */
+export async function leaveClub(clubId: string): Promise<{ success: boolean; error: Error | null }> {
+    try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+            return { success: false, error: new Error('User not authenticated') };
+        }
+
+        // Remove the user's membership
+        const { error: deleteError } = await supabase
+            .from('club_memberships' as any)
+            .delete()
+            .eq('club_id', clubId)
+            .eq('user_id', user.id);
+
+        if (deleteError) throw deleteError;
+
+        // Check if there are any remaining members
+        const { data: remainingMembers, error: countError } = await supabase
+            .from('club_memberships' as any)
+            .select('id')
+            .eq('club_id', clubId);
+
+        if (countError) throw countError;
+
+        // If no members left, delete the club and all related data
+        if (!remainingMembers || remainingMembers.length === 0) {
+            // Delete club book suggestions
+            await supabase
+                .from('club_book_suggestions' as any)
+                .delete()
+                .eq('club_id', clubId);
+
+            // Delete club member progress
+            await supabase
+                .from('club_member_progress' as any)
+                .delete()
+                .eq('club_id', clubId);
+
+            // Delete the club itself
+            await supabase
+                .from('kin_clubs' as any)
+                .delete()
+                .eq('id', clubId);
+        }
+
+        return { success: true, error: null };
+    } catch (error) {
+        console.error('Error leaving club:', error);
+        return { success: false, error: error as Error };
+    }
+}

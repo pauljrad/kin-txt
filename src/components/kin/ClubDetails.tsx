@@ -1,9 +1,19 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Users, BookOpen, Plus } from "lucide-react";
-import { getClubMembers, getActiveBookSuggestion, getClubProgress } from "@/lib/clubDatabase";
+import { BookOpen, Plus, Users, LogOut } from "lucide-react";
+import { getClubMembers, getActiveBookSuggestion, getClubProgress, leaveClub } from "@/lib/clubDatabase";
 import { getInitials } from "@/lib/utils";
 import { SuggestBookModal } from "./SuggestBookModal";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 
 interface ClubDetailsProps {
@@ -16,6 +26,7 @@ export const ClubDetails = ({ club, onRefresh }: ClubDetailsProps) => {
     const [activeSuggestion, setActiveSuggestion] = useState<any | null>(null);
     const [progress, setProgress] = useState<any[]>([]);
     const [suggestModalOpen, setSuggestModalOpen] = useState(false);
+    const [leaveDialogOpen, setLeaveDialogOpen] = useState(false);
 
     useEffect(() => {
         loadClubData();
@@ -49,14 +60,36 @@ export const ClubDetails = ({ club, onRefresh }: ClubDetailsProps) => {
         toast.success("Book suggested to club members!");
     };
 
+    const handleLeaveClub = async () => {
+        const { success, error } = await leaveClub(club.id);
+        if (error) {
+            toast.error("Failed to leave club");
+            return;
+        }
+        toast.success("Left club successfully");
+        setLeaveDialogOpen(false);
+        onRefresh();
+    };
+
     return (
         <div className="space-y-6">
             {/* Club Header */}
-            <div>
-                <h3 className="text-2xl font-bold mb-2">{club.name}</h3>
-                {club.description && (
-                    <p className="text-muted-foreground">{club.description}</p>
-                )}
+            <div className="flex items-start justify-between">
+                <div>
+                    <h3 className="text-2xl font-bold mb-2">{club.name}</h3>
+                    {club.description && (
+                        <p className="text-muted-foreground">{club.description}</p>
+                    )}
+                </div>
+                <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-2 text-destructive hover:text-destructive"
+                    onClick={() => setLeaveDialogOpen(true)}
+                >
+                    <LogOut className="h-4 w-4" />
+                    Leave Club
+                </Button>
             </div>
 
             {/* Members Section */}
@@ -168,6 +201,24 @@ export const ClubDetails = ({ club, onRefresh }: ClubDetailsProps) => {
                 clubId={club.id}
                 onBookSuggested={handleBookSuggested}
             />
+
+            <AlertDialog open={leaveDialogOpen} onOpenChange={setLeaveDialogOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Leave Club?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Are you sure you want to leave "{club.name}"?
+                            {members.length === 1 && " Since you're the last member, this club will be permanently deleted."}
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleLeaveClub} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                            Leave Club
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 };
