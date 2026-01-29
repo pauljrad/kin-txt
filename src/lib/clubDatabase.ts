@@ -286,10 +286,11 @@ export async function suggestBook(
 
         if (members && members.length > 0) {
             // Create progress records for ALL members (including suggester)
+            // All members are auto-accepted since this is a club book
             const progressRecords = members.map(m => ({
                 suggestion_id: suggestion.id,
                 user_id: m.user_id,
-                status: m.user_id === user.id ? 'accepted' : 'invited',
+                status: 'accepted', // Auto-accept all members for club books
                 progress: 0,
                 current_word_index: 0
             }));
