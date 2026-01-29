@@ -83,75 +83,87 @@ export const UserProfile = ({ userId }: UserProfileProps) => {
     const finished = history.filter(doc => doc.is_completed);
 
     return (
-        <div className="flex flex-col">
-            <div className="flex flex-col items-center mb-6">
-                <Avatar className="h-20 w-20 mb-3 border-2 border-border shadow-sm">
+        <div className="flex flex-col gap-5">
+            {/* Header: Horizontal Layout */}
+            <div className="flex items-center gap-4">
+                <Avatar className="h-16 w-16 border-2 border-border shadow-sm">
                     <AvatarImage src={profile.avatar_url || ''} className="object-cover" />
-                    <AvatarFallback className="text-xl bg-primary/10 text-primary font-bold">
+                    <AvatarFallback className="text-lg bg-primary/10 text-primary font-bold">
                         {getInitials(profile.display_name)}
                     </AvatarFallback>
                 </Avatar>
-                <h3 className="text-xl font-display text-foreground uppercase tracking-tight">{profile.display_name}</h3>
-                <p className="text-[10px] text-muted-foreground uppercase tracking-widest mt-1">K<span className="lowercase font-sans text-[10px] relative -top-[0.5px]">i</span>N since {new Date(profile.created_at).getFullYear()}</p>
+
+                <div className="flex-1 min-w-0">
+                    <h3 className="text-lg font-display font-bold leading-none mb-1.5 tracking-tight">{profile.display_name}</h3>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-medium">
+                        K<span className="lowercase font-sans text-[10px] relative -top-[0.5px]">i</span>N since {new Date(profile.created_at).getFullYear()}
+                    </p>
+                </div>
+
+                <div className="text-right px-2">
+                    <span className="block text-3xl font-display font-bold text-primary leading-none">{stats.total}</span>
+                    <span className="text-[8px] font-bold uppercase tracking-wider text-muted-foreground">Read</span>
+                </div>
             </div>
 
-            <Separator className="mb-6" />
-
-            {/* Reading Stats */}
-            <div className="grid grid-cols-4 gap-2 mb-6">
-                <div className="col-span-4 bg-secondary/20 rounded-lg p-3 text-center mb-2">
-                    <span className="block text-2xl font-bold font-display text-primary">{stats.total}</span>
-                    <span className="text-[10px] uppercase tracking-widest text-muted-foreground">XTs Read</span>
-                </div>
+            {/* Stats Bar */}
+            <div className="grid grid-cols-4 gap-2">
                 {[
                     { label: 'Arts', count: stats.byType.article },
                     { label: 'Books', count: stats.byType.ebook },
                     { label: 'Docs', count: stats.byType.document },
                     { label: 'Links', count: stats.byType.link }
                 ].map(stat => (
-                    <div key={stat.label} className="bg-secondary/10 rounded-md p-2 text-center">
+                    <div key={stat.label} className="bg-secondary/20 rounded-lg py-2 px-1 text-center border border-transparent hover:border-border/40 transition-colors">
                         <span className="block text-sm font-bold">{stat.count}</span>
-                        <span className="text-[8px] uppercase tracking-wider text-muted-foreground">{stat.label}</span>
+                        <span className="text-[8px] uppercase tracking-wider text-muted-foreground opacity-70">{stat.label}</span>
                     </div>
                 ))}
             </div>
 
-            <div className="space-y-6">
+            <Separator className="bg-border/40" />
+
+            <div className="space-y-5">
                 {/* Currently Reading */}
                 <div>
-                    <h4 className="text-[10px] font-bold text-primary mb-3 uppercase tracking-[0.2em] flex items-center gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                    <h4 className="flex items-center gap-2 text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2.5">
+                        <div className="w-1.5 h-1.5 rounded-full bg-primary/80 animate-pulse shadow-[0_0_8px_rgba(255,214,0,0.5)]" />
                         Reading Now
                     </h4>
                     <div className="space-y-1.5">
                         {reading.length > 0 ? (
                             reading.map(doc => (
-                                <div key={doc.id} className="text-xs p-2.5 rounded-lg bg-secondary/40 border border-border/50 group">
-                                    <p className="text-foreground font-medium truncate">{doc.title}</p>
+                                <div key={doc.id} className="text-sm p-3 rounded-lg bg-secondary/30 border border-border/40 group hover:border-primary/30 transition-colors">
+                                    <p className="text-foreground font-medium truncate leading-tight">{doc.title}</p>
+                                    <p className="text-[10px] text-muted-foreground mt-1.5">
+                                        Last read {new Date(doc.updated_at).toLocaleDateString()}
+                                    </p>
                                 </div>
                             ))
                         ) : (
-                            <p className="text-xs text-muted-foreground italic px-2">Nothing current.</p>
+                            <div className="text-xs text-muted-foreground/50 italic px-2 py-1">
+                                Not reading anything currently.
+                            </div>
                         )}
                     </div>
                 </div>
 
                 {/* Recently Finished */}
                 <div>
-                    <h4 className="text-[10px] font-bold text-muted-foreground mb-3 uppercase tracking-[0.2em]">History</h4>
-                    <ScrollArea className="h-32 pr-2 border rounded-md border-border/20 bg-secondary/5">
-                        <div className="p-2 space-y-1.5">
+                    <h4 className="text-[10px] font-bold text-muted-foreground/70 mb-2.5 uppercase tracking-widest pl-0.5">History</h4>
+                    <ScrollArea className="h-32 pr-3 -mr-2">
+                        <div className="space-y-1">
                             {finished.length > 0 ? (
                                 finished.map(doc => (
-                                    <div key={doc.id} className="text-xs p-2 rounded bg-background/50 border border-transparent hover:border-border/30 transition-all">
-                                        <p className="text-foreground/80 truncate">{doc.title}</p>
-                                        <p className="text-[8px] text-muted-foreground mt-0.5">
-                                            {doc.completed_at ? new Date(doc.completed_at).toLocaleDateString() : 'Finished'}
-                                        </p>
+                                    <div key={doc.id} className="flex items-center justify-between text-xs p-2 rounded-md hover:bg-secondary/40 transition-colors group cursor-default">
+                                        <p className="text-foreground/80 truncate flex-1 min-w-0 pr-3 group-hover:text-primary transition-colors">{doc.title}</p>
+                                        <span className="text-[9px] text-muted-foreground/60 whitespace-nowrap tabular-nums">
+                                            {doc.completed_at ? new Date(doc.completed_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : '-'}
+                                        </span>
                                     </div>
                                 ))
                             ) : (
-                                <p className="text-xs text-muted-foreground italic p-2">No history yet.</p>
+                                <p className="text-xs text-muted-foreground italic p-1">No reading history yet.</p>
                             )}
                         </div>
                     </ScrollArea>
