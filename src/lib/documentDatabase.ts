@@ -71,14 +71,7 @@ export function detectCategory(source: 'file' | 'paste' | 'url' | 'ebook' | 'art
   }
 
   if (source === 'paste') {
-    return wordCount > 5000 ? 'document' : 'attribute'; // Typo? Wait. 'attribute'? No.
-    // Wait, UserProfile treats 'paste' as Document (my change).
-    // detectCategory says 'document' or 'article'.
-    // If wordCount < 5000 it returns article?
-    // Let's keep it consistent: > 5000 -> document? Or just default loop.
-    return wordCount > 5000 ? 'document' : 'document'; // Let's simplify paste -> document as per user request (documents are uploads/paste).
-    // Actually user said "documents are like pdfs".
-    // I'll stick to 'document' for paste.
+    return 'document';
   }
 
   if (/\.(pdf|docx?)$/i.test(title)) {
