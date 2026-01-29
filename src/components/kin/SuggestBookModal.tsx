@@ -204,25 +204,24 @@ export const SuggestBookModal = ({ open, onOpenChange, clubId, onBookSuggested }
                         </div>
                     </TabsContent>
                 </Tabs>
-            </div>
 
-            <div className="flex justify-end gap-3 pt-4 border-t">
-                <Button
-                    variant="outline"
-                    onClick={() => onOpenChange(false)}
-                    disabled={isSuggesting}
-                >
-                    Cancel
-                </Button>
-                <Button
-                    onClick={handleSuggest}
-                    disabled={!selectedBookId || isSuggesting}
-                >
-                    {isSuggesting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Suggest to Club
-                </Button>
-            </div>
-        </DialogContent>
-        </Dialog >
+                <div className="flex justify-end gap-3 pt-4 border-t px-6">
+                    <Button
+                        variant="outline"
+                        onClick={() => onOpenChange(false)}
+                        disabled={isSuggesting}
+                    >
+                        Cancel
+                    </Button>
+                    <Button
+                        onClick={handleSuggest}
+                        disabled={!selectedBookId || isSuggesting}
+                    >
+                        {isSuggesting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Suggest to Club
+                    </Button>
+                </div>
+            </DialogContent>
+        </Dialog>
     );
 };
