@@ -584,21 +584,30 @@ export async function updateClubProgress(
             return { success: false, error: new Error('User not authenticated') };
         }
 
+        console.log('[updateClubProgress] Checking for club book:', { documentId, currentWordIndex, totalWords });
+
         // Find active suggestion for this document
-        const { data: suggestion } = await supabase
+        const { data: suggestion, error: suggestionError } = await supabase
             .from('club_book_suggestions' as any)
-            .select('id')
+            .select('id, club_id, title')
             .eq('document_id', documentId)
             .in('status', ['pending', 'active'])
             .maybeSingle();
 
+        console.log('[updateClubProgress] Suggestion query result:', { suggestion, suggestionError });
+
+        if (suggestionError) throw suggestionError;
+
         if (!suggestion) {
             // Not a club book, skip
+            console.log('[updateClubProgress] Not a club book, skipping');
             return { success: true, error: null };
         }
 
         // Calculate progress percentage
         const progress = totalWords > 0 ? Math.round((currentWordIndex / totalWords) * 100) : 0;
+
+        console.log('[updateClubProgress] Updating progress:', { suggestionId: suggestion.id, userId: user.id, progress, currentWordIndex });
 
         // Update or create progress record
         const { error: updateError } = await supabase
@@ -613,8 +622,12 @@ export async function updateClubProgress(
                 onConflict: 'suggestion_id,user_id'
             });
 
-        if (updateError) throw updateError;
+        if (updateError) {
+            console.error('[updateClubProgress] Update error:', updateError);
+            throw updateError;
+        }
 
+        console.log('[updateClubProgress] Successfully updated club progress');
         return { success: true, error: null };
     } catch (error) {
         console.error('Error updating club progress:', error);
