@@ -8,4 +8,6 @@ The following critical changes need to be deployed:
 - Rewritten getClubProgress to avoid foreign key joins  
 - Rewritten getClubMembers to avoid foreign key joins
 - RLS policies opened for club_book_suggestions and club_member_progress
-# Deployment trigger Thu Jan 29 11:48:57 GMT 2026
+- Notification toasts moved to bottom on mobile
+- Replaced The Conversation with Wikinews and Global Voices
+# Deployment trigger Fri Jan 30 14:15:00 UTC 2026 - News Source Update

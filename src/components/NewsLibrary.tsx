@@ -273,7 +273,7 @@ export function NewsLibrary({ onSelectArticle }: NewsLibraryProps) {
                 <div className="flex items-center gap-2 mb-3">
                   <div className="w-1.5 h-1.5 rounded-full bg-primary/70" />
                   <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/80">
-                    The Conversation
+                    {article.source}
                   </span>
                   <span className="text-[10px] text-muted-foreground ml-auto">
                     {formatTime(article.pubDate)}

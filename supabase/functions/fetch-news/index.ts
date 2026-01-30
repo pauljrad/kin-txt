@@ -27,46 +27,39 @@ interface RSSFeed {
 }
 
 const RSS_FEEDS: RSSFeed[] = [
-  { name: "The Conversation", url: "https://theconversation.com/uk/articles.atom", source: "conversation", category: "top" },
-  { name: "Technology", url: "https://theconversation.com/uk/technology/articles.atom", source: "conversation", category: "tech" },
-  { name: "Business", url: "https://theconversation.com/uk/business/articles.atom", source: "conversation", category: "business" },
-  { name: "Science", url: "https://theconversation.com/uk/politics/articles.atom", source: "conversation", category: "politics" },
-  { name: "Environment", url: "https://theconversation.com/uk/environment/articles.atom", source: "conversation", category: "science" },
-  { name: "Health", url: "https://theconversation.com/uk/health/articles.atom", source: "conversation", category: "science" },
-  { name: "Arts", url: "https://theconversation.com/uk/arts/articles.atom", source: "conversation", category: "entertainment" },
+  { name: "Top Stories", url: "https://en.wikinews.org/w/index.php?title=Special:NewsFeed&feed=rss&categories=Published&notcategories=No%20publish%7CArchived%7CAutoArchived%7Cdisputed&namespace=0&count=30", source: "Wikinews", category: "top" },
+  { name: "Global Voices", url: "https://globalvoices.org/feed/", source: "Global Voices", category: "top" },
+  { name: "Politics", url: "https://en.wikinews.org/w/index.php?title=Special:NewsFeed&feed=rss&categories=Politics_and_conflicts", source: "Wikinews", category: "politics" },
+  { name: "Science + Tech", url: "https://en.wikinews.org/w/index.php?title=Special:NewsFeed&feed=rss&categories=Science_and_technology", source: "Wikinews", category: "tech" },
+  { name: "Business", url: "https://en.wikinews.org/w/index.php?title=Special:NewsFeed&feed=rss&categories=Economy_and_business", source: "Wikinews", category: "business" },
+  { name: "Health", url: "https://en.wikinews.org/w/index.php?title=Special:NewsFeed&feed=rss&categories=Health", source: "Wikinews", category: "health" },
+  { name: "Culture", url: "https://en.wikinews.org/w/index.php?title=Special:NewsFeed&feed=rss&categories=Culture_and_entertainment", source: "Wikinews", category: "arts" },
+  { name: "Sports", url: "https://en.wikinews.org/w/index.php?title=Special:NewsFeed&feed=rss&categories=Sports", source: "Wikinews", category: "sports" },
+  { name: "Environment", url: "https://en.wikinews.org/w/index.php?title=Special:NewsFeed&feed=rss&categories=Environment", source: "Wikinews", category: "environment" },
 ];
 
-function extractAtomContent(xml: string, tag: string): string {
+const CATEGORIES = [
+  { id: "top", name: "Top Stories" },
+  { id: "politics", name: "Politics" },
+  { id: "tech", name: "Science + Tech" },
+  { id: "business", name: "Business" },
+  { id: "arts", name: "Culture" },
+  { id: "health", name: "Health" },
+  { id: "environment", name: "Environment" },
+  { id: "sports", name: "Sports" },
+];
+
+const ALLOWED_CATEGORIES = CATEGORIES.map(c => c.id);
+
+function stripTags(text: string): string {
+  return text.replace(/<[^>]*>/g, "").trim();
+}
+
+function extractContent(xml: string, tag: string): string {
   const pattern = new RegExp(`<${tag}[^>]*>([\\s\\S]*?)<\\/${tag}>`, "i");
   const match = xml.match(pattern);
-  return match ? decodeEntities(stripTags(match[1])) : "";
-}
-
-function extractAtomLink(xml: string): string {
-  const pattern = /<link[^>]*href=["']([^"']+)["'][^>]*\/>/i;
-  const match = xml.match(pattern);
-  return match ? parseEntity(match[1]) : "";
-}
-
-function parseEntity(str: string): string {
-  return str.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'");
-}
-
-function extractAtomAuthor(xml: string): string {
-  const pattern = /<author>\s*<name>([\s\S]*?)<\/name>\s*<\/author>/i;
-  const match = xml.match(pattern);
-  return match ? parseEntity(match[1].trim()) : "The Conversation";
-}
-
-// Extract full HTML content (preserving tags for pixel) but cleaning mostly
-function extractAtomHtmlContent(xml: string): string {
-  const pattern = /<content\s+type="html">([\s\S]*?)<\/content>/i;
-  const match = xml.match(pattern);
   if (!match) return "";
-
-  // The content is already HTML escaped in XML usually, or CDATA
   let content = match[1];
-
   // Check for CDATA
   const cdataMatch = content.match(/<!\[CDATA\[([\s\S]*?)\]\]>/i);
   if (cdataMatch) {
@@ -74,8 +67,38 @@ function extractAtomHtmlContent(xml: string): string {
   } else {
     content = parseEntity(content);
   }
-
   return content;
+}
+
+function extractLink(xml: string): string {
+  // Atom format
+  const atomPattern = /<link[^>]*href=["']([^"']+)["'][^>]*\/>/i;
+  let match = xml.match(atomPattern);
+  if (match) return parseEntity(match[1]);
+
+  // RSS format
+  const rssPattern = /<link>([\s\S]*?)<\/link>/i;
+  match = xml.match(rssPattern);
+  return match ? parseEntity(stripTags(match[1])) : "";
+}
+
+function parseEntity(str: string): string {
+  return str.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'");
+}
+
+function extractAuthor(xml: string): string {
+  // Atom format
+  const authorMatch = xml.match(/<author>([\s\S]*?)<\/author>/i);
+  if (authorMatch) {
+    const nameMatch = authorMatch[1].match(/<name>([\s\S]*?)<\/name>/i);
+    if (nameMatch) return parseEntity(nameMatch[1].trim());
+  }
+
+  // RSS format
+  const dcCreatorMatch = xml.match(/<dc:creator>([\s\S]*?)<\/dc:creator>/i);
+  if (dcCreatorMatch) return parseEntity(stripTags(dcCreatorMatch[1]));
+
+  return "";
 }
 
 async function fetchRSSFeed(feed: RSSFeed): Promise<NewsItem[]> {
@@ -101,55 +124,35 @@ async function fetchRSSFeed(feed: RSSFeed): Promise<NewsItem[]> {
     const xml = await response.text();
     const items: NewsItem[] = [];
 
-    // Split by <entry> tags for Atom
-    const entries = xml.split('<entry>');
-    // Skip the first split part (header)
-    entries.shift();
+    // Split by <entry> (Atom) or <item> (RSS)
+    const entries = xml.includes('<entry>') ? xml.split('<entry>') : xml.split('<item>');
+    entries.shift(); // Skip header
 
     let count = 0;
     for (const entryXml of entries) {
-      if (count >= 15) break; // Limit items per feed
+      if (count >= 15) break;
 
-      const title = extractAtomContent(entryXml, "title");
-      const link = extractAtomLink(entryXml);
+      const title = stripTags(extractContent(entryXml, "title"));
+      const link = extractLink(entryXml);
 
       if (!title || !link) continue;
 
-      const summary = extractAtomContent(entryXml, "summary");
-      const published = extractAtomContent(entryXml, "published");
-      const author = extractAtomAuthor(entryXml);
-      const fullContent = extractAtomHtmlContent(entryXml);
-
-      // We need to keep the 1x1 pixel image.
-      // Usually it's at the end or beginning.
-      // We will pass the RAW HTML (cleaned somewhat) to the frontend or parse it there.
-      // For now, let's store the full HTML in `description` or a new field.
-      // Since `NewsItem` interface needs update, we'll assume `description` holds the summary, 
-      // and we return raw content via a different mechanism or update the interface.
-      // Actually, let's just use the `description` for summary. 
-      // We need to send `content` to frontend.
-
-      // IMPORTANT: The existing NewsItem interface doesn't have `content` or `author`.
-      // I need to add them. But I can't modify the interface *inside* this function replacement easily if it's defined above.
-      // Wait, the interface IS defined above line 27. I should have updated it.
-      // I will update the interface in a separate call or overlapping call. 
-      // For now, I'll shove it into the object and cast it or hope TS is loose (it is Deno, so TS is strict).
-
-      // I'll update the return type logic below.
+      const summary = stripTags(extractContent(entryXml, "description") || extractContent(entryXml, "summary"));
+      const published = extractContent(entryXml, "pubDate") || extractContent(entryXml, "published");
+      const author = extractAuthor(entryXml) || feed.source;
+      const fullContent = extractContent(entryXml, "content:encoded") || extractContent(entryXml, "content") || summary;
 
       items.push({
-        id: `${feed.source}-${count}-${Date.now()}`,
+        id: `${feed.source.toLowerCase().replace(/ /g, '-')}-${count}-${Date.now()}`,
         title,
-        description: summary, // Use summary for the card
+        description: summary,
         link,
         pubDate: published || new Date().toISOString(),
         source: feed.source,
-        imageUrl: undefined, // No images allowed
-        // @ts-ignore
+        imageUrl: undefined,
         author,
-        // @ts-ignore
         content: fullContent
-      } as NewsItem);
+      });
 
       count++;
     }

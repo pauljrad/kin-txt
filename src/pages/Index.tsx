@@ -251,6 +251,7 @@ const Index = () => {
     author: string;
     pixelUrl?: string;
     pendingDoc: ActiveDocument;
+    source?: string;
   } | null>(null);
 
   useEffect(() => {
@@ -258,7 +259,7 @@ const Index = () => {
       const timer = setTimeout(() => {
         setActiveDocument(attributionData.pendingDoc);
         setAttributionData(null);
-      }, 1500); // 1.5 seconds to be safe and readable
+      }, 2000); // 2.0 seconds as requested
       return () => clearTimeout(timer);
     }
   }, [attributionData]);
@@ -335,10 +336,13 @@ const Index = () => {
     }
 
     // Trigger attribution splash
+    const sourceName = meta?.author === 'Wikinews' ? 'Wikinews' : meta?.author === 'Global Voices' ? 'Global Voices' : 'The Conversation';
+
     setAttributionData({
-      author: meta?.author || 'The Conversation',
+      author: meta?.author || sourceName,
       pixelUrl,
-      pendingDoc
+      pendingDoc,
+      source: sourceName
     });
 
   }, []);
@@ -615,14 +619,18 @@ const Index = () => {
             className="fixed inset-0 z-[100] bg-background flex flex-col items-center justify-center p-8 text-center"
           >
             <div className="max-w-2xl space-y-6">
-              <h2 className="text-2xl md:text-3xl font-serif text-foreground">
+              <h2 className="text-3xl md:text-5xl font-display uppercase leading-none tracking-wide text-foreground">
                 Written by <span className="text-primary">{attributionData.author}</span>
               </h2>
-              <p className="text-muted-foreground text-lg">
-                Originally published by The Conversation.
+              <p className="text-muted-foreground text-xl font-display tracking-wide uppercase">
+                Originally published by {attributionData.source || 'The Conversation'}.
               </p>
-              <p className="text-xs text-muted-foreground/60 uppercase tracking-widest mt-8">
-                Republished under CC BY-ND. No changes have been made to the text.
+              <p className="text-xs text-muted-foreground/60 uppercase tracking-widest mt-8 font-mono">
+                {attributionData.source === 'Wikinews'
+                  ? 'Republished under CC BY 2.5.'
+                  : attributionData.source === 'Global Voices'
+                    ? 'Republished under CC BY 3.0.'
+                    : 'Republished under CC BY-ND.'} No changes have been made to the text.
               </p>
             </div>
 
