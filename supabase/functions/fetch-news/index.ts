@@ -91,12 +91,23 @@ function extractAuthor(xml: string): string {
   const authorMatch = xml.match(/<author>([\s\S]*?)<\/author>/i);
   if (authorMatch) {
     const nameMatch = authorMatch[1].match(/<name>([\s\S]*?)<\/name>/i);
-    if (nameMatch) return parseEntity(nameMatch[1].trim());
+    if (nameMatch) {
+      const name = parseEntity(nameMatch[1].trim());
+      // Skip if name is just "Wikinews" or "Global Voices"
+      if (!["Wikinews", "Global Voices", "The Conversation"].includes(name)) {
+        return name;
+      }
+    }
   }
 
-  // RSS format
+  // RSS format (dc:creator)
   const dcCreatorMatch = xml.match(/<dc:creator>([\s\S]*?)<\/dc:creator>/i);
-  if (dcCreatorMatch) return parseEntity(stripTags(dcCreatorMatch[1]));
+  if (dcCreatorMatch) {
+    const name = parseEntity(stripTags(dcCreatorMatch[1])).trim();
+    if (!["Wikinews", "Global Voices", "The Conversation"].includes(name)) {
+      return name;
+    }
+  }
 
   return "";
 }

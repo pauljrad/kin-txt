@@ -338,8 +338,10 @@ const Index = () => {
     // Trigger attribution splash
     const sourceName = meta?.author === 'Wikinews' ? 'Wikinews' : meta?.author === 'Global Voices' ? 'Global Voices' : 'The Conversation';
 
+    // If the author is just the publication name, we'll use a generic placeholder or keep it as is
+    // but the UI will now distinguish between "Written by" and "Originally published by"
     setAttributionData({
-      author: meta?.author || sourceName,
+      author: meta?.author || 'Unknown Author',
       pixelUrl,
       pendingDoc,
       source: sourceName
