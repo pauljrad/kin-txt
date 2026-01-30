@@ -289,7 +289,7 @@ export function NewsLibrary({ onSelectArticle }: NewsLibraryProps) {
               {/* Author Attribution */}
               <div className="mt-2 pt-3 border-t border-border/40">
                 <p className="text-[11px] text-muted-foreground font-medium truncate">
-                  By <span className="text-foreground/90">{article.author || 'The Conversation'}</span>
+                  By <span className="text-foreground/90">{article.author}</span>
                 </p>
               </div>
 

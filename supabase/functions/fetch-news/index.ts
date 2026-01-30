@@ -90,11 +90,23 @@ function parseEntity(str: string): string {
   return str.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'");
 }
 
-function extractAuthor(xml: string, source: string): string {
+function extractAuthor(xml: string, source: string, content?: string): string {
+  // If Global Voices, try to find "Written by" in the content first
+  if (source === "Global Voices" && content) {
+    const writtenByMatch = content.match(/Written by\s*<a[^>]*>([\s\S]*?)<\/a>/i) ||
+      content.match(/Written by\s*([^<.\n]+)/i);
+    if (writtenByMatch) {
+      const name = stripTags(writtenByMatch[1]);
+      if (name && name.length < 100) return name;
+    }
+  }
+
   // Try dc:creator first (common in RSS) - check both with and without CDATA
   const dcCreatorMatch = xml.match(/<dc:creator>([\s\S]*?)<\/dc:creator>/i);
   if (dcCreatorMatch) {
     const name = stripTags(dcCreatorMatch[1]);
+    // For Global Voices, dc:creator often has the translator. 
+    // If we're here and it's Global Voices, we already tried content check.
     if (name && !["Wikinews", "Global Voices", "The Conversation"].includes(name)) {
       return name;
     }
@@ -162,8 +174,8 @@ async function fetchRSSFeed(feed: RSSFeed): Promise<NewsItem[]> {
 
       const summary = stripTags(extractContent(entryXml, "description") || extractContent(entryXml, "summary"));
       const published = extractContent(entryXml, "pubDate") || extractContent(entryXml, "published");
-      const author = extractAuthor(entryXml, feed.source) || feed.source;
       const fullContent = extractContent(entryXml, "content:encoded") || extractContent(entryXml, "content") || summary;
+      const author = extractAuthor(entryXml, feed.source, fullContent) || feed.source;
 
       items.push({
         id: `${feed.source.toLowerCase().replace(/ /g, '-')}-${count}-${Date.now()}`,

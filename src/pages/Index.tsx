@@ -314,7 +314,7 @@ const Index = () => {
       if (match) pixelUrl = match[1];
     }
 
-    const sourceName = meta?.source === 'Wikinews' ? 'Wikinews' : meta?.source === 'Global Voices' ? 'Global Voices' : 'The Conversation';
+    const sourceName = meta?.source || 'The Conversation';
 
     // Set document active immediately, KineticPlayer will handle the attribution splash
     setActiveDocument({
