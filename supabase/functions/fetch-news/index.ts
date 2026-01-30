@@ -86,15 +86,14 @@ function parseEntity(str: string): string {
   return str.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'");
 }
 
-function extractAuthor(xml: string): string {
+function extractAuthor(xml: string, source: string): string {
   // Atom format
   const authorMatch = xml.match(/<author>([\s\S]*?)<\/author>/i);
   if (authorMatch) {
     const nameMatch = authorMatch[1].match(/<name>([\s\S]*?)<\/name>/i);
     if (nameMatch) {
       const name = parseEntity(nameMatch[1].trim());
-      // Skip if name is just "Wikinews" or "Global Voices"
-      if (!["Wikinews", "Global Voices", "The Conversation"].includes(name)) {
+      if (name && !["Wikinews", "Global Voices", "The Conversation"].includes(name)) {
         return name;
       }
     }
@@ -104,10 +103,14 @@ function extractAuthor(xml: string): string {
   const dcCreatorMatch = xml.match(/<dc:creator>([\s\S]*?)<\/dc:creator>/i);
   if (dcCreatorMatch) {
     const name = parseEntity(stripTags(dcCreatorMatch[1])).trim();
-    if (!["Wikinews", "Global Voices", "The Conversation"].includes(name)) {
+    if (name && !["Wikinews", "Global Voices", "The Conversation"].includes(name)) {
       return name;
     }
   }
+
+  // Fallback for specific sources if no individual author found
+  if (source === "Wikinews") return "Wikinews Contributors";
+  if (source === "Global Voices") return "Global Voices Contributors";
 
   return "";
 }
@@ -150,7 +153,7 @@ async function fetchRSSFeed(feed: RSSFeed): Promise<NewsItem[]> {
 
       const summary = stripTags(extractContent(entryXml, "description") || extractContent(entryXml, "summary"));
       const published = extractContent(entryXml, "pubDate") || extractContent(entryXml, "published");
-      const author = extractAuthor(entryXml) || feed.source;
+      const author = extractAuthor(entryXml, feed.source) || feed.source;
       const fullContent = extractContent(entryXml, "content:encoded") || extractContent(entryXml, "content") || summary;
 
       items.push({

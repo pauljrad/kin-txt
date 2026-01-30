@@ -1094,7 +1094,7 @@ export function KineticPlayer({
             className="absolute inset-0 z-[60] bg-background flex flex-col items-center justify-center p-8 text-center"
             onClick={(e) => {
               e.stopPropagation();
-              setShowingAttribution(false);
+              setIsPlaying(!isPlaying);
             }}
           >
             <div className="max-w-2xl space-y-6">
@@ -1122,6 +1122,7 @@ export function KineticPlayer({
                     <Pause className="w-6 h-6 text-primary" />
                   </div>
                   <span className="text-xs uppercase tracking-widest text-primary font-medium">Paused</span>
+                  <span className="text-[10px] uppercase tracking-widest text-muted-foreground/60 mt-2">Tap to read</span>
                 </motion.div>
               )}
 
