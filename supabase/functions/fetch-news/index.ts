@@ -52,7 +52,11 @@ const CATEGORIES = [
 const ALLOWED_CATEGORIES = CATEGORIES.map(c => c.id);
 
 function stripTags(text: string): string {
-  return text.replace(/<[^>]*>/g, "").trim();
+  if (!text) return "";
+  // First, unwrap CDATA if present
+  let cleaned = text.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/gi, "$1");
+  // Then remove HTML tags
+  return cleaned.replace(/<[^>]*>/g, "").trim();
 }
 
 function extractContent(xml: string, tag: string): string {
@@ -87,24 +91,29 @@ function parseEntity(str: string): string {
 }
 
 function extractAuthor(xml: string, source: string): string {
-  // Atom format
+  // Try dc:creator first (common in RSS) - check both with and without CDATA
+  const dcCreatorMatch = xml.match(/<dc:creator>([\s\S]*?)<\/dc:creator>/i);
+  if (dcCreatorMatch) {
+    const name = stripTags(dcCreatorMatch[1]);
+    if (name && !["Wikinews", "Global Voices", "The Conversation"].includes(name)) {
+      return name;
+    }
+  }
+
+  // Try Atom format <author><name>
   const authorMatch = xml.match(/<author>([\s\S]*?)<\/author>/i);
   if (authorMatch) {
     const nameMatch = authorMatch[1].match(/<name>([\s\S]*?)<\/name>/i);
     if (nameMatch) {
-      const name = parseEntity(nameMatch[1].trim());
+      const name = stripTags(nameMatch[1]);
       if (name && !["Wikinews", "Global Voices", "The Conversation"].includes(name)) {
         return name;
       }
     }
-  }
-
-  // RSS format (dc:creator)
-  const dcCreatorMatch = xml.match(/<dc:creator>([\s\S]*?)<\/dc:creator>/i);
-  if (dcCreatorMatch) {
-    const name = parseEntity(stripTags(dcCreatorMatch[1])).trim();
-    if (name && !["Wikinews", "Global Voices", "The Conversation"].includes(name)) {
-      return name;
+    // Some feeds have <author>Author Name</author> directly
+    const directName = stripTags(authorMatch[1]);
+    if (directName && directName.length < 100 && !["Wikinews", "Global Voices", "The Conversation"].includes(directName)) {
+      return directName;
     }
   }
 
