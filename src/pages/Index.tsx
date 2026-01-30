@@ -40,6 +40,11 @@ interface ActiveDocument {
   whisperedWords?: string[];
   totalReadingTime?: number;
   isEbook?: boolean;
+  attribution?: {
+    author: string;
+    source?: string;
+    pixelUrl?: string;
+  };
 }
 
 interface EmphasisAnalysis {
@@ -247,22 +252,7 @@ const Index = () => {
     });
   }, []);
 
-  const [attributionData, setAttributionData] = useState<{
-    author: string;
-    pixelUrl?: string;
-    pendingDoc: ActiveDocument;
-    source?: string;
-  } | null>(null);
-
-  useEffect(() => {
-    if (attributionData) {
-      const timer = setTimeout(() => {
-        setActiveDocument(attributionData.pendingDoc);
-        setAttributionData(null);
-      }, 2000); // 2.0 seconds as requested
-      return () => clearTimeout(timer);
-    }
-  }, [attributionData]);
+  // Attribution is now handled within KineticPlayer
 
   const handleNewsSelect = useCallback(async (
     parsed: ParsedText,
@@ -317,17 +307,6 @@ const Index = () => {
       toast.success(`Found ${finalEmphasisWords.length} emphasis and ${finalWhisperedWords.length} whispered words`);
     }
 
-    // Prepare the document but don't set it active yet
-    const pendingDoc: ActiveDocument = {
-      parsedText: cleanedText,
-      title,
-      id: saved.id,
-      emphasisWords: finalEmphasisWords,
-      whisperedWords: finalWhisperedWords,
-      totalReadingTime: 0,
-      isEbook: false,
-    };
-
     // Extract pixel URL from rawHtml if present
     let pixelUrl: string | undefined;
     if (meta?.rawHtml) {
@@ -335,16 +314,22 @@ const Index = () => {
       if (match) pixelUrl = match[1];
     }
 
-    // Trigger attribution splash
     const sourceName = meta?.author === 'Wikinews' ? 'Wikinews' : meta?.author === 'Global Voices' ? 'Global Voices' : 'The Conversation';
 
-    // If the author is just the publication name, we'll use a generic placeholder or keep it as is
-    // but the UI will now distinguish between "Written by" and "Originally published by"
-    setAttributionData({
-      author: meta?.author || 'Unknown Author',
-      pixelUrl,
-      pendingDoc,
-      source: sourceName
+    // Set document active immediately, KineticPlayer will handle the attribution splash
+    setActiveDocument({
+      parsedText: cleanedText,
+      title,
+      id: saved.id,
+      emphasisWords: finalEmphasisWords,
+      whisperedWords: finalWhisperedWords,
+      totalReadingTime: 0,
+      isEbook: false,
+      attribution: {
+        author: meta?.author || 'Unknown Author',
+        source: sourceName,
+        pixelUrl
+      }
     });
 
   }, []);
@@ -357,8 +342,8 @@ const Index = () => {
 
       if (error) throw error;
       return {
-        emphasisWords: data.emphasisWords || [],
-        whisperedWords: data.whisperedWords || [],
+        emphasisWords: (data as any).emphasisWords || [],
+        whisperedWords: (data as any).whisperedWords || [],
       };
     } catch (err) {
       console.error('Failed to analyze emphasis:', err);
@@ -525,7 +510,7 @@ const Index = () => {
 
         if (linkError || !linkData) throw new Error("Link invalid or expired");
 
-        const content = linkData.content as any;
+        const content = (linkData as any).content as any;
 
         // Save to Library
         const { data: newDoc, error: saveErr } = await supabase
@@ -535,7 +520,7 @@ const Index = () => {
             title: content.title || 'Shared TXT',
             content: JSON.stringify(content.parsedText),
             preview: content.preview || '',
-            word_count: content.parsedText.paragraphs.flat().length,
+            word_count: (content.parsedText?.paragraphs?.flat()?.length) || 0,
             current_word_index: 0,
             progress: 0,
             source: 'url',
@@ -550,7 +535,7 @@ const Index = () => {
 
         // Open it
         if (newDoc) {
-          handleOpenDocumentById(newDoc.id);
+          handleOpenDocumentById((newDoc as any).id);
         }
 
       } catch (e) {
@@ -586,7 +571,7 @@ const Index = () => {
 
       // Construct URL
       const url = new URL(window.location.origin);
-      url.searchParams.set('share_id', data.id);
+      url.searchParams.set('share_id', (data as any).id);
       return url.toString();
     } catch (e) {
       console.error("Error generating link:", e);
@@ -612,36 +597,7 @@ const Index = () => {
       />
 
       <AnimatePresence mode="wait">
-        {attributionData ? (
-          <motion.div
-            key="attribution"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] bg-background flex flex-col items-center justify-center p-8 text-center"
-          >
-            <div className="max-w-2xl space-y-6">
-              <h2 className="text-3xl md:text-5xl font-display uppercase leading-none tracking-wide text-foreground">
-                Written by <span className="text-primary">{attributionData.author}</span>
-              </h2>
-              <p className="text-muted-foreground text-xl font-display tracking-wide uppercase">
-                Originally published by {attributionData.source || 'The Conversation'}.
-              </p>
-              <p className="text-xs text-muted-foreground/60 uppercase tracking-widest mt-8 font-mono">
-                {attributionData.source === 'Wikinews'
-                  ? 'Republished under CC BY 2.5.'
-                  : attributionData.source === 'Global Voices'
-                    ? 'Republished under CC BY 3.0.'
-                    : 'Republished under CC BY-ND.'} No changes have been made to the text.
-              </p>
-            </div>
-
-            {/* Invisible Tracking Pixel */}
-            {attributionData.pixelUrl && (
-              <img src={attributionData.pixelUrl} alt="" className="w-[1px] h-[1px] opacity-0 absolute pointer-events-none" />
-            )}
-          </motion.div>
-        ) : !activeDocument ? (
+        {!activeDocument ? (
           <motion.div
             key="input"
             initial={{ opacity: 0 }}
@@ -728,6 +684,7 @@ const Index = () => {
               onProgressChange={handleProgressChange}
               isEbook={activeDocument.isEbook}
               onShare={handleShareClick as any}
+              attribution={activeDocument.attribution}
             />
           </div>
         )}

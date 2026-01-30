@@ -28,6 +28,11 @@ interface KineticPlayerProps {
   onProgressChange?: (paragraph: number, word: number) => void;
   isEbook?: boolean;
   onShare?: () => void;
+  attribution?: {
+    author: string;
+    source?: string;
+    pixelUrl?: string;
+  };
 }
 
 export function KineticPlayer({
@@ -40,7 +45,8 @@ export function KineticPlayer({
   onBack,
   onProgressChange,
   isEbook = false,
-  onShare
+  onShare,
+  attribution
 }: KineticPlayerProps) {
   const { textSize, setTextSize } = useTextSize();
 
@@ -105,6 +111,7 @@ export function KineticPlayer({
   const [wordsReadInSession, setWordsReadInSession] = useState(0);
   const [showSettingsPopover, setShowSettingsPopover] = useState(false);
   const [showingChapterTitle, setShowingChapterTitle] = useState<string | null>(null);
+  const [showingAttribution, setShowingAttribution] = useState<boolean>(!!attribution);
   const [lastChapterIndex, setLastChapterIndex] = useState(-1);
   const [atmospherePlaying, setAtmospherePlaying] = useState(false);
   const atmosphereAudioRef = useRef<HTMLAudioElement>(null);
@@ -570,6 +577,16 @@ export function KineticPlayer({
     setChunkLength(count);
   }, [parsedText.paragraphs]);
 
+  // Attribution Timer Logic
+  useEffect(() => {
+    if (showingAttribution && isPlaying) {
+      const timer = setTimeout(() => {
+        setShowingAttribution(false);
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [showingAttribution, isPlaying]);
+
   // Handle progress bar click/drag
   const handleProgressBarInteraction = useCallback((e: React.MouseEvent | React.TouchEvent) => {
     if (!progressBarRef.current) return;
@@ -1034,7 +1051,7 @@ export function KineticPlayer({
 
   // In focus mode, minimal controls (Back + Eye) are ALWAYS visible
   // so user can exit focus mode any time. Full HUD only when showControls & not focus.
-  const hudVisible = showControls && !focusMode;
+  const isHudVisible = showControls && !focusMode;
   const minimalControlsVisible = focusMode;
 
   // Error state: if parsedText is invalid, show error and back button
@@ -1067,9 +1084,65 @@ export function KineticPlayer({
       onMouseMove={handleMouseMove}
       onClick={handleScreenTap}
     >
+      {/* Attribution Splash Overlay */}
+      <AnimatePresence>
+        {showingAttribution && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 z-[60] bg-background flex flex-col items-center justify-center p-8 text-center"
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowingAttribution(false);
+            }}
+          >
+            <div className="max-w-2xl space-y-6">
+              <h2 className="text-3xl md:text-5xl font-display uppercase leading-none tracking-wide text-foreground">
+                Written by <span className="text-primary">{attribution?.author}</span>
+              </h2>
+              <p className="text-muted-foreground text-xl font-display tracking-wide uppercase">
+                Originally published by {attribution?.source || 'The Conversation'}.
+              </p>
+              <p className="text-xs text-muted-foreground/60 uppercase tracking-widest mt-8 font-mono">
+                {attribution?.source === 'Wikinews'
+                  ? 'Republished under CC BY 2.5.'
+                  : attribution?.source === 'Global Voices'
+                    ? 'Republished under CC BY 3.0.'
+                    : 'Republished under CC BY-ND.'} No changes have been made to the text.
+              </p>
+
+              {!isPlaying && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="mt-12 flex flex-col items-center gap-2"
+                >
+                  <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center">
+                    <Pause className="w-6 h-6 text-primary" />
+                  </div>
+                  <span className="text-xs uppercase tracking-widest text-primary font-medium">Paused</span>
+                </motion.div>
+              )}
+
+              {isPlaying && (
+                <div className="mt-8 text-[10px] uppercase tracking-[0.2em] text-muted-foreground/40 animate-pulse">
+                  Starting in 2 seconds...
+                </div>
+              )}
+            </div>
+
+            {/* Invisible Tracking Pixel */}
+            {attribution?.pixelUrl && (
+              <img src={attribution.pixelUrl} alt="" className="w-[1px] h-[1px] opacity-0 absolute pointer-events-none" />
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Chapter Title Overlay */}
       <AnimatePresence>
-        {showingChapterTitle && (
+        {showingChapterTitle && !showingAttribution && (
           <motion.div
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -1201,7 +1274,7 @@ export function KineticPlayer({
 
       {/* Reading Time Display - positioned below the speed indicator */}
       <AnimatePresence>
-        {hudVisible && (
+        {isHudVisible && (
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -1220,7 +1293,7 @@ export function KineticPlayer({
 
       {/* Progress Bar - Seekable */}
       <AnimatePresence>
-        {hudVisible && (
+        {isHudVisible && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -1261,7 +1334,7 @@ export function KineticPlayer({
 
       {/* Chapter Navigation - uses toolbar button (no floating toggle) */}
       {
-        hudVisible && (
+        isHudVisible && (
           <ChapterNavigation
             chapters={chapters}
             currentWordIndex={getCurrentWordIndex()}
@@ -1276,7 +1349,7 @@ export function KineticPlayer({
 
       {/* Controls Overlay */}
       <AnimatePresence>
-        {hudVisible && (
+        {isHudVisible && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
