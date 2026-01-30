@@ -120,7 +120,7 @@ export function NewsLibrary({ onSelectArticle }: NewsLibraryProps) {
 
         onSelectArticle(parsed, article.title, {
           link: article.link,
-          source: 'article', // Strict 'article' default
+          source: article.source,
           author: article.author,
           // @ts-ignore - passing extra meta for pixel handling
           rawHtml: article.content
@@ -154,7 +154,7 @@ export function NewsLibrary({ onSelectArticle }: NewsLibraryProps) {
 
       // Parse the scraped text
       const parsed = parseTextContent(data.text);
-      onSelectArticle(parsed, article.title, { link: article.link, source: 'article', author: article.author });
+      onSelectArticle(parsed, article.title, { link: article.link, source: article.source, author: article.author });
     } catch (err) {
       console.error('Error loading article:', err);
       toast.error(err instanceof Error ? err.message : 'Failed to load article.');
