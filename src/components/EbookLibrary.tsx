@@ -49,10 +49,16 @@ export const AVAILABLE_EBOOKS: Ebook[] = [
     filePath: '/ebooks/siddhartha.epub',
   },
   {
-    id: 'great-gatsby',
-    title: 'The Great Gatsby',
-    author: 'F. Scott Fitzgerald',
-    filePath: '/ebooks/great-gatsby.epub',
+    id: 'dubliners',
+    title: 'Dubliners',
+    author: 'James Joyce',
+    filePath: '/ebooks/dubliners.epub',
+  },
+  {
+    id: 'notes-underground',
+    title: 'Notes from the Underground',
+    author: 'Fyodor Dostoevsky',
+    filePath: '/ebooks/notes-underground.epub',
   },
 ];
 

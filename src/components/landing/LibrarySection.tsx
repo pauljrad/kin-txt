@@ -44,6 +44,18 @@ const BOOKS = [
         title: 'The Great Gatsby',
         author: 'F. Scott Fitzgerald',
         isDark: true
+    },
+    {
+        id: 'dubliners',
+        title: 'Dubliners',
+        author: 'James Joyce',
+        isDark: false
+    },
+    {
+        id: 'notes-underground',
+        title: 'Notes from the Underground',
+        author: 'Fyodor Dostoevsky',
+        isDark: true
     }
 ];
 

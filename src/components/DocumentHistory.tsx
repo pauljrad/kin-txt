@@ -19,8 +19,8 @@ export const DocumentHistory = forwardRef<HTMLDivElement, DocumentHistoryProps>(
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState('');
   const [showCompleted, setShowCompleted] = useState(false);
-  // Start with all categories collapsed by default for a neater look
-  const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(new Set(['book', 'article', 'document']));
+  // Expand all categories by default for easier access
+  const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(new Set());
   const [collapsedReadCategories, setCollapsedReadCategories] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(true);
   const [pendingDelete, setPendingDelete] = useState<{ doc: SavedDocument; timeoutId: NodeJS.Timeout } | null>(null);
@@ -353,7 +353,7 @@ export const DocumentHistory = forwardRef<HTMLDivElement, DocumentHistoryProps>(
         </div>
 
         {/* Right side - Progress and actions */}
-        <div className="flex items-center gap-2 sm:gap-3 ml-13 sm:ml-0">
+        <div className="flex items-center gap-2 sm:gap-3 ml-0">
           {/* Progress indicator */}
           <div className="flex items-center gap-1.5 flex-shrink-0">
             <div className="w-12 sm:w-16 h-1.5 bg-muted rounded-full overflow-hidden">
@@ -367,8 +367,8 @@ export const DocumentHistory = forwardRef<HTMLDivElement, DocumentHistoryProps>(
             </span>
           </div>
 
-          {/* Action buttons */}
-          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          {/* Action buttons - Always visible on touch devices, hover on desktop */}
+          <div className="flex items-center gap-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
             {/* Mark as completed/uncompleted */}
             <button
               onClick={(e) => handleMarkCompleted(e, doc.id, !doc.completed)}
