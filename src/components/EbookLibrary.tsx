@@ -48,6 +48,12 @@ export const AVAILABLE_EBOOKS: Ebook[] = [
     author: 'Hermann Hesse',
     filePath: '/ebooks/siddhartha.epub',
   },
+  {
+    id: 'great-gatsby',
+    title: 'The Great Gatsby',
+    author: 'F. Scott Fitzgerald',
+    filePath: '/ebooks/great-gatsby.epub',
+  },
 ];
 
 const BookCover = ({ title, index }: { title: string; index: number }) => {

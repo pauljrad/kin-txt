@@ -38,6 +38,12 @@ const BOOKS = [
         title: 'Siddhartha',
         author: 'Hermann Hesse',
         isDark: false
+    },
+    {
+        id: 'great-gatsby',
+        title: 'The Great Gatsby',
+        author: 'F. Scott Fitzgerald',
+        isDark: true
     }
 ];
 
