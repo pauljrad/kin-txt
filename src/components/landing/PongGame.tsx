@@ -119,11 +119,14 @@ export const PongGame = forwardRef<HTMLDivElement, PongGameProps>(
 
             const onMouseMove = (e: MouseEvent) => handleMove(e.clientX);
             const onTouchMove = (e: TouchEvent) => {
+                // Prevent scrolling while moving paddle
+                if (e.cancelable) e.preventDefault();
                 if (e.touches.length === 1) handleMove(e.touches[0].clientX);
             };
 
             window.addEventListener('mousemove', onMouseMove);
-            window.addEventListener('touchmove', onTouchMove, { passive: true });
+            // passive: false required to use preventDefault
+            window.addEventListener('touchmove', onTouchMove, { passive: false });
             return () => {
                 window.removeEventListener('mousemove', onMouseMove);
                 window.removeEventListener('touchmove', onTouchMove);
@@ -331,6 +334,7 @@ export const PongGame = forwardRef<HTMLDivElement, PongGameProps>(
                     if (typeof ref === 'function') ref(node);
                     else if (ref) (ref as React.MutableRefObject<HTMLDivElement | null>).current = node;
                 }}
+                style={{ touchAction: 'none' }}
                 className="fixed inset-0 z-[100]"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
