@@ -20,8 +20,35 @@ import { AnimatePresence } from "framer-motion";
 const queryClient = new QueryClient();
 
 const AppContent = () => {
+  const [showSplash, setShowSplash] = useState(true);
+
+  useEffect(() => {
+    // Initial timer
+    const timer = setTimeout(() => {
+      setShowSplash(false);
+    }, 3000);
+
+    // Handle bfcache (Back-Forward Cache) restoration
+    const handlePageShow = (event: any) => {
+      if (event.persisted) {
+        setShowSplash(true);
+        setTimeout(() => setShowSplash(false), 3000);
+      }
+    };
+
+    window.addEventListener('pageshow', handlePageShow);
+
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('pageshow', handlePageShow);
+    };
+  }, []);
+
   return (
     <>
+      <AnimatePresence>
+        {showSplash && <SplashScreen />}
+      </AnimatePresence>
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
