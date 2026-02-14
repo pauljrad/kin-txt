@@ -90,13 +90,13 @@ export const InteractiveSplashScreen = forwardRef<HTMLDivElement, AnimatedTitleP
                     }
                 });
 
-                // 2. Wait 1.125 seconds
-                await new Promise(resolve => setTimeout(resolve, 1125));
+                // 2. Wait shorter time (was 1125ms)
+                await new Promise(resolve => setTimeout(resolve, 300));
 
-                // 3. Reveal letters (K, N, TXT) over 1.1 seconds
+                // 3. Reveal letters (K, N, TXT) faster (was 1.1s)
                 await lettersControls.start({
                     opacity: 1,
-                    transition: { duration: 1.1, ease: "easeInOut" }
+                    transition: { duration: 0.6, ease: "easeInOut" }
                 });
 
                 // 4. Smooth Stop - Allow them to settle nicely
