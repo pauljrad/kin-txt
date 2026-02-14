@@ -35,7 +35,7 @@ serve(async (req) => {
 
     // Explicitly pass the JWT to getUser for reliable auth
     const { data: { user }, error: userError } = await supabase.auth.getUser(jwt);
-    
+
     if (userError || !user) {
       console.error('Auth error:', userError?.message || 'Auth session missing!');
       return new Response(
@@ -48,31 +48,31 @@ serve(async (req) => {
 
     const body = await req.json();
     const { text } = body;
-    
+
     // Input validation
     if (!text || typeof text !== 'string') {
-      return new Response(JSON.stringify({ 
-        error: 'Invalid input: text is required and must be a string', 
-        emphasisWords: [], 
-        whisperedWords: [] 
+      return new Response(JSON.stringify({
+        error: 'Invalid input: text is required and must be a string',
+        emphasisWords: [],
+        whisperedWords: []
       }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    
+
     // If text is too large, analyze a sample instead of rejecting
     let textToAnalyze = text;
     let wasTruncated = false;
-    
+
     if (text.length > MAX_TEXT_SIZE) {
       console.log(`Text too large (${text.length} chars), analyzing first ${MAX_TEXT_SIZE} characters`);
       textToAnalyze = text.substring(0, MAX_TEXT_SIZE);
       wasTruncated = true;
     }
-    
+
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    
+
     if (!LOVABLE_API_KEY) {
       // Return empty arrays gracefully - emphasis is optional
       console.error("LOVABLE_API_KEY is not configured");
@@ -83,7 +83,7 @@ serve(async (req) => {
 
     // Parse the text to get words
     const words = textToAnalyze.split(/\\s+/).filter((w: string) => w.length > 0);
-    
+
     // First, find words that are in ALL CAPS (3+ letters, all uppercase)
     const allCapsWords = words
       .filter((w: string) => {
@@ -92,24 +92,20 @@ serve(async (req) => {
         return cleanWord.length >= 3 && /^[A-Z]+$/.test(cleanWord);
       })
       .map((w: string) => w); // Keep original with potential punctuation
-    
+
     // Create a prompt to identify emphatic words AND whispered/quiet words
     const prompt = `Analyze the following text and identify words that should be emphasized for dramatic effect. Return TWO categories:
 
-1. LOUD/EMPHASIS words (displayed LARGER) - typically:
-- Onomatopoeia (bang, crash, boom, pop, etc.)
-- Exclamations or interjections
-- Emotionally charged words (love, hate, death, fire, etc.)
-- Action words used for impact
-- Key dramatic moments
-- Words in ALL CAPS
+1. LOUD/EMPHASIS words (displayed LARGER) - ONLY include truly dramatic words:
+- Loud onomatopoeia (BANG, CRASH, BOOM, THUD, etc.)
+- Violent/Urgent actions (STAB, SHOT, KILL, RUN, FIRE, EXPLODE)
+- Intense exclamations that carry high dramatic weight.
+- CRITICAL: DO NOT include names of people or places.
+- CRITICAL: DO NOT include common nouns or descriptive adjectives unless they are violent/loud.
 
 2. QUIET/WHISPERED words (displayed SMALLER) - typically:
-- Words indicating whispers or quiet speech (whispered, muttered, murmured, hushed)
-- Words within quotes that are being whispered
-- Secretive or subtle words
-- Words that follow phrases like "she whispered", "he said quietly"
-- Gentle, soft, or delicate words in emotional contexts
+- Specific words indicating whispers (whispered, muttered, hushed).
+- Secretive or subtle words.
 
 Text: \"${textToAnalyze}\"
 
@@ -119,7 +115,7 @@ Return ONLY a JSON object with two arrays:
   \"whispered\": [\"word3\", \"word4\"]
 }
 
-Match the exact spelling and case from the text. Include no more than 5-10 words per category for the entire text. Only choose truly impactful words.
+Match the exact spelling and case from the text. Include no more than 10-15 truly high-impact words per category for the entire text. Quality over quantity.
 
 Example response: {\"emphasis\": [\"BANG\", \"crash\", \"fire\"], \"whispered\": [\"secret\", \"quietly\", \"hush\"]}`;
 
@@ -132,9 +128,9 @@ Example response: {\"emphasis\": [\"BANG\", \"crash\", \"fire\"], \"whispered\":
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
         messages: [
-          { 
-            role: "system", 
-            content: "You are a text analyzer that identifies emphatic words. Respond only with a valid JSON array." 
+          {
+            role: "system",
+            content: "You are a text analyzer that identifies emphatic words. Respond only with a valid JSON array."
           },
           { role: "user", content: prompt }
         ],
@@ -144,14 +140,14 @@ Example response: {\"emphasis\": [\"BANG\", \"crash\", \"fire\"], \"whispered\":
     if (!response.ok) {
       // Log detailed error server-side only (no response body in logs)
       console.error("AI gateway error - status:", response.status);
-      
+
       if (response.status === 429) {
         return new Response(JSON.stringify({ error: "Rate limit exceeded", emphasisWords: [], whisperedWords: [] }), {
           status: 429,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      
+
       // Return empty arrays on error so the app still works
       return new Response(JSON.stringify({ emphasisWords: [], whisperedWords: [] }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -160,7 +156,7 @@ Example response: {\"emphasis\": [\"BANG\", \"crash\", \"fire\"], \"whispered\":
 
     const data = await response.json();
     const content = data.choices?.[0]?.message?.content || "{}";
-    
+
     // Parse the JSON response
     let emphasisWords: string[] = [];
     let whisperedWords: string[] = [];
@@ -168,7 +164,7 @@ Example response: {\"emphasis\": [\"BANG\", \"crash\", \"fire\"], \"whispered\":
       // Clean the response - remove markdown code blocks if present
       const cleaned = content.replace(/```json\\n?|\\n?```/g, '').trim();
       const parsed = JSON.parse(cleaned);
-      
+
       // Handle both old array format and new object format
       if (Array.isArray(parsed)) {
         emphasisWords = parsed;
@@ -182,18 +178,20 @@ Example response: {\"emphasis\": [\"BANG\", \"crash\", \"fire\"], \"whispered\":
       emphasisWords = [];
       whisperedWords = [];
     }
-    
+
     // Merge ALL CAPS words with AI-identified emphasis words
     // Remove duplicates by converting to a Set and back
     const mergedEmphasis = Array.from(new Set([...allCapsWords, ...emphasisWords]));
 
     return new Response(JSON.stringify({ emphasisWords: mergedEmphasis, whisperedWords }), {
-      headers: { ...corsHeaders, \"Content-Type\": \"application/json\" },
+      headers: {
+        ...corsHeaders, "Content-Type": "application/json"
+      },
     });
   } catch (error) {
     // Log detailed error server-side
     console.error("Error in analyze-emphasis function");
-    
+
     // Return generic error to client
     return new Response(JSON.stringify({ error: "An error occurred while processing your request", emphasisWords: [], whisperedWords: [] }), {
       status: 500,

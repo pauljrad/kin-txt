@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Upload, FileText, Type, X, Link as LinkIcon, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { parseFile, parseTextContent, ParsedText } from '@/lib/textParser';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -35,7 +36,7 @@ export function TextInput({ onTextParsed }: TextInputProps) {
     setIsLoading(true);
     setError(null);
     setFileName(file.name);
-    
+
     try {
       const parsed = await parseFile(file);
       onTextParsed(parsed, file.name, 'file');
@@ -49,10 +50,10 @@ export function TextInput({ onTextParsed }: TextInputProps) {
 
   const handleUrlSubmit = useCallback(async () => {
     if (!url.trim()) return;
-    
+
     setIsLoading(true);
     setError(null);
-    
+
     try {
       // Format URL if needed
       let formattedUrl = url.trim();
@@ -60,8 +61,20 @@ export function TextInput({ onTextParsed }: TextInputProps) {
         formattedUrl = `https://${formattedUrl}`;
       }
 
+      // Explicitly get session to pass auth token
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError) throw sessionError;
+
+      const accessToken = sessionData.session?.access_token;
+      if (!accessToken) {
+        throw new Error('Please sign in to fetch content from URLs.');
+      }
+
       const { data, error: fnError } = await supabase.functions.invoke('scrape-url', {
         body: { url: formattedUrl },
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
       });
 
       if (fnError) throw fnError;
@@ -69,9 +82,12 @@ export function TextInput({ onTextParsed }: TextInputProps) {
 
       const parsed = parseTextContent(data.text);
       onTextParsed(parsed, data.title || 'Web Article', 'url');
+      toast.success('Web article content fetched successfully');
     } catch (err) {
       console.error('Error scraping URL:', err);
-      setError(err instanceof Error ? err.message : 'Failed to fetch URL content');
+      const msg = err instanceof Error ? err.message : 'Failed to fetch URL content';
+      setError(msg);
+      toast.error(msg);
     } finally {
       setIsLoading(false);
     }
@@ -80,7 +96,7 @@ export function TextInput({ onTextParsed }: TextInputProps) {
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
-    
+
     const file = e.dataTransfer.files[0];
     if (file) {
       handleFileUpload(file);
@@ -107,11 +123,10 @@ export function TextInput({ onTextParsed }: TextInputProps) {
           onClick={() => toggleMode('paste')}
           whileHover={{ y: -1 }}
           whileTap={{ scale: 0.98 }}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-all duration-300 ${
-            mode === 'paste'
-              ? 'bg-primary text-primary-foreground'
-              : 'bg-secondary/50 text-secondary-foreground hover:bg-secondary'
-          }`}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-all duration-300 ${mode === 'paste'
+            ? 'bg-primary text-primary-foreground'
+            : 'bg-secondary/50 text-secondary-foreground hover:bg-secondary'
+            }`}
         >
           <Type className="w-3.5 h-3.5" />
           Paste TXT
@@ -120,11 +135,10 @@ export function TextInput({ onTextParsed }: TextInputProps) {
           onClick={() => toggleMode('upload')}
           whileHover={{ y: -1 }}
           whileTap={{ scale: 0.98 }}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-all duration-300 ${
-            mode === 'upload'
-              ? 'bg-primary text-primary-foreground'
-              : 'bg-secondary/50 text-secondary-foreground hover:bg-secondary'
-          }`}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-all duration-300 ${mode === 'upload'
+            ? 'bg-primary text-primary-foreground'
+            : 'bg-secondary/50 text-secondary-foreground hover:bg-secondary'
+            }`}
         >
           <Upload className="w-3.5 h-3.5" />
           Upload File
@@ -133,11 +147,10 @@ export function TextInput({ onTextParsed }: TextInputProps) {
           onClick={() => toggleMode('url')}
           whileHover={{ y: -1 }}
           whileTap={{ scale: 0.98 }}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-all duration-300 ${
-            mode === 'url'
-              ? 'bg-primary text-primary-foreground'
-              : 'bg-secondary/50 text-secondary-foreground hover:bg-secondary'
-          }`}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-all duration-300 ${mode === 'url'
+            ? 'bg-primary text-primary-foreground'
+            : 'bg-secondary/50 text-secondary-foreground hover:bg-secondary'
+            }`}
         >
           <LinkIcon className="w-3.5 h-3.5" />
           From URL

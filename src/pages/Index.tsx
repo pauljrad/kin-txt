@@ -20,6 +20,7 @@ import { Button } from '@/components/ui/button';
 
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { AnimatedTitle } from '@/components/AnimatedTitle';
+import { InstallPWA } from '@/components/InstallPWA';
 import { usePullGesture } from '@/hooks/usePullGesture';
 import { ParsedText, processTextStyles, filterEmphasis } from '@/lib/textParser';
 import { SavedDocument, saveDocument, updateDocumentProgress, updateDocumentEmphasis } from '@/lib/documentDatabase';
@@ -108,7 +109,35 @@ const Index = () => {
       )
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
+    // Add real-time library refresh (for club suggestions)
+    const docChannel = supabase.channel('library_refresh')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'documents',
+          filter: `user_id=eq.${user.id}`
+        },
+        (payload) => {
+          console.log("LIBRARY CHANGE DETECTED:", payload);
+          setRefreshTrigger(prev => prev + 1);
+        }
+      )
+      .subscribe();
+
+    // Secondary refresh mechanism via custom events
+    const handleRefresh = () => {
+      console.log("REFRESH EVENT RECEIVED");
+      setRefreshTrigger(prev => prev + 1);
+    };
+    window.addEventListener('kin_library_refreshed', handleRefresh);
+
+    return () => {
+      supabase.removeChannel(channel);
+      supabase.removeChannel(docChannel);
+      window.removeEventListener('kin_library_refreshed', handleRefresh);
+    };
   }, [user]);
 
   const handleSendChallenge = async () => {
@@ -476,6 +505,20 @@ const Index = () => {
     }
   };
 
+  // Handle 'read' query parameter for deep-linking (e.g., from club)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const docId = params.get('read');
+    if (docId) {
+      // Clear the param to avoid re-opening on refresh
+      const newUrl = new URL(window.location.href);
+      newUrl.searchParams.delete('read');
+      window.history.replaceState({}, '', newUrl.toString());
+
+      handleOpenDocumentById(docId);
+    }
+  }, []);
+
   // Handle Shared Link Redemption
   useEffect(() => {
     if (!user) return;
@@ -589,6 +632,8 @@ const Index = () => {
         paddingBottom: 'env(safe-area-inset-bottom, 0px)',
       }}
     >
+      <InstallPWA />
+
       <ShareModal
         open={isShareOpen}
         onOpenChange={setIsShareOpen}

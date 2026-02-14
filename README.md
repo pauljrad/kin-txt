@@ -1,6 +1,6 @@
 # Kinetext - Kinetic Reading App
 
-A revolutionary reading application with AI-powered text analysis, emphasis detection, and kinetic reading features.
+A revolutionary reading application with Ai-powered text analysis, emphasis detection, and kinetic reading features.
 
 ## 🚀 Live Demo
 
@@ -11,7 +11,7 @@ A revolutionary reading application with AI-powered text analysis, emphasis dete
 
 ## Features
 
-- ✨ AI-powered emphasis detection
+- ✨ Ai-powered emphasis detection
 - 📚 Ebook library with EPUB support
 - 📰 News article reader
 - 🎯 Kinetic reading player

@@ -81,10 +81,12 @@ export const InfoMenu = forwardRef<HTMLDivElement, InfoMenuProps>(function InfoM
                 <div className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b border-border pt-[calc(env(safe-area-inset-top)+1.5rem)]">
                     <div className="flex items-center justify-between p-4 sm:p-5 mt-2">
                         <div className="flex items-center gap-3">
-                            {/* Logo "i" Style Icon */}
-                            <div className="relative flex flex-col items-center justify-center w-8 h-8">
-                                <span className="w-1.5 h-1.5 rounded-full bg-foreground mb-1" />
-                                <span className="w-1.5 h-4 bg-foreground rounded-sm" />
+                            <div className="flex items-center gap-1.5">
+                                <div className="relative flex flex-col items-center justify-center w-3 h-8">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-foreground mb-1" />
+                                    <span className="w-1.5 h-4 bg-foreground rounded-sm" />
+                                </div>
+                                <span className="w-3 h-1.5 bg-foreground rounded-sm mt-3" />
                             </div>
                             <h2 className="text-xl font-medium font-display tracking-tight">Information & Instructions</h2>
                         </div>
@@ -111,7 +113,7 @@ export const InfoMenu = forwardRef<HTMLDivElement, InfoMenuProps>(function InfoM
                             <p className="text-xs sm:text-sm text-foreground m-0 leading-relaxed font-medium">
                                 Welcome to <span className="font-semibold text-foreground">KiN-TXT</span>.
                                 This guide covers everything you need to know about our kinetic text reader,
-                                reading modes, ebook library, live news, AI-powered features, and focus tools.
+                                reading modes, ebook library, live news, Ai-powered features, and focus tools.
                             </p>
                         </div>
 
@@ -254,7 +256,7 @@ export const InfoMenu = forwardRef<HTMLDivElement, InfoMenuProps>(function InfoM
                                 <AccordionContent className="space-y-6 pt-4">
                                     {/* Overarching Statement */}
                                     <p className="text-xs sm:text-sm text-foreground/90 leading-relaxed italic border-l-2 border-primary/50 pl-4">
-                                        Our AI analyses any text in seconds, instantly highlighting emphasis, rhythm, and writing
+                                        Our Ai analyses any text in seconds, instantly highlighting emphasis, rhythm, and writing
                                         style — whether it’s news, books, reports, or text you upload or paste.
                                     </p>
 
@@ -276,7 +278,7 @@ export const InfoMenu = forwardRef<HTMLDivElement, InfoMenuProps>(function InfoM
                                             </div>
                                             <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
                                                 Explore our collection of free classic Ebooks and experience the text with emphasis
-                                                and rhythm, instantly applied by our AI.
+                                                and rhythm, instantly applied by our Ai.
                                             </p>
                                         </div>
                                         {/* My TXTs */}

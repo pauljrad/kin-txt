@@ -62,6 +62,19 @@ const Login = forwardRef<HTMLDivElement>((_, ref) => {
     return Object.keys(newErrors).length === 0;
   };
 
+  // Handle email verification redirect
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('verified') === 'true') {
+      toast.success("Email address verified", {
+        description: "You have been successfully verified.",
+        duration: 5000, // Make it last longer
+      });
+      // Clean up the URL
+      window.history.replaceState({}, '', '/');
+    }
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -71,6 +84,8 @@ const Login = forwardRef<HTMLDivElement>((_, ref) => {
 
     try {
       if (isSignUp) {
+        // We handle the verification link manually in the edge function, 
+        // but we pass the redirect URL here just in case standard auth flows are used
         const { error } = await signUp(email, password, displayName || undefined);
         if (error) {
           if (error.message.includes('already registered')) {
@@ -106,7 +121,14 @@ const Login = forwardRef<HTMLDivElement>((_, ref) => {
         }
 
         toast.success('Account created! Please check your email to verify your account.');
-        navigate('/home');
+
+        // Force sign out to ensure they verify email first
+        await supabase.auth.signOut();
+
+        // Reset form or show specific UI
+        setIsSignUp(false);
+        setPassword('');
+        // navigate('/home') removed to prevent auto-login
       } else {
         const { error } = await signIn(email, password);
         if (error) {
@@ -118,7 +140,7 @@ const Login = forwardRef<HTMLDivElement>((_, ref) => {
           setIsLoading(false);
           return;
         }
-        toast.success('Welcome back to Kin-TXT');
+        toast.success('Welcome back to KiN-TXT');
         navigate('/home');
       }
     } catch (err) {

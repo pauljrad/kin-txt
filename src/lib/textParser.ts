@@ -198,6 +198,7 @@ export function processTextStyles(parsed: ParsedText): ProcessedTextResult {
         const suffix = singleWordMatch[5];
         cleanWord = prefix + content + suffix;
         const contentClean = content.toLowerCase().replace(/[.,!?;:'"()[\]]/g, '');
+        // REVERTED: Italics map back to WHISPER
         detectedWhispered.push(contentClean);
       }
       else if (AUTO_WHISPER_WORDS.has(lookupKey)) {
@@ -223,7 +224,7 @@ export function processTextStyles(parsed: ParsedText): ProcessedTextResult {
             cleanWord = cleanWord.replace(/([*_])([^\w\s]*)$/, '$2');
           }
 
-          // Register this word as whispered
+          // Reverted: Register this word as whispered
           const contentClean = cleanWord.toLowerCase().replace(/[.,!?;:'"()[\]]/g, '');
           detectedWhispered.push(contentClean);
         }

@@ -2,7 +2,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "https://esm.sh/resend@2.0.0";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
-const ADMIN_EMAIL = Deno.env.get("ADMIN_EMAIL") || "your-email@example.com";
+const ADMIN_EMAIL = "hello@kin-txt.com";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -34,7 +34,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Send notification to admin
     const emailResponse = await resend.emails.send({
-      from: "KiN-TXT Notifications <notifications@resend.dev>",
+      from: "KiN-TXT Notifications <hello@kin-txt.com>",
       to: [ADMIN_EMAIL],
       subject: `🎉 New KiN-TXT Signup: ${email}`,
       html: `

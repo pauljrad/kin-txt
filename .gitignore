@@ -40,3 +40,5 @@ workbox-*.js
 yarn.lock
 pnpm-lock.yaml
 bun.lockb
+.vercel
+.env*.local

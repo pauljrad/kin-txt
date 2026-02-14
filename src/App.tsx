@@ -10,6 +10,7 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { PWAPrompt } from "@/components/PWAPrompt";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
+import Landing from "./pages/Landing";
 import NotFound from "./pages/NotFound";
 
 import { useState, useEffect } from "react";
@@ -49,7 +50,8 @@ const AppContent = () => {
         {showSplash && <SplashScreen />}
       </AnimatePresence>
       <Routes>
-        <Route path="/" element={<Login />} />
+        <Route path="/" element={<Landing />} />
+        <Route path="/login" element={<Login />} />
         <Route
           path="/home"
           element={

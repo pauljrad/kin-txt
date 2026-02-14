@@ -2,8 +2,9 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { BookOpen, Plus, Users, LogOut } from "lucide-react";
 import { getClubMembers, getActiveBookSuggestion, getClubProgress, leaveClub, respondToBookSuggestion } from "@/lib/clubDatabase";
-import { getInitials } from "@/lib/utils";
+import { getInitials, getAvatarColor } from "@/lib/utils";
 import { SuggestBookModal } from "./SuggestBookModal";
+import { supabase } from "@/integrations/supabase/client";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -30,40 +31,100 @@ export const ClubDetails = ({ club, onRefresh, onBack }: ClubDetailsProps) => {
     const [suggestModalOpen, setSuggestModalOpen] = useState(false);
     const [leaveDialogOpen, setLeaveDialogOpen] = useState(false);
 
+    const fetchProgress = async (suggestionId: string) => {
+        try {
+            console.log("[ClubDetails] Fetching progress for suggestion:", suggestionId);
+            const { progress: progressData, error } = await getClubProgress(club.id, suggestionId);
+            if (error) throw error;
+
+            setProgress(progressData);
+
+            // Also update local user progress status
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+                const myProg = progressData.find((p: any) => p.user_id === user.id);
+                console.log("[ClubDetails] Found my progress:", myProg);
+                setUserProgress(myProg || null);
+            }
+        } catch (err) {
+            console.error("[ClubDetails] Error fetching progress:", err);
+        }
+    };
+
+    const loadClubData = async () => {
+        try {
+            console.log("[ClubDetails] Loading club data for:", club.id);
+            // Load members
+            const { members: clubMembers, error: memberError } = await getClubMembers(club.id);
+            if (memberError) throw memberError;
+
+            setMembers(clubMembers.filter(m => m.status === 'accepted'));
+
+            // Load active book suggestion
+            const { suggestion, error: suggestionError } = await getActiveBookSuggestion(club.id);
+            if (suggestionError) throw suggestionError;
+
+            console.log("[ClubDetails] Active suggestion:", suggestion);
+            setActiveSuggestion(suggestion);
+
+            // Load progress if there's an active suggestion
+            if (suggestion) {
+                await fetchProgress(suggestion.id);
+            } else {
+                setProgress([]);
+                setUserProgress(null);
+            }
+        } catch (error) {
+            console.error("[ClubDetails] Error loading club data:", error);
+            toast.error("Failed to load club dashboard");
+        }
+    };
+
+    // Initial load
     useEffect(() => {
         loadClubData();
     }, [club.id]);
 
-    const loadClubData = async () => {
-        // Load members
-        const { members: clubMembers, error } = await getClubMembers(club.id);
-        if (error) {
-            console.error("FAILED TO LOAD MEMBERS:", error);
-            toast.error("Failed to load members. Check console for details.");
-        } else {
-            console.log("LOADED MEMBERS:", clubMembers);
-        }
-        setMembers(clubMembers.filter(m => m.status === 'accepted'));
+    useEffect(() => {
+        if (!activeSuggestion) return;
 
-        // Load active book suggestion
-        const { suggestion } = await getActiveBookSuggestion(club.id);
-        setActiveSuggestion(suggestion);
+        console.log("SETTING UP REAL-TIME PROGRESS SYNC FOR:", activeSuggestion.id);
 
-        // Load progress if there's an active suggestion
-        if (suggestion) {
-            const { progress: memberProgress } = await getClubProgress(club.id, suggestion.id);
-            setProgress(memberProgress);
-            // Find current user's progress
-            const { data: { user } } = await (await import('@/integrations/supabase/client')).supabase.auth.getUser();
-            const userProg = memberProgress.find((p: any) => p.user_id === user?.id);
-            setUserProgress(userProg || null);
-        }
-    };
+        // Fetch initial progress
+        fetchProgress(activeSuggestion.id);
+
+        // Subscribe to changes
+        const channel = supabase
+            .channel(`club_progress_${activeSuggestion.id}`)
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'club_member_progress',
+                    filter: `suggestion_id=eq.${activeSuggestion.id}`
+                },
+                (payload) => {
+                    console.log("REAL-TIME PROGRESS UPDATE RECEIVED:", payload);
+                    fetchProgress(activeSuggestion.id);
+                }
+            )
+            .subscribe();
+
+        return () => {
+            console.log("CLEANING UP PROGRESS SYNC");
+            supabase.removeChannel(channel);
+        };
+    }, [activeSuggestion?.id]);
 
     const handleBookSuggested = () => {
         setSuggestModalOpen(false);
         loadClubData();
+        onRefresh(); // Refresh club list in parent if needed
         toast.success("Book suggested to club members!");
+
+        // Dispatch event for Index library refresh
+        window.dispatchEvent(new CustomEvent('kin_library_refreshed'));
     };
 
     const handleLeaveClub = async () => {
@@ -153,7 +214,10 @@ export const ClubDetails = ({ club, onRefresh, onBack }: ClubDetailsProps) => {
                             key={member.id}
                             className="flex items-center gap-2 px-3 py-2 rounded-lg bg-secondary/30 border border-border/50"
                         >
-                            <div className="h-6 w-6 rounded-full bg-primary/10 border border-primary/5 flex items-center justify-center text-[10px] font-bold text-primary">
+                            <div
+                                className="h-6 w-6 rounded-full border border-primary/5 flex items-center justify-center text-[10px] font-bold"
+                                style={{ backgroundColor: getAvatarColor(member.user_id, member.profiles?.avatar_color), color: '#000' }}
+                            >
                                 {member.profiles?.avatar_url ? (
                                     <img
                                         src={member.profiles.avatar_url}
@@ -244,7 +308,10 @@ export const ClubDetails = ({ club, onRefresh, onBack }: ClubDetailsProps) => {
                             <h5 className="text-sm font-medium">Reading Progress</h5>
                             {progress.map(p => (
                                 <div key={p.id} className="flex items-center gap-3">
-                                    <div className="h-6 w-6 rounded-full bg-primary/10 border border-primary/5 flex items-center justify-center text-[10px] font-bold text-primary">
+                                    <div
+                                        className="h-6 w-6 rounded-full border border-primary/5 flex items-center justify-center text-[10px] font-bold"
+                                        style={{ backgroundColor: getAvatarColor(p.user_id, p.profiles?.avatar_color), color: '#000' }}
+                                    >
                                         {p.profiles?.avatar_url ? (
                                             <img
                                                 src={p.profiles.avatar_url}
@@ -265,8 +332,11 @@ export const ClubDetails = ({ club, onRefresh, onBack }: ClubDetailsProps) => {
                                         {p.status !== 'invited' && (
                                             <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
                                                 <div
-                                                    className="h-full bg-primary transition-all"
-                                                    style={{ width: `${p.progress || 0}%` }}
+                                                    className="h-full transition-all"
+                                                    style={{
+                                                        width: `${p.progress || 0}%`,
+                                                        backgroundColor: getAvatarColor(p.user_id, p.profiles?.avatar_color)
+                                                    }}
                                                 />
                                             </div>
                                         )}

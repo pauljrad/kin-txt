@@ -64,7 +64,7 @@ export const KinLayout = ({ onViewProfile }: { onViewProfile?: (userId: string) 
             <SheetContent className="bg-card border-l border-border text-foreground w-full sm:max-w-md p-0 overflow-hidden flex flex-col items-stretch [&>button]:top-[calc(env(safe-area-inset-top)+2.4rem)] [&>button]:right-6">
                 {/* Header with Safe Area support */}
                 <div className="pt-[calc(env(safe-area-inset-top)+2rem)] px-6 pb-6 border-b border-border">
-                    <h2 className="text-2xl font-bold font-display tracking-wide uppercase">
+                    <h2 className="text-2xl font-bold tracking-wide uppercase">
                         K<span className="lowercase font-sans text-xl relative -top-[1px]">i</span>N-Network
                     </h2>
                 </div>

@@ -84,52 +84,9 @@ export function NewsLibrary({ onSelectArticle }: NewsLibraryProps) {
     setLoadingId(article.id);
 
     try {
-      // If we already have content from the feed (The Conversation Atom feed provides it)
-      if (article.content) {
-        // We must parse it locally safely.
-        // However, parseTextContent usually takes raw text, not HTML with pixel trackers.
-        // Wait, we need to extract the pixel tracker URL if possible OR keep it valid in parsed text?
-        // ParsedText is strictly text paragraphs.
-        // We might need to handle the pixel tracker separately in the `meta`.
+      // THE CONVERSATION provided content is often a summary/atom entry.
+      // User requested "whole article", so we FORCE a scrape of the link even if content exists.
 
-        // Extract pixel tracker if present
-        // (Looking for <img src="..." alt="The Conversation" ...> or similar 1x1)
-        const pixelMatch = article.content.match(/<img[^>]+src=["']([^"']+)["'][^>]*>/i);
-        // Actually, let's just use the provided content logic.
-
-        // We need to strip tags to get the text for the reader.
-        // We'll use a DOMParser to get text content while preserving structure?
-        // Or rely on `parseTextContent`. 
-        // `parseTextContent` in `lib/textParser` might not handle HTML string well directly if it expects raw text.
-        // Let's assume we need to clean it. 
-
-        // Basic strip tags but keep paragraphs
-        const cleanText = article.content
-          .replace(/<p>/gi, '\n')
-          .replace(/<\/p>/gi, '\n')
-          .replace(/<br\s*\/?>/gi, '\n')
-          .replace(/<[^>]+>/g, ' '); // Strip all other tags
-
-        const parsed = parseTextContent(cleanText);
-
-        // Pass FULL content (with tags potentially) or just the pixel URL to metadata?
-        // The user said: "The counter is a 1x1 pixel invisible image... ensure... included"
-        // If we only render text in KiN reader, the pixel won't fire.
-        // We need to fire it manually or mount a hidden image.
-        // Let's pass the raw HTML content in meta so the parent can extract/render the pixel.
-
-        onSelectArticle(parsed, article.title, {
-          link: article.link,
-          source: article.source,
-          author: article.author,
-          // @ts-ignore - passing extra meta for pixel handling
-          rawHtml: article.content
-        });
-        setLoadingId(null);
-        return;
-      }
-
-      // Fallback to scrape-url if no content
       const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
       if (sessionError) throw sessionError;
 
@@ -138,7 +95,7 @@ export function NewsLibrary({ onSelectArticle }: NewsLibraryProps) {
         throw new Error('Please sign in to load articles');
       }
 
-      // Use the scrape-url edge function to get article content
+      // Use the scrape-url edge function to get FULL article content
       const { data, error: scrapeError } = await supabase.functions.invoke('scrape-url', {
         body: { url: article.link },
         headers: {
@@ -149,19 +106,43 @@ export function NewsLibrary({ onSelectArticle }: NewsLibraryProps) {
       if (scrapeError) throw scrapeError;
 
       if (!data?.success || !data?.text) {
+        // Fallback to existing content if scraping fails but content exists
+        if (article.content) {
+          const cleanText = article.content
+            .replace(/<p>/gi, '\n')
+            .replace(/<\/p>/gi, '\n')
+            .replace(/<br\s*\/?>/gi, '\n')
+            .replace(/<[^>]+>/g, ' ');
+          const parsed = parseTextContent(cleanText);
+          onSelectArticle(parsed, article.title, {
+            link: article.link,
+            source: article.source,
+            author: article.author,
+            // @ts-ignore
+            rawHtml: article.content
+          });
+          return;
+        }
         throw new Error(data?.error || 'Failed to fetch article content');
       }
 
-      // Parse the scraped text
+      // Parse the scraped text (Full Article)
       const parsed = parseTextContent(data.text);
-      onSelectArticle(parsed, article.title, { link: article.link, source: article.source, author: article.author });
+      onSelectArticle(parsed, article.title, {
+        link: article.link,
+        source: article.source,
+        author: article.author,
+        // If we have rawHtml from the original article (for pixel tracking), pass it along
+        // @ts-ignore
+        rawHtml: article.content
+      });
     } catch (err) {
       console.error('Error loading article:', err);
-      toast.error(err instanceof Error ? err.message : 'Failed to load article.');
+      toast.error(err instanceof Error ? err.message : 'Could not load article');
     } finally {
       setLoadingId(null);
     }
-  }, [onSelectArticle]);
+  }, [onSelectArticle, supabase.auth, supabase.functions]);
 
   const handleCategoryChange = useCallback((categoryId: string) => {
     setActiveCategory(categoryId);

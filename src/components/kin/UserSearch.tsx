@@ -6,12 +6,13 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
 import { Search, UserPlus } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { getInitials } from "@/lib/utils";
+import { getInitials, getAvatarColor } from "@/lib/utils";
 
 interface Profile {
     id: string;
     display_name: string | null;
     avatar_url: string | null;
+    avatar_color: string | null;
     email: string | null;
 }
 
@@ -35,7 +36,7 @@ export const UserSearch = () => {
                 .limit(10);
 
             if (error) throw error;
-            setResults(data || []);
+            setResults((data as any) || []);
         } catch (error) {
             console.error('Error searching users:', error);
             toast({
@@ -121,10 +122,16 @@ export const UserSearch = () => {
                     <div key={profile.id} className="flex items-center justify-between p-3 rounded-xl bg-card border border-border hover:bg-secondary/20 transition-colors">
                         <div className="flex items-center gap-3">
                             <Avatar className="h-9 w-9 border border-border">
-                                <AvatarImage src={profile.avatar_url || ''} className="object-cover" />
-                                <AvatarFallback className="bg-primary/5 text-primary text-xs font-bold">
-                                    {getInitials(profile.display_name)}
-                                </AvatarFallback>
+                                {profile.avatar_url ? (
+                                    <AvatarImage src={profile.avatar_url} className="object-cover" />
+                                ) : (
+                                    <AvatarFallback
+                                        className="text-xs font-bold"
+                                        style={{ backgroundColor: getAvatarColor(profile.id, profile.avatar_color), color: '#000' }}
+                                    >
+                                        {getInitials(profile.display_name)}
+                                    </AvatarFallback>
+                                )}
                             </Avatar>
                             <div>
                                 <p className="font-medium text-sm text-foreground">{profile.display_name || 'Anonymous'}</p>

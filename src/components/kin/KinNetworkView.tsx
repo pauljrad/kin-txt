@@ -2,7 +2,7 @@ import { UserSearch } from "./UserSearch";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { getInitials } from "@/lib/utils";
+import { getInitials, getAvatarColor } from "@/lib/utils";
 
 interface KinNetworkViewProps {
     onViewProfile?: (userId: string) => void;
@@ -73,7 +73,10 @@ export const KinNetworkView = ({ onViewProfile }: KinNetworkViewProps) => {
                                     }}
                                 >
                                     <div className="flex items-center gap-3">
-                                        <div className="h-8 w-8 rounded-full bg-primary/10 border border-primary/5 flex items-center justify-center text-[10px] font-bold text-primary">
+                                        <div
+                                            className="h-8 w-8 rounded-full border border-primary/5 flex items-center justify-center text-[10px] font-bold"
+                                            style={{ backgroundColor: getAvatarColor(kin.id, kin.avatar_color), color: '#000' }}
+                                        >
                                             {kin.avatar_url ? (
                                                 <img src={kin.avatar_url} className="rounded-full w-full h-full object-cover" />
                                             ) : (

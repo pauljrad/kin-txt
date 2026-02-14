@@ -222,10 +222,10 @@ export async function updateDocumentProgress(id: string, paragraph: number, word
     console.error('Error updating progress:', error);
   }
 
-  // Also update club progress if this is a club book
-  console.log('[documentDatabase] Calling updateClubProgress for document:', id);
-  const clubResult = await updateClubProgress(id, wordIndex, totalWords);
-  console.log('[documentDatabase] updateClubProgress result:', clubResult);
+  // Also update club progress if this is a club book (non-blocking)
+  updateClubProgress(id, wordIndex, totalWords).catch(err => {
+    console.error('[documentDatabase] Failed to sync club progress:', err);
+  });
 }
 
 export async function updateDocumentReadingTime(id: string, totalSeconds: number): Promise<void> {

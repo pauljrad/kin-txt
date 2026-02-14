@@ -52,7 +52,7 @@ export const KinClubsLayout = () => {
                 <SheetContent className="bg-card border-l border-border text-foreground w-full sm:max-w-4xl p-0 overflow-hidden flex flex-col items-stretch focus-visible:outline-none focus:outline-none">
                     {/* Header */}
                     <div className="pt-[calc(env(safe-area-inset-top)+2rem)] px-6 pb-6 border-b border-border flex justify-between items-center gap-4">
-                        <h2 className="text-2xl font-bold font-display tracking-wide uppercase shrink-0">
+                        <h2 className="text-2xl font-bold tracking-wide uppercase shrink-0">
                             K<span className="lowercase font-sans text-xl relative -top-[1px]">i</span>N-Clubs
                         </h2>
 

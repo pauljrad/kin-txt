@@ -37,202 +37,47 @@ function validateUrl(urlString: string): void {
   }
 }
 
-// Readability-inspired content extraction from markdown
-// Based on how Firefox Reader Mode and Safari Reader work
-function extractReadableContent(markdown: string, title?: string): string {
-  // Step 1: Remove all markdown formatting artifacts first
-  let text = markdown
-    // Remove markdown image syntax completely
-    .replace(/!\[[^\]]*\]\([^)]*\)/g, '')
-    .replace(/!\[[^\]]*\]/g, '')
-    // Remove reference-style images
-    .replace(/^\[[^\]]*\]:\s*\S+.*$/gm, '')
-    // Remove markdown links but keep the text
-    .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
-    .replace(/\[([^\]]+)\]\[[^\]]*\]/g, '$1')
-    // Remove standalone URLs
-    .replace(/(?:^|\s)https?:\/\/\S+/g, ' ')
-    // Remove markdown header markers but keep text
-    .replace(/^#{1,6}\s+/gm, '')
-    // Remove emphasis markers
-    .replace(/\*\*\*([^*]+)\*\*\*/g, '$1')
-    .replace(/\*\*([^*]+)\*\*/g, '$1')
-    .replace(/\*([^*\n]+)\*/g, '$1')
-    .replace(/___([^_]+)___/g, '$1')
-    .replace(/__([^_]+)__/g, '$1')
-    .replace(/_([^_\n]+)_/g, '$1')
-    // Remove code blocks
-    .replace(/```[\s\S]*?```/g, '')
-    .replace(/`([^`]+)`/g, '$1')
-    // Remove blockquotes markers
-    .replace(/^>\s*/gm, '')
-    // Remove horizontal rules
-    .replace(/^[-*_]{3,}\s*$/gm, '\n')
-    // Remove list markers but keep content
-    .replace(/^\s*[-*+]\s+/gm, '')
-    .replace(/^\s*\d+\.\s+/gm, '')
-    // Clean up HTML entities
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/&[a-zA-Z0-9#]+;/g, ' ');
-
-  // Step 2: Split into paragraphs and analyze each one
-  const paragraphs = text.split(/\n\s*\n/);
-
-  // Patterns that indicate non-content (navigation, metadata, ads, etc.)
-  const nonContentPatterns = [
-    // Navigation and UI
-    /^(home|menu|search|sign in|log in|sign up|register|subscribe|follow us|share|comment|comments|like|reply|load more|show more|see more|read more|continue reading|click here|tap here|learn more)/i,
-    // Social media
-    /^(share on|share via|follow on|tweet|facebook|twitter|linkedin|instagram|pinterest|whatsapp|email this|print this)/i,
-    // Metadata patterns (but allow longer author lines that might be content)
-    /^(posted\s|published\s|updated\s|written by|author:|date:|time:|\d+\s*(min|minute|hour|day|week|month|year)s?\s*(ago|read)$|reading time)/i,
-    // Timestamps only (not content with timestamps)
-    /^\d{1,2}[:\-\/]\d{1,2}([:\-\/]\d{2,4})?(\s*(am|pm))?$/i,
-    // Copyright and legal
-    /^(copyright|©|\(c\)|all rights reserved|terms of|privacy policy|cookie policy|disclaimer)/i,
-    // Media credits (short ones)
-    /^(image|photo|photograph|video|audio|picture|illustration|graphic|chart|figure)\s*(:|source|credit|courtesy|by|via|from)/i,
-    // Advertisements
-    /^(advertisement|sponsored|promoted|ad:|promo:|special offer|limited time)/i,
-    // Related content sections
-    /^(related|you may also|you might also|recommended|trending|popular|most read|top stories|more from|also read|see also|don't miss)/i,
-    // Newsletter/subscription prompts
-    /^(newsletter|subscribe to|sign up for|get our|join our|enter your email|your email)/i,
-    // Cookie notices
-    /^(we use cookies|this site uses|accept cookies|cookie settings|manage preferences)/i,
-    // App prompts
-    /^(download our|get the app|open in app|continue in app)/i,
-    // Empty-ish lines
-    /^[\s\-–—•·]+$/,
-    // Just numbers
-    /^\d+$/,
-    // Section markers without content
-    /^(breaking|exclusive|opinion|analysis|feature|live|update|watch|listen|video|podcast|gallery|slideshow)$/i,
-    // Guardian-specific patterns
-    /^(key events|show key events only|filter|turn on|turn off|get in touch|email|contact)/i,
-    /^(quick guide|show|hide|what happened|summary)/i,
-  ];
-
-  // Filter and score paragraphs using readability heuristics
-  const scoredParagraphs = paragraphs.map(para => {
-    const trimmed = para.trim();
-
-    // Empty paragraph - keep for spacing
-    if (trimmed.length === 0) {
-      return { text: '', score: 0, keep: false };
-    }
-
-    // Check against non-content patterns
-    for (const pattern of nonContentPatterns) {
-      if (pattern.test(trimmed)) {
-        return { text: trimmed, score: -100, keep: false };
-      }
-    }
-
-    // Calculate readability score (inspired by Readability.js)
-    let score = 0;
-
-    // Longer paragraphs are more likely to be content
-    const wordCount = trimmed.split(/\s+/).length;
-    if (wordCount >= 25) score += 40;
-    else if (wordCount >= 15) score += 25;
-    else if (wordCount >= 8) score += 10;
-    else if (wordCount < 4) score -= 15;
-
-    // Sentences (ending with punctuation) are good indicators
-    const sentenceEndings = (trimmed.match(/[.!?]["']?\s|[.!?]["']?$/g) || []).length;
-    score += sentenceEndings * 12;
-
-    // Commas indicate complex sentences - usually content
-    const commaCount = (trimmed.match(/,/g) || []).length;
-    score += Math.min(commaCount * 4, 20);
-
-    // Multiple sentences in a paragraph is strong content signal
-    if (sentenceEndings >= 2) score += 25;
-
-    // Very short lines without punctuation are suspicious
-    if (trimmed.length < 50 && !/[.!?]$/.test(trimmed)) {
-      score -= 20;
-    }
-
-    // Penalize lines with too many special characters
-    const specialCharRatio = (trimmed.match(/[^a-zA-Z0-9\s.,!?'"()-]/g) || []).length / trimmed.length;
-    if (specialCharRatio > 0.15) score -= 25;
-
-    // Penalize lines that are mostly uppercase (often headers/buttons)
-    const letters = trimmed.match(/[a-zA-Z]/g) || [];
-    const uppercaseRatio = letters.length > 0 ? (trimmed.match(/[A-Z]/g) || []).length / letters.length : 0;
-    if (uppercaseRatio > 0.6 && trimmed.length < 60) score -= 20;
-
-    // Skip if it starts with common non-content starters
-    if (/^(skip|jump|go to|back to|return to|view all|show all|hide|expand|collapse|more|less|next|previous|first|last)\b/i.test(trimmed)) {
-      score -= 40;
-    }
-
-    // Skip lines that are just author attributions (short ones)
-    if (/^(by|from|via|source:|credit:)\s+[a-z\s,]+$/i.test(trimmed) && trimmed.length < 50) {
-      score -= 50;
-    }
-
-    // Skip lines that look like tags/categories
-    if (/^(tags?:|categor(y|ies):|topics?:|filed under:|in:)/i.test(trimmed)) {
-      score -= 60;
-    }
-
-    // Skip lines that are just social stats
-    if (/^\d+\s*(likes?|shares?|comments?|views?|reactions?)/i.test(trimmed)) {
-      score -= 60;
-    }
-
-    // Skip Guardian live blog UI elements
-    if (/^(all times|gmt|bst|et|pt|cet)\b/i.test(trimmed) && trimmed.length < 30) {
-      score -= 50;
-    }
-
-    // Keep lines that look like actual sports/news updates (have a time prefix but substantial content)
-    if (/^\d{1,2}[:.]\d{2}\s+.{50,}/.test(trimmed)) {
-      score += 20; // Timestamped updates with content
-    }
-
-    return { text: trimmed, score, keep: score > 5 };
-  });
-
-  // Keep paragraphs with positive scores
-  const contentParagraphs = scoredParagraphs
-    .filter(p => p.keep && p.text.length > 0)
-    .map(p => p.text);
-
-  // If we filtered too aggressively, fall back to length-based filtering
-  if (contentParagraphs.length < 2) {
-    const fallbackParagraphs = paragraphs
-      .map(p => p.trim())
-      .filter(p => {
-        if (p.length === 0) return false;
-        return p.length >= 100 || (p.length >= 50 && /[.!?]$/.test(p));
-      });
-
-    if (fallbackParagraphs.length > contentParagraphs.length) {
-      return fallbackParagraphs.join('\n\n').trim();
-    }
+// Filter and score paragraphs using readability heuristics
+function extractReadableContent(textInput: string, allowLowScore: boolean = false): string {
+  // Simple check: is this HTML? If so, strip tags but preserve structure hints
+  let text = textInput;
+  if (text.includes('<') && text.includes('>')) {
+    text = text
+      .replace(/<script[\s\S]*?<\/script>/gi, '')
+      .replace(/<style[\s\S]*?<\/style>/gi, '')
+      .replace(/<footer[\s\S]*?<\/footer>/gi, '')
+      .replace(/<nav[\s\S]*?<\/nav>/gi, '')
+      .replace(/<p[^>]*>/gi, '\n\n')
+      .replace(/<br[^>]*>/gi, '\n')
+      .replace(/<li[^>]*>/gi, '\n- ')
+      .replace(/<h[1-6][^>]*>/gi, '\n\n# ')
+      .replace(/<[^>]+>/g, ' ');
   }
 
-  // Join paragraphs with proper spacing
-  let result = contentParagraphs.join('\n\n');
+  const paragraphs = text.split(/\n\s*\n/);
+  const scoredParagraphs = paragraphs.map(para => {
+    const trimmed = para.trim();
+    if (trimmed.length === 0) return { text: '', score: 0, keep: false };
 
-  // Final cleanup
-  result = result
-    .replace(/[ \t]+/g, ' ')
-    .replace(/\n{3,}/g, '\n\n')
-    .replace(/\[\s*\]/g, '')
-    .replace(/\(\s*\)/g, '')
-    .trim();
+    // Basic scoring logic...
+    let score = 0;
+    const wordCount = trimmed.split(/\s+/).length;
+    const sentenceEndings = (trimmed.match(/[.!?]["']?\s|[.!?]["']?$/g) || []).length;
 
-  return result;
+    score += wordCount * 1;
+    score += sentenceEndings * 10;
+
+    // Reject very short snippets that look like UI/Metadata
+    if (!allowLowScore && score < 30) return { text: trimmed, score, keep: false };
+    if (allowLowScore && score < 10) return { text: trimmed, score, keep: false };
+
+    return { text: trimmed, score, keep: true };
+  });
+
+  return scoredParagraphs
+    .filter(p => p.keep)
+    .map(p => p.text)
+    .join('\n\n');
 }
 
 // Fallback: Basic HTML extraction for when Firecrawl is unavailable
@@ -317,7 +162,8 @@ function extractFromHtml(html: string): { title: string; body: string } {
     .trim();
 
   // Apply readability filtering to the extracted text
-  const cleanedBody = extractReadableContent(text, title);
+  // We allow a slightly lower score here because we've already done some HTML-specific filtering
+  const cleanedBody = extractReadableContent(text, true);
 
   return { title, body: cleanedBody };
 }
@@ -415,7 +261,7 @@ serve(async (req) => {
           title = title.replace(/\s*[|\-–—]\s*[^|\-–—]+$/, '').trim();
 
           // Apply readability extraction to the markdown
-          const cleanedText = extractReadableContent(markdown, title);
+          const cleanedText = extractReadableContent(markdown, true); // Allow low score for Firecrawl output
 
           // Prepend headline to the body text
           const fullText = title + '\n\n' + cleanedText;
@@ -443,57 +289,75 @@ serve(async (req) => {
     }
 
     // Fallback: Basic HTTP fetch
-    console.log('Fetching URL with basic scraping:', formattedUrl);
+    console.log(`[scraper] Fetching URL: ${formattedUrl}`);
 
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000);
+    const response = await fetch(formattedUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9',
+      },
+    });
 
-    try {
-      const response = await fetch(formattedUrl, {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-        },
-        signal: controller.signal,
-      });
+    if (!response.ok) {
+      console.error(`[scraper] Fetch failed with status: ${response.status}`);
+      throw new Error(`Failed to fetch URL: ${response.statusText}`);
+    }
 
-      clearTimeout(timeoutId);
+    const html = await response.text();
+    console.log(`[scraper] Received HTML length: ${html.length}`);
 
-      if (!response.ok) {
-        throw new Error(`Failed to fetch URL: ${response.status}`);
-      }
+    // Extract title from HTML
+    const { title: pageTitle } = extractFromHtml(html);
+    console.log(`[scraper] Extracted Page Title: ${pageTitle}`);
 
-      const contentLength = response.headers.get('content-length');
-      if (contentLength && parseInt(contentLength) > 5 * 1024 * 1024) {
-        throw new Error('Content too large');
-      }
+    // Step 1: Use Readability-style extraction
+    console.log('[scraper] Attempting Stage 1: Smart Extraction');
+    let extractedText = extractReadableContent(html);
+    console.log(`[scraper] Stage 1 result length: ${extractedText.length}`);
 
-      const html = await response.text();
-
-      if (html.length > 1024 * 1024) {
-        throw new Error('Content too large to process');
-      }
-
-      const { title, body } = extractFromHtml(html);
-
-      // Prepend headline to the body text
-      const fullText = title + '\n\n' + body;
-
-      console.log('Basic scraping extracted title:', title);
-      console.log('Basic scraping extracted body length:', body.length);
-
+    // Case 1: Success (enough content)
+    if (extractedText.length > 500) {
+      console.log('[scraper] Stage 1 SUCCESS (extractedText > 500 chars)');
       return new Response(
         JSON.stringify({
           success: true,
-          text: fullText,
-          title: title
+          text: extractedText,
+          title: pageTitle,
+          method: 'smart'
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
-    } catch (fetchError) {
-      clearTimeout(timeoutId);
-      throw fetchError;
     }
+
+    // Case 2: Fallback (low content)
+    console.log('[scraper] content too short, attempting Stage 2: Wide-net Fallback');
+    const fallbackText = extractReadableContent(html, true); // True for "allow low score"
+    console.log(`[scraper] Stage 2 result length: ${fallbackText.length}`);
+
+    if (fallbackText.length > 100) {
+      console.log('[scraper] Stage 2 SUCCESS (fallbackText > 100 chars)');
+      return new Response(
+        JSON.stringify({
+          success: true,
+          text: fallbackText,
+          title: pageTitle,
+          method: 'fallback'
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.warn('[scraper] All extraction methods returned insufficient content.');
+    return new Response(
+      JSON.stringify({
+        success: false,
+        error: 'Could not extract enough readable content from this page.',
+        title: pageTitle,
+        debug_lengths: { smart: extractedText.length, fallback: fallbackText.length }
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
   } catch (error) {
     console.error('Error in scrape-url function:', error);
 

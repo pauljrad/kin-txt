@@ -227,7 +227,7 @@ export async function getClubMembers(clubId: string): Promise<{
 
         const { data: profiles, error: profileError } = await supabase
             .from('profiles')
-            .select('id, display_name, email, avatar_url')
+            .select('id, display_name, email, avatar_url, avatar_color')
             .in('id', userIds);
 
         console.log('[getClubMembers] Profiles query result:', { profiles, profileError });
@@ -284,28 +284,32 @@ export async function suggestBook(
             .eq('club_id', clubId)
             .eq('status', 'accepted');
 
-        if (members && members.length > 0) {
-            // Create progress records for ALL members (including suggester)
-            const progressRecords = members.map(m => ({
-                suggestion_id: suggestion.id,
+        if (members && (members as any[]).length > 0) {
+            // Suggester gets the progress record linked to their existing document
+            // Others get a record with document_id = null (invitee status)
+            const progressRecords = (members as any[]).map(m => ({
+                suggestion_id: (suggestion as any).id,
                 user_id: m.user_id,
                 status: m.user_id === user.id ? 'accepted' : 'invited',
+                document_id: m.user_id === user.id ? documentId : null,
                 progress: 0,
                 current_word_index: 0
             }));
 
-            await supabase
+            const { error: progressError } = await supabase
                 .from('club_member_progress' as any)
                 .insert(progressRecords);
 
-            // Send notifications to other members (not the suggester)
-            const otherMembers = members.filter(m => m.user_id !== user.id);
+            if (progressError) throw progressError;
+
+            // Send notifications to other members
+            const otherMembers = (members as any[]).filter(m => m.user_id !== user.id);
             if (otherMembers.length > 0) {
                 const notifications = otherMembers.map(m => ({
                     user_id: m.user_id,
                     type: 'book_suggestion',
                     payload: {
-                        suggestion_id: suggestion.id,
+                        suggestion_id: (suggestion as any).id,
                         club_id: clubId,
                         message: `A new book has been suggested for your club: ${title}`
                     }
@@ -315,7 +319,7 @@ export async function suggestBook(
             }
         }
 
-        return { suggestion, error: null };
+        return { suggestion: suggestion as any, error: null };
     } catch (error) {
         console.error('Error suggesting book:', error);
         return { suggestion: null, error: error as Error };
@@ -334,35 +338,67 @@ export async function acceptBookSuggestion(
             return { document: null, error: new Error('User not authenticated') };
         }
 
-        // Get suggestion details
-        const { data: suggestion, error: suggestionError } = await supabase
+        // Check if there's already a document assigned (e.g., for the suggester)
+        const { data: progressRecord, error: progressError } = await supabase
+            .from('club_member_progress' as any)
+            .select('document_id, status')
+            .eq('suggestion_id', suggestionId)
+            .eq('user_id', user.id)
+            .maybeSingle();
+
+        if (progressError) throw progressError;
+
+        if (progressRecord && (progressRecord as any).document_id) {
+            // Document already exists, just make sure status is 'accepted'
+            if ((progressRecord as any).status !== 'accepted') {
+                await supabase
+                    .from('club_member_progress' as any)
+                    .update({ status: 'accepted' })
+                    .eq('suggestion_id', suggestionId)
+                    .eq('user_id', user.id);
+            }
+
+            // Fetch and return the existing document
+            const { data: existingDoc } = await supabase
+                .from('documents' as any)
+                .select('*')
+                .eq('id', (progressRecord as any).document_id)
+                .single();
+
+            return { document: existingDoc, error: null };
+        }
+
+        // No document yet? Clone the suggested book into the user's library
+        const { data: suggestion } = await supabase
             .from('club_book_suggestions' as any)
             .select('document_id, title')
             .eq('id', suggestionId)
             .single();
 
-        if (suggestionError) throw suggestionError;
+        if (!suggestion) throw new Error('Suggestion not found');
 
-        // Clone document to user's library
-        const { data: sourceDoc, error: docError } = await supabase
+        const sourceDocId = (suggestion as any).document_id;
+        const { data: sourceDoc } = await supabase
             .from('documents' as any)
             .select('*')
-            .eq('id', suggestion.document_id)
+            .eq('id', sourceDocId)
             .single();
 
-        if (docError) throw docError;
+        if (!sourceDoc) {
+            throw new Error('Source document no longer exists');
+        }
 
-        // Create new document for user
+        // Create new document copy for this user
         const { data: newDoc, error: insertError } = await supabase
             .from('documents' as any)
             .insert({
                 user_id: user.id,
-                title: sourceDoc.title,
-                content: sourceDoc.content,
-                preview: sourceDoc.preview,
-                word_count: sourceDoc.word_count,
+                title: (sourceDoc as any).title,
+                content: (sourceDoc as any).content,
+                preview: (sourceDoc as any).preview,
+                word_count: (sourceDoc as any).word_count,
                 source: 'club_book',
-                file_type: sourceDoc.file_type,
+                file_type: (sourceDoc as any).file_type,
                 current_word_index: 0,
                 progress: 0
             })
@@ -371,12 +407,12 @@ export async function acceptBookSuggestion(
 
         if (insertError) throw insertError;
 
-        // Update progress record
+        // Update progress record with the new document copy
         await supabase
             .from('club_member_progress' as any)
             .update({
                 status: 'accepted',
-                document_id: newDoc.id
+                document_id: (newDoc as any).id
             })
             .eq('suggestion_id', suggestionId)
             .eq('user_id', user.id);
@@ -411,7 +447,7 @@ export async function getClubProgress(
         const userIds = progressRecords.map((p: any) => p.user_id);
         const { data: profiles, error: profileError } = await supabase
             .from('profiles')
-            .select('id, display_name, avatar_url')
+            .select('id, display_name, avatar_url, avatar_color')
             .in('id', userIds);
 
         if (profileError) throw profileError;
@@ -484,7 +520,7 @@ export async function getActiveBookSuggestion(
 
         if (suggestionError) throw suggestionError;
         if (!suggestion) {
-            console.log('[getActiveBookSuggestion] No active suggestion found');
+            console.log('[getActiveBookSuggestion] No active suggestion found for clubId:', clubId);
             return { suggestion: null, error: null };
         }
 
@@ -579,58 +615,65 @@ export async function updateClubProgress(
     totalWords: number
 ): Promise<{ success: boolean; error: Error | null }> {
     try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-            return { success: false, error: new Error('User not authenticated') };
-        }
-
-        console.log('[updateClubProgress] Checking for club book:', { documentId, currentWordIndex, totalWords });
-
-        // Find active suggestion for this document
-        const { data: suggestion, error: suggestionError } = await supabase
-            .from('club_book_suggestions' as any)
-            .select('id, club_id, title')
-            .eq('document_id', documentId)
-            .in('status', ['pending', 'active'])
-            .maybeSingle();
-
-        console.log('[updateClubProgress] Suggestion query result:', { suggestion, suggestionError });
-
-        if (suggestionError) throw suggestionError;
-
-        if (!suggestion) {
-            // Not a club book, skip
-            console.log('[updateClubProgress] Not a club book, skipping');
+        if (!documentId) {
+            console.log('[updateClubProgress] No documentId provided, skipping');
             return { success: true, error: null };
         }
 
-        // Calculate progress percentage
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+            console.log('[updateClubProgress] No user authenticated');
+            return { success: false, error: new Error('Not authenticated') };
+        }
+
+        console.log('[updateClubProgress] Checking for club book:', { documentId, userId: user.id, currentWordIndex, totalWords });
+
+        // Find which club book this document belongs to for this specific user
+        const { data: progressRecord, error: progressError } = await supabase
+            .from('club_member_progress' as any)
+            .select('suggestion_id, status')
+            .eq('document_id', documentId)
+            .eq('user_id', user.id)
+            .maybeSingle();
+
+        console.log('[updateClubProgress] Progress record query result:', { progressRecord, progressError });
+
+        if (progressError) {
+            console.error('[updateClubProgress] Query error:', progressError);
+            return { success: true, error: null }; // Silent fail
+        }
+
+        if (!progressRecord) {
+            console.log('[updateClubProgress] No progress record found - not a club book');
+            return { success: true, error: null };
+        }
+
+        const suggestionId = (progressRecord as any).suggestion_id;
         const progress = totalWords > 0 ? Math.round((currentWordIndex / totalWords) * 100) : 0;
 
-        console.log('[updateClubProgress] Updating progress:', { suggestionId: suggestion.id, userId: user.id, progress, currentWordIndex });
+        console.log('[updateClubProgress] Upserting progress:', { suggestionId, userId: user.id, progress, currentWordIndex });
 
-        // Update or create progress record
-        const { error: updateError } = await supabase
+        const { error: upsertError } = await supabase
             .from('club_member_progress' as any)
             .upsert({
-                suggestion_id: suggestion.id,
+                suggestion_id: suggestionId,
                 user_id: user.id,
                 progress,
                 current_word_index: currentWordIndex,
-                status: 'accepted' // Valid statuses: 'invited', 'accepted', 'declined'
+                status: 'accepted'
             }, {
                 onConflict: 'suggestion_id,user_id'
             });
 
-        if (updateError) {
-            console.error('[updateClubProgress] Update error:', updateError);
-            throw updateError;
+        if (upsertError) {
+            console.error('[updateClubProgress] Upsert error:', upsertError);
+            throw upsertError;
         }
 
         console.log('[updateClubProgress] Successfully updated club progress');
         return { success: true, error: null };
     } catch (error) {
-        console.error('Error updating club progress:', error);
+        console.error('[updateClubProgress] SILENCED SYNC ERROR:', error);
         return { success: false, error: error as Error };
     }
 }

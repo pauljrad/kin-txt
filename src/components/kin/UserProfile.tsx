@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { getInitials } from "@/lib/utils";
+import { getInitials, getAvatarColor } from "@/lib/utils";
 import { useToast } from "@/components/ui/use-toast";
 
 interface UserProfileProps {
@@ -13,6 +13,7 @@ interface UserProfileProps {
 interface Profile {
     display_name: string | null;
     avatar_url: string | null;
+    avatar_color: string | null;
     created_at: string;
 }
 
@@ -38,7 +39,7 @@ export const UserProfile = ({ userId }: UserProfileProps) => {
                 .select('*')
                 .eq('id', userId)
                 .single();
-            if (data) setProfile(data);
+            if (data) setProfile(data as any);
         };
 
         const fetchHistory = async () => {
@@ -106,10 +107,13 @@ export const UserProfile = ({ userId }: UserProfileProps) => {
     return (
         <div className="flex flex-col gap-5 w-full h-full max-h-[60vh] overflow-hidden">
             {/* Header: Horizontal Layout */}
-            <div className="flex items-start gap-4 shrink-0 w-full">
+            <div className="flex items-start gap-4 shrink-0 w-full pr-10 sm:pr-0">
                 <Avatar className="h-16 w-16 border-2 border-border shadow-sm shrink-0">
                     <AvatarImage src={profile.avatar_url || ''} className="object-cover" />
-                    <AvatarFallback className="text-lg bg-primary/10 text-primary font-bold">
+                    <AvatarFallback
+                        className="text-lg font-bold"
+                        style={{ backgroundColor: getAvatarColor(profile.id, profile.avatar_color), color: '#000' }}
+                    >
                         {getInitials(profile.display_name)}
                     </AvatarFallback>
                 </Avatar>
@@ -121,7 +125,7 @@ export const UserProfile = ({ userId }: UserProfileProps) => {
                     </p>
                 </div>
 
-                <div className="text-right pl-2 shrink-0 pt-1">
+                <div className="text-center pl-2 shrink-0 pt-1 min-w-[3rem]">
                     <span className="block text-3xl font-display font-bold text-primary leading-none">{stats.total}</span>
                     <span className="text-[8px] font-bold uppercase tracking-wider text-muted-foreground">Read</span>
                 </div>

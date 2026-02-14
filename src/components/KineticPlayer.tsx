@@ -4,7 +4,7 @@ import { Play, Pause, RotateCcw, ChevronLeft, Rewind, BookOpen, Clock, Music, Se
 import { ParsedText, getWordDelay, filterEmphasis } from '@/lib/textParser';
 import { detectChapters, findSentenceBoundaries, getRewindPosition, Chapter } from '@/lib/chapterParser';
 import { updateDocumentReadingTime as updateLocalReadingTime } from '@/lib/documentStorage';
-import { updateDocumentReadingTime as updateDbReadingTime } from '@/lib/documentDatabase';
+import { updateDocumentReadingTime as updateDbReadingTime, markDocumentCompleted } from '@/lib/documentDatabase';
 import { ChapterNavigation } from './ChapterNavigation';
 import { FullTextView } from './FullTextView';
 import { supabase } from '@/integrations/supabase/client';
@@ -586,6 +586,16 @@ export function KineticPlayer({
       return () => clearTimeout(timer);
     }
   }, [showingAttribution, isPlaying]);
+
+  // Auto-complete document when user reaches the end
+  useEffect(() => {
+    if (isComplete && documentId) {
+      console.log('[KineticPlayer] Document completed, marking as finished:', documentId);
+      markDocumentCompleted(documentId, true).catch(err => {
+        console.error('[KineticPlayer] Failed to mark document as completed:', err);
+      });
+    }
+  }, [isComplete, documentId]);
 
   // Handle progress bar click/drag
   const handleProgressBarInteraction = useCallback((e: React.MouseEvent | React.TouchEvent) => {
@@ -1237,7 +1247,7 @@ export function KineticPlayer({
                   ? `calc(2.9rem * var(--text-size-multiplier, 1))` // Match normal text size in Target Mode
                   : `calc(${cleanWord.includes('kin-txt') || cleanWord === 'kin-txt' ? '6rem' :
                     isEmphasisWord ? '6rem' :
-                      isWhisperedWord ? '1.5rem' : '2.9rem'
+                      isWhisperedWord ? '2.4rem' : '2.9rem'
                   } * var(--text-size-multiplier, 1))`,
               }}
             >
@@ -1272,25 +1282,6 @@ export function KineticPlayer({
           )}
         </AnimatePresence>
       </div>
-
-      {/* Reading Time Display - positioned below the speed indicator */}
-      <AnimatePresence>
-        {isHudVisible && (
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className="absolute right-4 glass-panel px-3 py-2 flex items-center gap-2 z-20"
-            style={{ top: 'calc(4rem + env(safe-area-inset-top, 0px))' }}
-          >
-            <Clock className="w-4 h-4 text-muted-foreground" />
-            <div className="text-xs">
-              <div className="text-muted-foreground">Session: <span className="text-foreground font-medium tabular-nums">{formatTime(sessionTime)}</span></div>
-              <div className="text-muted-foreground">Total: <span className="text-foreground font-medium tabular-nums">{formatTime(totalReadingTime)}</span></div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       {/* Progress Bar - Seekable */}
       <AnimatePresence>
@@ -1434,17 +1425,29 @@ export function KineticPlayer({
               </button>
             </motion.div>
 
-            {/* Current Speed Indicator */}
+            {/* Combined Indicators Panel (Speed + Duration) */}
             <motion.div
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="pointer-events-none absolute right-16 sm:right-24 glass-panel px-2 py-1 sm:px-4 sm:py-2 flex items-center justify-center"
-              style={{ top: 'calc(1rem + env(safe-area-inset-top, 0px))', height: 'fit-content', minHeight: '3rem' }}
+              className="pointer-events-auto absolute right-16 sm:right-24 flex flex-col items-start gap-4"
+              style={{ top: 'calc(1rem + env(safe-area-inset-top, 0px))' }}
             >
-              <span className="text-[10px] sm:text-sm text-muted-foreground">
-                {rhythmMode ? 'Rhythm: ' : 'Speed: '}
-              </span>
-              <span className="text-xs sm:text-sm font-medium">{Math.round(displaySpeed * 200)} WPM</span>
+              {/* Speed Indicator */}
+              <div className="glass-panel px-2 py-1 sm:px-4 sm:py-2 flex items-center justify-center min-h-[3rem] w-[140px] sm:w-[180px]">
+                <span className="text-[10px] sm:text-sm text-muted-foreground mr-1">
+                  {rhythmMode ? 'Rhythm: ' : 'Speed: '}
+                </span>
+                <span className="text-xs sm:text-sm font-medium">{Math.round(displaySpeed * 200)} WPM</span>
+              </div>
+
+              {/* Duration Timer */}
+              <div className="glass-panel px-3 py-2 flex items-center gap-2 w-[140px] sm:w-[180px]">
+                <Clock className="w-4 h-4 text-muted-foreground shrink-0" />
+                <div className="text-xs">
+                  <div className="text-muted-foreground whitespace-nowrap">Session: <span className="text-foreground font-medium tabular-nums">{formatTime(sessionTime)}</span></div>
+                  <div className="text-muted-foreground whitespace-nowrap">Total: <span className="text-foreground font-medium tabular-nums">{formatTime(totalReadingTime)}</span></div>
+                </div>
+              </div>
             </motion.div>
 
 
