@@ -20,7 +20,6 @@ import { Button } from '@/components/ui/button';
 
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { AnimatedTitle } from '@/components/AnimatedTitle';
-import { InstallPWA } from '@/components/InstallPWA';
 import { usePullGesture } from '@/hooks/usePullGesture';
 import { ParsedText, processTextStyles, filterEmphasis } from '@/lib/textParser';
 import { SavedDocument, saveDocument, updateDocumentProgress, updateDocumentEmphasis } from '@/lib/documentDatabase';
@@ -632,7 +631,7 @@ const Index = () => {
         paddingBottom: 'env(safe-area-inset-bottom, 0px)',
       }}
     >
-      <InstallPWA />
+
 
       <ShareModal
         open={isShareOpen}
