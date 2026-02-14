@@ -775,7 +775,7 @@ const Index = () => {
             filter: isPongGameActive ? 'blur(6px)' : 'blur(0px)',
           }}
           transition={{ duration: 0.4 }}
-          className="fixed left-4 z-50 toolbar-button"
+          className="absolute left-4 z-50 toolbar-button"
           style={{ top: 'calc(1rem + env(safe-area-inset-top, 0px))', pointerEvents: isPongGameActive ? 'none' : 'auto' }}
           title="Sign out"
         >
@@ -786,7 +786,7 @@ const Index = () => {
       {/* Notifications - Top Right (right-28) */}
       {!activeDocument && (
         <div
-          className="fixed right-28 z-50 flex items-center justify-center p-0"
+          className="absolute right-28 z-50 flex items-center justify-center p-0"
           style={{ top: 'calc(1rem + env(safe-area-inset-top, 0px))' }}
         >
           <Notifications
@@ -818,7 +818,7 @@ const Index = () => {
             filter: isPongGameActive ? 'blur(6px)' : 'blur(0px)',
           }}
           transition={{ duration: 0.4 }}
-          className="fixed right-16 z-50 toolbar-button"
+          className="absolute right-16 z-50 toolbar-button"
           style={{ top: 'calc(1rem + env(safe-area-inset-top, 0px))', pointerEvents: isPongGameActive ? 'none' : 'auto' }}
           title="Information & Instructions"
         >

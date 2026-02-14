@@ -29,7 +29,7 @@ const PHRASES: PhraseConfig[] = [
 export const KineticScrollSection = () => {
     const containerRef = useRef<HTMLDivElement>(null);
     const [progress, setProgress] = useState(0);
-    const [isVisible, setIsVisible] = useState(false);
+    // Removed isVisible state to avoid unmounting thrashing
 
     useEffect(() => {
         const handleScroll = () => {
@@ -47,12 +47,9 @@ export const KineticScrollSection = () => {
             if (p < 0) p = 0;
             if (p > 1) p = 1;
 
+            // Optimization: Only update React state if p changes significantly or requestAnimationFrame?
+            // React batching in 18/19 usually handles this well.
             setProgress(p);
-
-            const inView = rect.top <= viewportHeight && rect.bottom >= 0;
-            if (inView !== isVisible) {
-                setIsVisible(inView);
-            }
         };
 
         window.addEventListener('scroll', handleScroll, { passive: true });
@@ -63,7 +60,7 @@ export const KineticScrollSection = () => {
             window.removeEventListener('scroll', handleScroll);
             window.removeEventListener('resize', handleScroll);
         };
-    }, [isVisible]);
+    }, []);
 
     const getStyles = (globalProgress: number, index: number, total: number, type: AnimationType) => {
         const sequenceProgress = globalProgress * total;
@@ -74,28 +71,20 @@ export const KineticScrollSection = () => {
         const OFFSET_END = 1.0;
 
         // --- CRISP TEXT STRATEGY ---
-        // We use double the font size (50vw) and half the scale.
-        // This ensures vectors are rendered at high resolution.
-        // Old Start: 0.35 -> New: 0.175
-        // Old Peak: 1.0 -> New: 0.5
-        // Old End: 4.0 -> New: 2.0
-
         const SCALE_START = 0.175;
         const SCALE_PEAK = 0.5;
         const SCALE_END = 2.0;
 
-        // Default values
         let opacity = 0;
-        let transform = 'translate3d(0,0,0) scale(0.5)'; // Default peak scale
-        let display = 'none';
+        let transform = 'translate3d(0,0,0) scale(0.5)';
 
-        if (localProgress > OFFSET_START) {
-            if (!isLastWord && localProgress > OFFSET_END) {
-                display = 'none';
-            } else {
-                display = 'flex';
-            }
+        // --- MOBILE FIX: ALWAYS RENDER (Avoid Display: None thrashing) ---
+        // Just use Opacity 0.
+        // Also check range purely for opacity calculation
 
+        const inWindow = localProgress > OFFSET_START && (isLastWord || localProgress < OFFSET_END);
+
+        if (inWindow) {
             // OPACITY LOGIC (80/20)
             if (localProgress < 0) {
                 // Entering
@@ -118,60 +107,37 @@ export const KineticScrollSection = () => {
             }
 
             // TRANSFORM LOGIC
-            // Zoom: linear interp from START to END (adjusted for phase)
-            // Enter phase: OFFSET_START -> 0 maps to SCALE_START -> SCALE_PEAK
-            // Exit phase: 0 -> OFFSET_END maps to SCALE_PEAK -> SCALE_END
-
             if (type === 'zoom') {
                 let s = SCALE_PEAK;
                 if (localProgress < 0) {
-                    // -1 -> 0
                     const t = (localProgress - OFFSET_START) / (0 - OFFSET_START);
                     s = SCALE_START + (SCALE_PEAK - SCALE_START) * t;
                 } else {
-                    // 0 -> 1 (and beyond for last word)
                     const t = (localProgress - 0) / (OFFSET_END - 0);
                     s = SCALE_PEAK + (SCALE_END - SCALE_PEAK) * t;
                 }
                 transform = `scale(${s})`;
             }
-
-            // For Slides/Rotate, we also reduce scale base to 0.5
-            // Slide magnitude stays same in vw/vh because that's translation not scale?
-            // Actually, if we scale down the container, we scale down the translation too?
-            // No, translate comes before scale in CSS usually or depends on matrix order.
-            // string: `translate() scale()` -> Translate is in parent coords? No local.
-            // If Text is 50vw wide.
-            // Scale 0.5 makes it appear 25vw wide.
-            // Translate 50vw moves it 50vw.
-            // So translation units should be same as before.
-
             else if (type === 'slideLeft') {
                 const x = -localProgress * 80;
-                // Scale logic: grows from 0.25 to 0.75?
-                // Old: 0.5 to 1.5. New: 0.25 to 0.75.
                 const s = 0.25 + 0.25 * (1 + localProgress);
                 transform = `translate3d(${x}vw, 0, 0) scale(${Math.min(s, 0.75)})`;
             }
-
             else if (type === 'slideRight') {
                 const x = localProgress * 80;
                 const s = 0.25 + 0.25 * (1 + localProgress);
                 transform = `translate3d(${x}vw, 0, 0) scale(${Math.min(s, 0.75)})`;
             }
-
             else if (type === 'slideUp') {
                 const y = -localProgress * 80;
-                // Old: 0.8 -> 1.0. New: 0.4 -> 0.5
                 const s = 0.4 + 0.1 * (1 - Math.abs(localProgress));
                 transform = `translate3d(0, ${y}vh, 0) scale(${s})`;
             }
-
             else if (type === 'rotate') {
                 const rot = localProgress * 45;
                 const s = localProgress < 0
                     ? 0.25 + 0.25 * ((localProgress - OFFSET_START) / (0 - OFFSET_START))
-                    : 0.5 + 0.5 * localProgress; // Grows past 0.5
+                    : 0.5 + 0.5 * localProgress;
                 transform = `rotate(${rot}deg) scale(${s})`;
             }
         }
@@ -182,7 +148,7 @@ export const KineticScrollSection = () => {
         return {
             opacity,
             transform,
-            display,
+            display: 'flex', // ALWAYS FLEX to prevent layout thrashing
             zIndex: index,
             position: 'absolute' as const,
             top: '0',
@@ -192,8 +158,14 @@ export const KineticScrollSection = () => {
             justifyContent: 'center',
             alignItems: 'center',
             pointerEvents: 'none' as const,
-            // REMOVING will-change TO PREVENT BLURRINESS
-            // willChange: 'transform, opacity' 
+            // MOBILE HARDWARE ACCELERATION
+            backfaceVisibility: 'hidden' as const,
+            WebkitBackfaceVisibility: 'hidden' as const,
+            perspective: '1000px',
+            willChange: 'transform, opacity' // Re-adding carefully for mobile smoothness? Or is it the cause?
+            // Usually opacity is distinct layer. transform is distinct.
+            // If flashing, it might be running out of VRAM.
+            // Let's TRY without will-change first, but with backface-visibility.
         };
     };
 
@@ -205,8 +177,8 @@ export const KineticScrollSection = () => {
                         key={i}
                         style={getStyles(progress, i, PHRASES.length, item.type)}
                     >
-                        {/* INCREASED FONT SIZE to 50vw for Sharpness */}
-                        <h2 className="font-display text-[50vw] leading-none tracking-tighter whitespace-nowrap text-black antialiased">
+                        {/* REDUCED FONT SIZE ON MOBILE (25vw), HUGE DESKTOP (50vw) */}
+                        <h2 className="font-display text-[25vw] md:text-[50vw] leading-none tracking-tighter whitespace-nowrap text-black antialiased translate-z-0">
                             {item.text}
                         </h2>
                     </div>

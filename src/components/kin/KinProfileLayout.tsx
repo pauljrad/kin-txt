@@ -10,7 +10,7 @@ export const KinProfileLayout = () => {
         <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger asChild>
                 <button
-                    className="fixed right-52 z-50 toolbar-button"
+                    className="absolute right-52 z-50 toolbar-button"
                     style={{ top: 'calc(1rem + env(safe-area-inset-top, 0px))' }}
                 >
                     <User className="h-4 w-4 sm:h-5 sm:w-5" />

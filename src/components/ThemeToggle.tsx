@@ -41,7 +41,7 @@ export const ThemeToggle = forwardRef<HTMLButtonElement, ThemeToggleProps>(
         }}
         className={
           className ??
-          'fixed right-4 z-50 toolbar-button'
+          'absolute right-4 z-50 toolbar-button'
         }
         style={{ top: 'calc(1rem + env(safe-area-inset-top, 0px))', ...style }}
         aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}

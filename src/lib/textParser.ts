@@ -197,9 +197,7 @@ export function processTextStyles(parsed: ParsedText): ProcessedTextResult {
         const content = singleWordMatch[3];
         const suffix = singleWordMatch[5];
         cleanWord = prefix + content + suffix;
-        const contentClean = content.toLowerCase().replace(/[.,!?;:'"()[\]]/g, '');
-        // REVERTED: Italics map back to WHISPER
-        detectedWhispered.push(contentClean);
+        // NO LONGER automatically marking italics as whispered.
       }
       else if (AUTO_WHISPER_WORDS.has(lookupKey)) {
         // AUTOMATIC WHISPER DETECTION
@@ -223,10 +221,7 @@ export function processTextStyles(parsed: ParsedText): ProcessedTextResult {
             // Strip trailing marker
             cleanWord = cleanWord.replace(/([*_])([^\w\s]*)$/, '$2');
           }
-
-          // Reverted: Register this word as whispered
-          const contentClean = cleanWord.toLowerCase().replace(/[.,!?;:'"()[\]]/g, '');
-          detectedWhispered.push(contentClean);
+          // NO LONGER marking multi-word italics as whispered.
         }
       }
 

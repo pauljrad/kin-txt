@@ -22,7 +22,7 @@ export const KinUnifiedLayout = ({ onViewProfile }: { onViewProfile?: (userId: s
         <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger asChild>
                 <button
-                    className="fixed right-40 z-50 toolbar-button"
+                    className="absolute right-40 z-50 toolbar-button"
                     style={{ top: 'calc(1rem + env(safe-area-inset-top, 0px))' }}
                 >
                     <Users className="h-4 w-4 sm:h-5 sm:w-5" />

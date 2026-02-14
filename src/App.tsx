@@ -7,7 +7,6 @@ import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/hooks/useAuth";
 import { TextSizeProvider } from "@/hooks/useTextSize";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
-import { PWAPrompt } from "@/components/PWAPrompt";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Landing from "./pages/Landing";
@@ -73,7 +72,6 @@ const App = () => (
         <TooltipProvider>
           <BrowserRouter>
             <AuthProvider>
-              <PWAPrompt />
               <Toaster />
               <Sonner />
               <AppContent />
