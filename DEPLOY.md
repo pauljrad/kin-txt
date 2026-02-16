@@ -10,4 +10,4 @@ The following critical changes need to be deployed:
 - RLS policies opened for club_book_suggestions and club_member_progress
 - Notification toasts moved to bottom on mobile
 - Replaced The Conversation with Wikinews and Global Voices
-# Deployment trigger Fri Jan 30 14:15:00 UTC 2026 - News Source Update
+# Deployment trigger Sat Feb 14 14:15:00 UTC 2026 - Gatsby, Dubliners, Notes Integration and Button Fixes
