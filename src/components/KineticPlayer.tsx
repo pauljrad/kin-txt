@@ -1292,7 +1292,8 @@ export function KineticPlayer({
             exit={{ opacity: 0, y: 10 }}
             transition={{ duration: 0.3 }}
             ref={progressBarRef}
-            className="progress-bar-container absolute bottom-0 left-0 right-0 h-8 sm:h-6 bg-muted/20 cursor-pointer group flex items-center"
+            className="progress-bar-container absolute left-4 right-4 h-12 flex items-center cursor-pointer group z-40"
+            style={{ bottom: 'calc(1.5rem + env(safe-area-inset-bottom, 20px))' }}
             onMouseDown={handleProgressMouseDown}
             onTouchStart={(e) => {
               e.stopPropagation();
@@ -1301,23 +1302,28 @@ export function KineticPlayer({
               handleProgressBarInteraction(e);
             }}
           >
-            {/* Progress fill */}
-            <motion.div
-              className="absolute top-0 left-0 h-full bg-foreground/20"
-              initial={{ width: 0 }}
-              animate={{ width: `${progress}%` }}
-              transition={{ duration: isDragging ? 0 : 0.1 }}
-            />
+            {/* Track background */}
+            <div className="absolute left-0 right-0 h-1.5 bg-muted/30 rounded-full overflow-hidden backdrop-blur-sm">
+              {/* Progress fill */}
+              <motion.div
+                className="h-full bg-foreground"
+                initial={{ width: 0 }}
+                animate={{ width: `${progress}%` }}
+                transition={{ duration: isDragging ? 0 : 0.1 }}
+              />
+            </div>
 
-            {/* Drag handle */}
+            {/* Drag handle - always visible for better accessibility */}
             <motion.div
-              className="absolute top-1/2 -translate-y-1/2 w-5 h-5 sm:w-4 sm:h-4 bg-foreground rounded-full shadow-lg cursor-grab active:cursor-grabbing"
+              className="absolute w-5 h-5 bg-foreground rounded-full shadow-lg cursor-grab active:cursor-grabbing border-2 border-background z-10"
               style={{ left: `calc(${progress}% - 10px)` }}
               animate={{ scale: isDragging ? 1.2 : 1 }}
+              transition={{ duration: 0.1 }}
             />
 
             {/* Percentage label */}
-            <div className="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-medium text-muted-foreground tabular-nums">
+            <div className={`absolute -top-6 left-1/2 -translate-x-1/2 text-xs font-medium text-muted-foreground tabular-nums transition-opacity duration-200 ${isDragging ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+              }`}>
               {Math.round(progress)}%
             </div>
           </motion.div>
@@ -1455,7 +1461,7 @@ export function KineticPlayer({
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 20 }}
-              className="controls-panel pointer-events-auto absolute bottom-12 sm:bottom-10 left-1 right-1 sm:left-1/2 sm:-translate-x-1/2 sm:w-auto"
+              className="controls-panel pointer-events-auto absolute bottom-24 sm:bottom-14 left-4 right-4 sm:left-1/2 sm:-translate-x-1/2 sm:w-auto"
             >
               <div className="glass-panel p-2 sm:p-4 flex flex-col gap-2 sm:gap-4">
                 {/* Playback Controls */}
