@@ -196,15 +196,15 @@
   html {
     font-size: 16px;
     height: 100%;
-    /* Use dvh for mobile browsers to handle address bar resizing */
-    min-height: 100dvh;
+    /* Use svh/dvh for mobile browsers to handle address bar resizing */
+    min-height: 100svh;
     background-color: black;
   }
 
   body {
     @apply bg-background text-foreground antialiased;
     font-family: var(--font-body);
-    min-height: 100dvh;
+    min-height: 100svh;
     /* Prevent white background during overscroll/bounce */
     overscroll-behavior-y: none;
     background-color: black;
@@ -212,7 +212,9 @@
   }
 
   #root {
-    height: 100%;
+    min-height: 100svh;
+    display: flex;
+    flex-direction: column;
   }
 
   h1,
