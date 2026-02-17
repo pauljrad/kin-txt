@@ -1090,7 +1090,7 @@ export function KineticPlayer({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 flex items-center justify-center overflow-hidden cursor-pointer transition-all duration-700 bg-background"
+      className="fixed inset-0 h-[100dvh] w-screen flex items-center justify-center overflow-hidden cursor-pointer transition-all duration-700 bg-black touch-none"
       onMouseMove={handleMouseMove}
       onClick={handleScreenTap}
     >
@@ -1101,7 +1101,7 @@ export function KineticPlayer({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="absolute inset-0 z-[60] bg-background flex flex-col items-center justify-center p-8 text-center"
+            className="absolute inset-0 z-[60] bg-black flex flex-col items-center justify-center p-8 text-center"
             onClick={(e) => {
               e.stopPropagation();
               setIsPlaying(!isPlaying);
@@ -1292,8 +1292,8 @@ export function KineticPlayer({
             exit={{ opacity: 0, y: 10 }}
             transition={{ duration: 0.3 }}
             ref={progressBarRef}
-            className="progress-bar-container absolute left-4 right-4 h-12 flex items-center cursor-pointer group z-40"
-            style={{ bottom: 'calc(1.5rem + env(safe-area-inset-bottom, 20px))' }}
+            className="progress-bar-container absolute left-0 right-0 z-40 flex items-end justify-center px-6 pb-8 cursor-pointer group"
+            style={{ bottom: 'env(safe-area-inset-bottom, 20px)' }}
             onMouseDown={handleProgressMouseDown}
             onTouchStart={(e) => {
               e.stopPropagation();
@@ -1303,28 +1303,33 @@ export function KineticPlayer({
             }}
           >
             {/* Track background */}
-            <div className="absolute left-0 right-0 h-1.5 bg-muted/30 rounded-full overflow-hidden backdrop-blur-sm">
+            <div className="relative w-full h-1.5 bg-muted/30 rounded-full">
               {/* Progress fill */}
               <motion.div
-                className="h-full bg-foreground"
+                className="absolute top-0 left-0 h-full bg-foreground rounded-full"
                 initial={{ width: 0 }}
                 animate={{ width: `${progress}%` }}
                 transition={{ duration: isDragging ? 0 : 0.1 }}
               />
-            </div>
 
-            {/* Drag handle - always visible for better accessibility */}
-            <motion.div
-              className="absolute w-5 h-5 bg-foreground rounded-full shadow-lg cursor-grab active:cursor-grabbing border-2 border-background z-10"
-              style={{ left: `calc(${progress}% - 10px)` }}
-              animate={{ scale: isDragging ? 1.2 : 1 }}
-              transition={{ duration: 0.1 }}
-            />
+              {/* Handle Container - Moves with progress */}
+              <motion.div
+                className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 z-10"
+                style={{ left: `${progress}%` }}
+                animate={{ scale: isDragging ? 1.1 : 1 }}
+                transition={{ duration: 0.1 }}
+              >
+                {/* Handle Dot */}
+                <div className="w-5 h-5 bg-foreground rounded-full shadow-lg border-2 border-background" />
 
-            {/* Percentage label */}
-            <div className={`absolute -top-6 left-1/2 -translate-x-1/2 text-xs font-medium text-muted-foreground tabular-nums transition-opacity duration-200 ${isDragging ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
-              }`}>
-              {Math.round(progress)}%
+                {/* Percentage Label - Floating above */}
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 bg-zinc-800/90 text-white text-[10px] font-bold px-2 py-0.5 rounded backdrop-blur-md whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none"
+                  style={{ opacity: isDragging ? 1 : undefined }}>
+                  {Math.round(progress)}%
+                  {/* Triangle */}
+                  <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-[1px] border-4 border-transparent border-t-zinc-800/90" />
+                </div>
+              </motion.div>
             </div>
           </motion.div>
         )}
