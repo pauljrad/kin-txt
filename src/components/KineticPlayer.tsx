@@ -1090,7 +1090,7 @@ export function KineticPlayer({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 h-screen w-screen flex items-center justify-center overflow-hidden cursor-pointer transition-all duration-700 bg-background touch-none z-50"
+      className="fixed inset-0 h-[100dvh] w-screen flex items-center justify-center overflow-hidden cursor-pointer transition-all duration-700 bg-background touch-none z-50"
       onMouseMove={handleMouseMove}
       onClick={handleScreenTap}
     >
