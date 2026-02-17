@@ -1292,7 +1292,7 @@ export function KineticPlayer({
             exit={{ opacity: 0, y: 10 }}
             transition={{ duration: 0.3 }}
             ref={progressBarRef}
-            className="progress-bar-container absolute left-0 right-0 z-40 flex items-end justify-center px-6 pb-8 cursor-pointer group"
+            className="progress-bar-container absolute left-0 right-0 z-40 flex items-end justify-center px-6 pb-2 cursor-pointer group"
             style={{ bottom: 'env(safe-area-inset-bottom, 20px)' }}
             onMouseDown={handleProgressMouseDown}
             onTouchStart={(e) => {
