@@ -1090,7 +1090,7 @@ export function KineticPlayer({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 flex items-center justify-center overflow-hidden cursor-pointer transition-all duration-700 bg-background touch-none z-50"
+      className="fixed inset-0 h-screen w-screen flex items-center justify-center overflow-hidden cursor-pointer transition-all duration-700 bg-background touch-none z-50"
       onMouseMove={handleMouseMove}
       onClick={handleScreenTap}
     >
@@ -1323,7 +1323,7 @@ export function KineticPlayer({
                 <div className="w-5 h-5 bg-foreground rounded-full shadow-lg border-2 border-background" />
 
                 {/* Percentage Label - Floating above (Always visible) */}
-                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 bg-primary/90 text-primary-foreground text-[10px] font-bold px-2 py-0.5 rounded backdrop-blur-md whitespace-nowrap pointer-events-none shadow-sm">
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 bg-primary/90 text-primary-foreground text-[10px] font-bold px-2 py-0.5 rounded backdrop-blur-md whitespace-nowrap pointer-events-none shadow-sm">
                   {Math.round(progress)}%
                   {/* Triangle */}
                   <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-[1px] border-4 border-transparent border-t-primary/90" />
