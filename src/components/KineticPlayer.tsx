@@ -1790,7 +1790,7 @@ export function KineticPlayer({
                     }}
                   >
                     <Music
-                      className={`w-4 h-4 sm:w-6 sm:h-6 transition-all duration-300 ${atmospherePlaying ? 'text-white' : 'text-foreground/40'}`}
+                      className={`w-4 h-4 sm:w-6 sm:h-6 transition-all duration-300 ${atmospherePlaying ? 'text-primary' : 'text-foreground/40'}`}
                       strokeWidth={atmospherePlaying ? 3 : 1.5}
                     />
                   </button>
