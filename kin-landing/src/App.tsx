@@ -1,7 +1,7 @@
 import { TickerBanner } from './components/TickerBanner'
 import { SplashScreen } from './components/SplashScreen'
 import { usePullGesture } from './hooks/usePullGesture'
-import { KineticScrollSection } from './components/KineticScrollSection'
+import { ReadInTimeSection } from './components/ReadInTimeSection'
 import { RhythmEmphasisSection } from './components/RhythmEmphasisSection'
 import { AccelerationSection } from './components/AccelerationSection'
 import { TargetModeSection } from './components/TargetModeSection'
@@ -34,7 +34,7 @@ function App() {
 
         </section>
 
-        <KineticScrollSection />
+        <ReadInTimeSection />
 
         <RhythmEmphasisSection />
 

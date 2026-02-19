@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import { motion } from 'framer-motion';
-import iphoneDemo from '../assets/iphone-demo.mp4';
+
 
 export function MobileShowcaseSection() {
     const containerRef = useRef<HTMLDivElement>(null);
@@ -102,14 +102,8 @@ export function MobileShowcaseSection() {
 
                         {/* Screen Content */}
                         <div className="absolute inset-0 bg-black flex items-center justify-center overflow-hidden">
-                            <video
-                                src={iphoneDemo}
-                                className="w-full h-full object-cover opacity-90"
-                                autoPlay
-                                loop
-                                muted
-                                playsInline
-                            />
+                            {/* Abstract Gradient instead of Video */}
+                            <div className="absolute inset-0 bg-gradient-to-br from-indigo-900 via-purple-900 to-black opacity-80" />
                             {/* Vignette Overlay */}
                             <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,0.4)_100%)] pointer-events-none"></div>
                         </div>

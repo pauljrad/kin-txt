@@ -1,4 +1,4 @@
-# Kinetext - Kinetic Reading App
+# KiN-TXT (Redeploy Triggered)netext - Kinetic Reading App
 
 A revolutionary reading application with Ai-powered text analysis, emphasis detection, and kinetic reading features.
 

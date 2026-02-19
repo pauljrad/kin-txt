@@ -467,10 +467,21 @@ export const InteractiveSplashScreen = forwardRef<HTMLDivElement, AnimatedTitleP
                             initial={{ opacity: 0, y: 20 }}
                             animate={!isIntro ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
                             transition={{ duration: 0.8, delay: 0.4, ease: "easeOut" }}
-                            className="flex flex-col items-center gap-1"
+                            className="flex flex-col items-center gap-2"
                         >
-                            <motion.span animate={{ y: [0, 4, 0] }} transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }} className="w-[2px] h-6 bg-white rounded-sm"></motion.span>
-                            <motion.span animate={{ y: [0, 12, 0] }} transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut", repeatDelay: 0.1 }} className="w-[4px] h-[4px] bg-white rounded-full shadow-[0_0_8px_white]"></motion.span>
+                            <span className="text-[10px] font-mono tracking-[0.3em] text-white/50 mb-1">SCROLL</span>
+                            <div className="relative flex flex-col items-center">
+                                <motion.span
+                                    animate={{ y: [0, 8, 0] }}
+                                    transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                                    className="w-[2px] h-8 bg-white/20 rounded-full"
+                                ></motion.span>
+                                <motion.span
+                                    animate={{ y: [0, 16, 0] }}
+                                    transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut", repeatDelay: 0.1 }}
+                                    className="absolute top-0 w-[4px] h-[4px] bg-white rounded-full shadow-[0_0_12px_white]"
+                                ></motion.span>
+                            </div>
                         </motion.div>
                     </div>
                 </div>

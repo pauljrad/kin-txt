@@ -1,6 +1,5 @@
 import { useRef } from 'react';
 import { motion } from 'framer-motion';
-import iphoneDemo from '../../assets/iphone-demo.mp4';
 
 export function MobileShowcaseSection() {
     const containerRef = useRef<HTMLDivElement>(null);
@@ -102,14 +101,9 @@ export function MobileShowcaseSection() {
 
                         {/* Screen Content */}
                         <div className="absolute inset-0 bg-black flex items-center justify-center overflow-hidden">
-                            <video
-                                src={iphoneDemo}
-                                className="w-full h-full object-cover opacity-90"
-                                autoPlay
-                                loop
-                                muted
-                                playsInline
-                            />
+                            <div className="text-white/20 font-display text-4xl transform -rotate-12 select-none uppercase tracking-widest">
+                                Kin-TXT Mobile
+                            </div>
                             {/* Vignette Overlay */}
                             <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,0.4)_100%)] pointer-events-none"></div>
                         </div>

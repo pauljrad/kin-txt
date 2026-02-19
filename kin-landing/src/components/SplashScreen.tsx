@@ -360,7 +360,7 @@ export const SplashScreen = forwardRef<HTMLDivElement, AnimatedTitleProps>(
                         </motion.button>
                     </div>
 
-                    <div className="absolute top-[85%] left-0 w-full flex flex-col items-center justify-center pointer-events-none">
+                    <div className="absolute top-[85%] left-0 w-full flex flex-row items-end justify-center pointer-events-none gap-4">
                         <motion.div
                             initial={{ opacity: 0, y: 20 }}
                             animate={!isIntro ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
@@ -370,6 +370,15 @@ export const SplashScreen = forwardRef<HTMLDivElement, AnimatedTitleProps>(
                             <motion.span animate={{ y: [0, 4, 0] }} transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }} className="w-[2px] h-6 bg-white rounded-sm"></motion.span>
                             <motion.span animate={{ y: [0, 12, 0] }} transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut", repeatDelay: 0.1 }} className="w-[4px] h-[4px] bg-white rounded-full shadow-[0_0_8px_white]"></motion.span>
                         </motion.div>
+
+                        <motion.span
+                            initial={{ opacity: 0 }}
+                            animate={!isIntro ? { opacity: 1 } : { opacity: 0 }}
+                            transition={{ duration: 0.8, delay: 0.6 }}
+                            className="text-[10px] font-mono uppercase tracking-[0.2em] text-white mb-1"
+                        >
+                            SCROLL
+                        </motion.span>
                     </div>
                 </div>
             </>
