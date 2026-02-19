@@ -22,13 +22,18 @@ export const RhythmEmphasisSection = () => {
         <section ref={sectionRef} className="min-h-screen w-full bg-black text-white flex flex-col lg:flex-row items-start justify-center p-8 lg:p-24 lg:pt-32 gap-16 overflow-hidden border-t border-white/10">
             {/* Left Column: Description */}
             <motion.div
-                initial={{ opacity: 0, x: -50 }}
-                whileInView={{ opacity: 1, x: 0 }}
+                initial={{ opacity: 0, y: 50 }}
+                whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ duration: 0.8, ease: "easeOut" }}
+                transition={{ duration: 0.8, ease: "easeOut", delay: 0.5 }} // Slight delay to let Pulse finish
                 className="flex-1 max-w-xl space-y-8"
             >
-                <div>
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.6, delay: 0.6 }}
+                >
                     <h2 className="text-sm uppercase tracking-[0.4em] text-red-500 font-bold mb-4">Reading Modes</h2>
                     <h3 className="text-5xl lg:text-7xl font-display leading-[0.9] tracking-tighter mb-6">
                         RHYTHM &<br />EMPHASIS
@@ -36,9 +41,15 @@ export const RhythmEmphasisSection = () => {
                     <p className="text-xl text-zinc-400 font-light leading-relaxed">
                         Immersive, time-based reading that moves at the speed of thought.
                     </p>
-                </div>
+                </motion.div>
 
-                <div className="space-y-6 text-zinc-300 leading-relaxed font-light">
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.6, delay: 0.8 }}
+                    className="space-y-6 text-zinc-300 leading-relaxed font-light"
+                >
                     <p>
                         Rhythm Mode turns reading into a time-based experience, with text arriving through pace, pause, and emphasis.
                         Focus becomes continuous, page friction disappears, and language unfolds as the writer intended.
@@ -47,9 +58,15 @@ export const RhythmEmphasisSection = () => {
                         Our Ai analyses any text in seconds, instantly highlighting emphasis, rhythm, and writing style —
                         whether it’s news, books, reports, or text you upload or paste.
                     </p>
-                </div>
+                </motion.div>
 
-                <div className="pt-4 flex flex-wrap gap-4">
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.6, delay: 1.0 }}
+                    className="pt-4 flex flex-wrap gap-4"
+                >
                     <div className="px-4 py-2 bg-white/5 border border-white/10 rounded-full text-xs uppercase tracking-widest text-zinc-400 hover:text-white transition-colors cursor-default">
                         Adaptive Pace
                     </div>
@@ -59,15 +76,15 @@ export const RhythmEmphasisSection = () => {
                     <div className="px-4 py-2 bg-white/5 border border-white/10 rounded-full text-xs uppercase tracking-widest text-zinc-400 hover:text-white transition-colors cursor-default">
                         Continuous Focus
                     </div>
-                </div>
+                </motion.div>
             </motion.div>
 
             {/* Right Column: Player & Interaction */}
             <motion.div
-                initial={{ opacity: 0, x: 50 }}
-                whileInView={{ opacity: 1, x: 0 }}
+                initial={{ opacity: 0, y: 50 }}
+                whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ duration: 0.8, ease: "easeOut", delay: 0.2 }}
+                transition={{ duration: 0.8, ease: "easeOut", delay: 1.2 }} // Appears last
                 className="flex-1 w-full max-w-2xl flex flex-col gap-6"
             >
                 <div className="aspect-[16/10] w-full relative">
