@@ -11,6 +11,7 @@ import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Landing from "./pages/Landing";
 import NotFound from "./pages/NotFound";
+import { Analytics } from "@vercel/analytics/react";
 
 import { useState, useEffect } from "react";
 import { SplashScreen } from "@/components/SplashScreen";
@@ -75,6 +76,7 @@ const App = () => (
               <Toaster />
               <Sonner />
               <AppContent />
+              <Analytics />
             </AuthProvider>
           </BrowserRouter>
         </TooltipProvider>
