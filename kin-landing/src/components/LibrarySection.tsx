@@ -92,6 +92,12 @@ const BOOKS = [
         title: 'Treasure Island',
         author: 'Robert Louis Stevenson',
         isDark: true
+    },
+    {
+        id: 'call-wild',
+        title: 'The Call of the Wild',
+        author: 'Jack London',
+        isDark: false
     }
 ];
 

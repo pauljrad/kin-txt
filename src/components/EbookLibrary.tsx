@@ -96,6 +96,12 @@ export const AVAILABLE_EBOOKS: Ebook[] = [
     author: 'Robert Louis Stevenson',
     filePath: '/ebooks/treasure-island.epub',
   },
+  {
+    id: 'call-wild',
+    title: 'The Call of the Wild',
+    author: 'Jack London',
+    filePath: '/ebooks/call-of-the-wild.epub',
+  },
 ];
 
 const BookCover = ({ title, index }: { title: string; index: number }) => {
