@@ -60,6 +60,12 @@ export const AVAILABLE_EBOOKS: Ebook[] = [
     author: 'Fyodor Dostoevsky',
     filePath: '/ebooks/notes-underground.epub',
   },
+  {
+    id: 'room-view',
+    title: 'A Room with a View',
+    author: 'E. M. Forster',
+    filePath: '/ebooks/a-room-with-a-view.epub',
+  },
 ];
 
 const BookCover = ({ title, index }: { title: string; index: number }) => {

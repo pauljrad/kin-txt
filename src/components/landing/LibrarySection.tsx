@@ -56,6 +56,12 @@ const BOOKS = [
         title: 'Notes from the Underground',
         author: 'Fyodor Dostoevsky',
         isDark: true
+    },
+    {
+        id: 'room-view',
+        title: 'A Room with a View',
+        author: 'E. M. Forster',
+        isDark: false
     }
 ];
 
