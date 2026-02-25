@@ -74,6 +74,12 @@ const BOOKS = [
         title: 'Metamorphosis',
         author: 'Franz Kafka',
         isDark: false
+    },
+    {
+        id: 'sherlock-holmes',
+        title: 'The Adventures of Sherlock Holmes',
+        author: 'Arthur Conan Doyle',
+        isDark: true
     }
 ];
 

@@ -78,6 +78,12 @@ export const AVAILABLE_EBOOKS: Ebook[] = [
     author: 'Franz Kafka',
     filePath: '/ebooks/metamorphosis.epub',
   },
+  {
+    id: 'sherlock-holmes',
+    title: 'The Adventures of Sherlock Holmes',
+    author: 'Arthur Conan Doyle',
+    filePath: '/ebooks/sherlock-holmes.epub',
+  },
 ];
 
 const BookCover = ({ title, index }: { title: string; index: number }) => {
