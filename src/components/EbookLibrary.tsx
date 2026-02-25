@@ -90,6 +90,12 @@ export const AVAILABLE_EBOOKS: Ebook[] = [
     author: 'Rudyard Kipling',
     filePath: '/ebooks/the-jungle-book.epub',
   },
+  {
+    id: 'treasure-island',
+    title: 'Treasure Island',
+    author: 'Robert Louis Stevenson',
+    filePath: '/ebooks/treasure-island.epub',
+  },
 ];
 
 const BookCover = ({ title, index }: { title: string; index: number }) => {

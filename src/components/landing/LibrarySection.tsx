@@ -86,6 +86,12 @@ const BOOKS = [
         title: 'The Jungle Book',
         author: 'Rudyard Kipling',
         isDark: false
+    },
+    {
+        id: 'treasure-island',
+        title: 'Treasure Island',
+        author: 'Robert Louis Stevenson',
+        isDark: true
     }
 ];
 
