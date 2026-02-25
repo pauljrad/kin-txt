@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 
 export const TickerBanner = () => {
-    const tickerText = "BETA Testing: Feb 20 – Mar 20. Limited spaces available. Sign up now for early access. • ";
+    const tickerText = "BETA Testing: March 01 – March 31. Limited spaces available. Sign up now for early access. • ";
     const repeatedText = Array(10).fill(tickerText).join("");
 
     return (
