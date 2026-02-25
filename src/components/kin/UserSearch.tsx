@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -23,15 +23,25 @@ export const UserSearch = () => {
     const { user } = useAuth();
     const { toast } = useToast();
 
-    const handleSearch = async () => {
-        if (!searchTerm.trim()) return;
+    // Clear results when search term is empty
+    const clearResults = () => {
+        setResults([]);
+        setLoading(false);
+    };
+
+    const handleSearch = async (termOverride?: string) => {
+        const term = termOverride !== undefined ? termOverride : searchTerm;
+        if (!term.trim()) {
+            clearResults();
+            return;
+        }
         setLoading(true);
 
         try {
             const { data, error } = await supabase
                 .from('profiles')
                 .select('*')
-                .ilike('display_name', `%${searchTerm}%`)
+                .ilike('display_name', `%${term}%`)
                 .neq('id', user?.id) // Don't show self
                 .limit(10);
 
@@ -48,6 +58,19 @@ export const UserSearch = () => {
             setLoading(false);
         }
     };
+
+    // Auto-search effect with debounce
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            if (searchTerm.trim().length >= 3) {
+                handleSearch();
+            } else if (searchTerm.trim().length === 0) {
+                clearResults();
+            }
+        }, 300);
+
+        return () => clearTimeout(timer);
+    }, [searchTerm]);
 
     const sendKinRequest = async (recipientId: string) => {
         if (!user) return;
@@ -112,7 +135,7 @@ export const UserSearch = () => {
                     onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                     className="bg-secondary/50 border-border text-foreground placeholder:text-muted-foreground"
                 />
-                <Button onClick={handleSearch} disabled={loading} variant="secondary" size="icon" className="shrink-0">
+                <Button onClick={() => handleSearch()} disabled={loading} variant="secondary" size="icon" className="shrink-0">
                     <Search className="h-4 w-4" />
                 </Button>
             </div>
