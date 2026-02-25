@@ -80,6 +80,12 @@ const BOOKS = [
         title: 'The Adventures of Sherlock Holmes',
         author: 'Arthur Conan Doyle',
         isDark: true
+    },
+    {
+        id: 'jungle-book',
+        title: 'The Jungle Book',
+        author: 'Rudyard Kipling',
+        isDark: false
     }
 ];
 

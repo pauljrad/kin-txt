@@ -84,6 +84,12 @@ export const AVAILABLE_EBOOKS: Ebook[] = [
     author: 'Arthur Conan Doyle',
     filePath: '/ebooks/sherlock-holmes.epub',
   },
+  {
+    id: 'jungle-book',
+    title: 'The Jungle Book',
+    author: 'Rudyard Kipling',
+    filePath: '/ebooks/the-jungle-book.epub',
+  },
 ];
 
 const BookCover = ({ title, index }: { title: string; index: number }) => {
