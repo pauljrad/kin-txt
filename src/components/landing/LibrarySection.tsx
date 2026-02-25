@@ -68,6 +68,12 @@ const BOOKS = [
         title: 'A Tale of Two Cities',
         author: 'Charles Dickens',
         isDark: true
+    },
+    {
+        id: 'metamorphosis',
+        title: 'Metamorphosis',
+        author: 'Franz Kafka',
+        isDark: false
     }
 ];
 

@@ -72,6 +72,12 @@ export const AVAILABLE_EBOOKS: Ebook[] = [
     author: 'Charles Dickens',
     filePath: '/ebooks/a-tale-of-two-cities.epub',
   },
+  {
+    id: 'metamorphosis',
+    title: 'Metamorphosis',
+    author: 'Franz Kafka',
+    filePath: '/ebooks/metamorphosis.epub',
+  },
 ];
 
 const BookCover = ({ title, index }: { title: string; index: number }) => {
