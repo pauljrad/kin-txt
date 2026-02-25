@@ -66,6 +66,12 @@ export const AVAILABLE_EBOOKS: Ebook[] = [
     author: 'E. M. Forster',
     filePath: '/ebooks/a-room-with-a-view.epub',
   },
+  {
+    id: 'tale-two-cities',
+    title: 'A Tale of Two Cities',
+    author: 'Charles Dickens',
+    filePath: '/ebooks/a-tale-of-two-cities.epub',
+  },
 ];
 
 const BookCover = ({ title, index }: { title: string; index: number }) => {

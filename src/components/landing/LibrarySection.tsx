@@ -62,6 +62,12 @@ const BOOKS = [
         title: 'A Room with a View',
         author: 'E. M. Forster',
         isDark: false
+    },
+    {
+        id: 'tale-two-cities',
+        title: 'A Tale of Two Cities',
+        author: 'Charles Dickens',
+        isDark: true
     }
 ];
 
