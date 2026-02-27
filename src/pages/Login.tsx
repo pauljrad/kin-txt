@@ -86,7 +86,7 @@ const Login = forwardRef<HTMLDivElement>((_, ref) => {
       if (isSignUp) {
         // We handle the verification link manually in the edge function, 
         // but we pass the redirect URL here just in case standard auth flows are used
-        const { error } = await signUp(email, password, displayName || undefined);
+        const { user: newUser, error } = await signUp(email, password, displayName || undefined);
         if (error) {
           if (error.message.includes('already registered')) {
             toast.error('This email is already registered. Please sign in instead.');
@@ -96,9 +96,6 @@ const Login = forwardRef<HTMLDivElement>((_, ref) => {
           setIsLoading(false);
           return;
         }
-
-        // Get user info for notifications
-        const { data: { user: newUser } } = await supabase.auth.getUser();
 
         // Send welcome email (fire and forget - don't block signup)
         supabase.functions.invoke('send-welcome-email', {

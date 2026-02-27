@@ -46,7 +46,7 @@ const handler = async (req: Request): Promise<Response> => {
       email: email,
       options: {
         // Hardcoded to production URL to ensure no 404s
-        redirectTo: "https://kin-txt.vercel.app/?verified=true",
+        redirectTo: "https://kin-txt.com/?verified=true",
       },
     });
 
