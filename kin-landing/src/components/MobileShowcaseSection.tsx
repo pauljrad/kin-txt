@@ -102,10 +102,16 @@ export function MobileShowcaseSection() {
 
                         {/* Screen Content */}
                         <div className="absolute inset-0 bg-black flex items-center justify-center overflow-hidden">
-                            {/* Abstract Gradient instead of Video */}
-                            <div className="absolute inset-0 bg-gradient-to-br from-indigo-900 via-purple-900 to-black opacity-80" />
-                            {/* Vignette Overlay */}
-                            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,0.4)_100%)] pointer-events-none"></div>
+                            <video
+                                src="/videos/mobile-showcase.mov"
+                                autoPlay
+                                loop
+                                muted
+                                playsInline
+                                className="absolute inset-0 w-full h-full object-cover"
+                            />
+                            {/* Optional Vignette Overlay to help it sit in the frame */}
+                            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,0.2)_100%)] pointer-events-none"></div>
                         </div>
                     </div>
                 </motion.div>
