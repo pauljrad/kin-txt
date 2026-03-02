@@ -354,6 +354,7 @@ export const SplashScreen = forwardRef<HTMLDivElement, AnimatedTitleProps>(
                             initial={{ opacity: 0, y: 20 }}
                             animate={!isIntro ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
                             transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
+                            onClick={() => window.location.href = '/login'}
                             className="mb-12 px-6 py-2 border border-white/30 text-white text-xs tracking-[0.2em] hover:bg-white hover:text-black transition-colors uppercase font-medium"
                         >
                             Login
