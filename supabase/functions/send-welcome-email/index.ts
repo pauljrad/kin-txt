@@ -15,6 +15,7 @@ const corsHeaders = {
 interface WelcomeEmailRequest {
   email: string;
   displayName?: string;
+  verificationUrl?: string; // New field from trigger
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -23,7 +24,7 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { email, displayName }: WelcomeEmailRequest = await req.json();
+    const { email, displayName, verificationUrl: incomingUrl }: WelcomeEmailRequest = await req.json();
 
     if (!email) {
       throw new Error("Email is required");
@@ -31,32 +32,42 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log(`[Welcome Email] Attempting to send to ${email}`);
 
-    // Initialize Supabase Admin Client
-    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-      },
-    });
+    let verificationUrl = incomingUrl;
 
-    // Generate Verification Link
-    console.log("[Welcome Email] Generating verification link...");
-    const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
-      type: "magiclink",
-      email: email,
-      options: {
-        // Hardcoded to production URL to ensure no 404s
-        redirectTo: "https://kin-txt.com/?verified=true",
-      },
-    });
-
-    if (linkError) {
-      console.error("[Welcome Email] Error generating verification link:", linkError);
-      throw linkError;
+    // Sanitize any Vercel links if they somehow slip through
+    if (verificationUrl && verificationUrl.includes('vercel.app')) {
+      console.log("[Welcome Email] Sanitizing Vercel link...");
+      verificationUrl = verificationUrl.replace(/https:\/\/[^/]+\.vercel\.app/, 'https://kin-txt.com');
     }
 
-    const verificationUrl = linkData.properties?.action_link;
-    console.log("[Welcome Email] Verification link generated successfully");
+    if (!verificationUrl) {
+      // Initialize Supabase Admin Client for fallback link generation
+      const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false,
+        },
+      });
+
+      // Generate Verification Link (Fallback)
+      console.log("[Welcome Email] Generating verification link (fallback)...");
+      const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
+        type: "magiclink", // Reverted to magiclink
+        email: email,
+        options: {
+          redirectTo: "https://kin-txt.com/?verified=true",
+        },
+      });
+
+      if (linkError) {
+        console.error("[Welcome Email] Error generating verification link:", linkError);
+        throw linkError;
+      }
+
+      verificationUrl = linkData.properties?.action_link;
+    }
+
+    console.log("[Welcome Email] Verification link confirmed");
 
     console.log(`[Welcome Email] Sending email via Resend...`);
 

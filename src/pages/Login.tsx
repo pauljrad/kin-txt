@@ -237,6 +237,8 @@ const Login = forwardRef<HTMLDivElement>((_, ref) => {
             {isLoading ? (isSignUp ? 'Creating account...' : 'Signing in...') : (isSignUp ? 'Create Account' : 'Sign In')}
           </Button>
 
+          {/* Signup toggle hidden for testing phase */}
+          {/* 
           <div className="text-center">
             <button
               type="button"
@@ -249,6 +251,7 @@ const Login = forwardRef<HTMLDivElement>((_, ref) => {
               {isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Sign up"}
             </button>
           </div>
+*/}
         </motion.form>
       </div>
     </div>

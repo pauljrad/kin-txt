@@ -356,7 +356,7 @@ export const SplashScreen = forwardRef<HTMLDivElement, AnimatedTitleProps>(
                             transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
                             className="mb-12 px-6 py-2 border border-white/30 text-white text-xs tracking-[0.2em] hover:bg-white hover:text-black transition-colors uppercase font-medium"
                         >
-                            Login / Signup
+                            Login
                         </motion.button>
                     </div>
 
