@@ -71,7 +71,10 @@ export const FullTextView = forwardRef<HTMLDivElement, FullTextViewProps>(functi
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b border-border">
+        <div
+          className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b border-border"
+          style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
+        >
           <div className="flex items-center justify-between p-4">
             <h2 className="text-lg font-medium">Full Text View</h2>
             <button

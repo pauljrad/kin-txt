@@ -82,7 +82,10 @@ export const ChapterNavigation = forwardRef<HTMLDivElement, ChapterNavigationPro
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header */}
-              <div className="p-4 border-b border-border flex items-center justify-between">
+              <div
+                className="p-4 border-b border-border flex items-center justify-between"
+                style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 1rem)' }}
+              >
                 <h3 className="font-display text-lg">Navigation</h3>
                 <button 
                   onClick={onToggle}
