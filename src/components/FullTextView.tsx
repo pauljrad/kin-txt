@@ -6,13 +6,17 @@ import { ParsedText } from '@/lib/textParser';
 interface FullTextViewProps {
   parsedText: ParsedText;
   currentWordIndex: number;
+  paragraphOffsets: number[];
+  totalWords: number;
   onClose: () => void;
-  onNavigate: (wordIndex: number) => void;
+  onNavigate: (index: number) => void;
 }
 
 export const FullTextView = forwardRef<HTMLDivElement, FullTextViewProps>(function FullTextView({ 
   parsedText, 
   currentWordIndex, 
+  paragraphOffsets,
+  totalWords,
   onClose,
   onNavigate 
 }, ref) {
@@ -37,18 +41,8 @@ export const FullTextView = forwardRef<HTMLDivElement, FullTextViewProps>(functi
     }
   }, [onClose]);
 
-  // Calculate word index for each word in the text
-  const getWordIndex = (paragraphIndex: number, wordIndex: number): number => {
-    let index = 0;
-    for (let i = 0; i < paragraphIndex; i++) {
-      index += parsedText.paragraphs[i].length;
-    }
-    return index + wordIndex;
-  };
-
-  const handleWordClick = (paragraphIndex: number, wordIndex: number) => {
-    const index = getWordIndex(paragraphIndex, wordIndex);
-    onNavigate(index);
+  const handleWordClick = (paraIndex: number, wordIndex: number) => {
+    onNavigate(paragraphOffsets[paraIndex] + wordIndex);
     onClose();
   };
 
@@ -100,7 +94,7 @@ export const FullTextView = forwardRef<HTMLDivElement, FullTextViewProps>(functi
             {parsedText.paragraphs.map((paragraph, pIndex) => (
               <p key={pIndex} className="mb-4 leading-relaxed">
                 {paragraph.map((word, wIndex) => {
-                  const wordIdx = getWordIndex(pIndex, wIndex);
+                  const wordIdx = paragraphOffsets[pIndex] + wIndex;
                   const isCurrent = wordIdx === currentWordIndex;
                   const isPast = wordIdx < currentWordIndex;
                   

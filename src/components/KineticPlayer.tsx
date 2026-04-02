@@ -566,13 +566,22 @@ export function KineticPlayer({
       }
     }
     
-    const word = targetIndex - paragraphOffsets[para];
+    // CRITICAL: Clear all active timeouts during a seek.
+    // This prevents background timers (like chapter title pauses) from jumping us back.
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    if (chapterTimeoutRef.current) clearTimeout(chapterTimeoutRef.current);
+    if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
+    
+    // Reset state associated with transitions
+    setShowingChapterTitle(null);
+    setIsComplete(false);
 
+    const word = targetIndex - paragraphOffsets[para];
+    
     setCurrentParagraph(para);
     setCurrentWord(word);
     setSentenceCount(0);
     setWordInChunk(0);
-    setIsComplete(false);
 
     // Recalculate chunk length for current position
     const currentPara = parsedText.paragraphs[para];
@@ -1936,6 +1945,8 @@ export function KineticPlayer({
           <FullTextView
             parsedText={parsedText}
             currentWordIndex={getCurrentWordIndex()}
+            paragraphOffsets={paragraphOffsets}
+            totalWords={totalWords}
             onClose={() => setShowFullText(false)}
             onNavigate={(index) => {
               seekToIndex(index);
