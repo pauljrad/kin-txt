@@ -60,7 +60,7 @@ export function KineticPlayer({
     rhythmPreset: 'slower' | 'normal' | 'faster';
     accelerationMode: boolean;
     adaptiveSpeed: boolean;
-    resetInterval: 'start' | '1' | '2' | '3' | '4' | 'end' | 'paragraph';
+    resetInterval: '1' | '2' | '3' | '4' | 'end' | 'paragraph';
     focusMode: boolean;
     targetMode: boolean;
     targetColor: string;
@@ -90,7 +90,7 @@ export function KineticPlayer({
   const [rhythmPreset, setRhythmPreset] = useState<'slower' | 'normal' | 'faster'>(initialSettings.rhythmPreset ?? 'normal');
   const [accelerationMode, setAccelerationMode] = useState(initialSettings.accelerationMode ?? false);
   const [adaptiveSpeed, setAdaptiveSpeed] = useState(initialSettings.adaptiveSpeed ?? true);
-  const [resetInterval, setResetInterval] = useState<'start' | '1' | '2' | '3' | '4' | 'end' | 'paragraph'>(initialSettings.resetInterval ?? '3');
+  const [resetInterval, setResetInterval] = useState<'1' | '2' | '3' | '4' | 'end' | 'paragraph'>(initialSettings.resetInterval && (initialSettings.resetInterval as string) !== 'start' ? (initialSettings.resetInterval as any) : '3');
   const [focusMode, setFocusMode] = useState(initialSettings.focusMode ?? false);
   const [targetMode, setTargetMode] = useState(initialSettings.targetMode ?? false);
   const [targetColor, setTargetColor] = useState(initialSettings.targetColor ?? '#FFD600');
@@ -519,10 +519,17 @@ export function KineticPlayer({
 
 
     if (accelerationMode) {
-      if (chunkLength <= 1) {
-        return Number.isFinite(startSpeed) && startSpeed > 0 ? startSpeed : DEFAULT_SPEED;
+      let progressInChunk = 0;
+      if (resetInterval === 'end') {
+        const totalWords = parsedText.paragraphs.flat().length;
+        progressInChunk = getCurrentWordIndex() / Math.max(1, totalWords - 1);
+      } else {
+        if (chunkLength <= 1) {
+          return Number.isFinite(startSpeed) && startSpeed > 0 ? startSpeed : DEFAULT_SPEED;
+        }
+        progressInChunk = wordInChunk / Math.max(1, chunkLength - 1);
       }
-      const progressInChunk = wordInChunk / Math.max(1, chunkLength - 1);
+      
       // Linear interpolation between start and end speed
       const speed = startSpeed + (endSpeed - startSpeed) * progressInChunk;
       return Number.isFinite(speed) && speed > 0 ? speed : DEFAULT_SPEED;
@@ -530,7 +537,7 @@ export function KineticPlayer({
 
     // Default static speed (use startSpeed as the base)
     return Number.isFinite(startSpeed) && startSpeed > 0 ? startSpeed : DEFAULT_SPEED;
-  }, [rhythmMode, rhythmSpeeds.length, rhythmSpeedMap, getCurrentWordIndex, rhythmMultiplier, accelerationMode, wordInChunk, chunkLength, startSpeed, endSpeed]);
+  }, [rhythmMode, rhythmSpeeds.length, rhythmSpeedMap, getCurrentWordIndex, rhythmMultiplier, accelerationMode, parsedText.paragraphs, wordInChunk, chunkLength, resetInterval, startSpeed, endSpeed]);
 
   // Save progress when it changes
   useEffect(() => {
@@ -665,12 +672,10 @@ export function KineticPlayer({
     }
 
     // Determine reset count based on interval setting
-    // 'start' = never reset (always start speed), 'end' = never reset (always accelerate), 'paragraph' = infinite
+    // 'end' = never reset (always accelerate), 'paragraph' = infinite
     let resetCount = Infinity;
     if (resetInterval === 'end') {
       resetCount = Infinity; // Never reset, accelerate to end
-    } else if (resetInterval === 'start') {
-      resetCount = 0; // Always reset (always start speed)
     } else if (resetInterval !== 'paragraph') {
       resetCount = parseInt(resetInterval);
     }
@@ -733,8 +738,13 @@ export function KineticPlayer({
           setShowingChapterTitle(null);
           setCurrentParagraph(nextPara);
           setCurrentWord(0);
-          setSentenceCount(0);
-          setWordInChunk(0);
+          
+          // Only reset counters if NOT in 'end' mode
+          if (resetInterval !== 'end') {
+            setSentenceCount(0);
+            setWordInChunk(0);
+          }
+          
           // Partial reset for adaptive - keep some momentum but slow down for new chapter
           setWordsReadInSession(prev => Math.floor(prev * 0.5));
 
@@ -743,8 +753,6 @@ export function KineticPlayer({
           let resetCount = Infinity;
           if (resetInterval === 'end') {
             resetCount = Infinity;
-          } else if (resetInterval === 'start') {
-            resetCount = 0;
           } else if (resetInterval !== 'paragraph') {
             resetCount = parseInt(resetInterval);
           }
@@ -764,16 +772,18 @@ export function KineticPlayer({
         // Normal paragraph transition
         setCurrentParagraph(nextPara);
         setCurrentWord(0);
-        setSentenceCount(0);
-        setWordInChunk(0);
+        
+        // Only reset counters if NOT in 'end' mode
+        if (resetInterval !== 'end') {
+          setSentenceCount(0);
+          setWordInChunk(0);
+        }
 
         // Calculate chunk length for first sentences of next paragraph
         const nextParagraph = parsedText.paragraphs[nextPara];
         let resetCount = Infinity;
         if (resetInterval === 'end') {
           resetCount = Infinity;
-        } else if (resetInterval === 'start') {
-          resetCount = 0;
         } else if (resetInterval !== 'paragraph') {
           resetCount = parseInt(resetInterval);
         }
@@ -1015,8 +1025,6 @@ export function KineticPlayer({
         let resetCount = Infinity;
         if (resetInterval === 'end') {
           resetCount = Infinity;
-        } else if (resetInterval === 'start') {
-          resetCount = 0;
         } else if (resetInterval !== 'paragraph') {
           resetCount = parseInt(resetInterval);
         }
@@ -1721,7 +1729,7 @@ export function KineticPlayer({
                             <div className="space-y-2">
                               <div className="text-xs text-muted-foreground">Reset speed after</div>
                               <div className="flex flex-wrap gap-1.5">
-                                {(['start', '1', '2', '3', '4', 'end', 'paragraph'] as const).map((interval) => (
+                                {(['1', '2', '3', '4', 'end', 'paragraph'] as const).map((interval) => (
                                   <button
                                     key={interval}
                                     onClick={() => setResetInterval(interval)}
@@ -1732,11 +1740,9 @@ export function KineticPlayer({
                                   >
                                     {interval === 'paragraph'
                                       ? 'Paragraph'
-                                      : interval === 'start'
-                                        ? 'Start'
-                                        : interval === 'end'
-                                          ? 'End'
-                                          : `${interval} sentence${interval !== '1' ? 's' : ''}`}
+                                      : interval === 'end'
+                                        ? 'End'
+                                        : `${interval} sentence${interval !== '1' ? 's' : ''}`}
                                   </button>
                                 ))}
                               </div>
