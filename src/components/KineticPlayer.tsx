@@ -828,6 +828,10 @@ export function KineticPlayer({
     // Only play if playing, not complete, and no overlays are showing
     if (!isPlaying || isComplete || showFullText || isNavOpen || showingChapterTitle) return;
 
+    // FORCE SYNC ground truth whenever the loop runs/re-runs
+    // This ensures that hitting PLAY after a seek always uses the correct state
+    positionRef.current = { paragraph: currentParagraph, word: currentWord };
+
     const para = parsedText.paragraphs[currentParagraph];
     if (!para) return;
 
@@ -1244,75 +1248,93 @@ export function KineticPlayer({
 
         <AnimatePresence>
           {!showingChapterTitle && (
-            <motion.div
-              ref={wordRef}
-              key={`${currentParagraph}-${currentWord}`}
-              initial={isDragging ? { opacity: 1 } : (targetMode ? { opacity: 0 } : { opacity: 0, scale: 0.9, y: 10, filter: 'blur(4px)' })}
-              animate={isDragging 
-                ? { opacity: 1, scale: 1, y: 0, filter: 'blur(0px)' }
-                : (targetMode
+            isDragging ? (
+              // INSTANT MODE: No AnimatePresence, no motion, just direct render during drag
+              <div 
+                className={`kinetic-word select-none w-full flex items-center justify-center font-display`}
+                style={{
+                  fontSize: `calc(2.9rem * var(--text-size-multiplier, 1))`
+                }}
+              >
+                {targetMode ? (
+                  (() => {
+                    const safeWord = currentDisplayWord || '';
+                    const orpIndex = getORPIndex(safeWord);
+                    const prefix = safeWord.substring(0, orpIndex);
+                    const focalChar = safeWord[orpIndex] || '';
+                    const suffix = safeWord.substring(orpIndex + 1);
+
+                    return (
+                      <div className="w-full grid grid-cols-[1fr_auto_1fr] items-baseline">
+                        <span className="text-right whitespace-pre">{prefix}</span>
+                        <span className="text-center font-bold min-w-[1ch]" style={{ color: targetColor }}>{focalChar}</span>
+                        <span className="text-left whitespace-pre">{suffix}</span>
+                      </div>
+                    );
+                  })()
+                ) : currentDisplayWord}
+              </div>
+            ) : (
+              <motion.div
+                ref={wordRef}
+                key={`${currentParagraph}-${currentWord}`}
+                initial={targetMode ? { opacity: 0 } : { opacity: 0, scale: 0.9, y: 10, filter: 'blur(4px)' }}
+                animate={targetMode
                   ? { opacity: 1 }
                   : { opacity: isWhisperedWord ? 0.6 : 1, scale: 1, y: 0, filter: 'blur(0px)' }
-                )
-              }
-              exit={isDragging
-                ? { opacity: 0, transition: { duration: 0.01 } }
-                : (targetMode
+                }
+                exit={targetMode
                   ? { opacity: 0, transition: { duration: 0.05 } }
                   : { opacity: 0, scale: 1.1, y: -10, filter: 'blur(4px)', transition: { duration: 0.05 } }
-                )
-              }
-              transition={isDragging
-                ? { duration: 0 }
-                : (targetMode
+                }
+                transition={targetMode
                   ? { duration: Math.min(0.15, (currentWordDelayMs / 1000) * 0.3), ease: "easeOut" }
                   : {
                     duration: Math.min(0.2, (currentWordDelayMs / 1000) * 0.4),
                     ease: "easeOut"
                   }
-                )
-              }
-              className={`kinetic-word select-none w-full flex items-center justify-center ${cleanWord.includes('kin-txt') || cleanWord === 'kin-txt'
-                ? 'text-foreground'
-                : `font-display ${isWhisperedWord && !targetMode ? 'text-muted-foreground/60 italic' : ''}`
-                }`}
-              style={{
-                fontSize: targetMode
-                  ? `calc(2.9rem * var(--text-size-multiplier, 1))` // Match normal text size in Target Mode
-                  : `calc(${cleanWord.includes('kin-txt') || cleanWord === 'kin-txt' ? '6rem' :
-                    isEmphasisWord ? '6rem' :
-                      isWhisperedWord ? '2.4rem' : '2.9rem'
-                  } * var(--text-size-multiplier, 1))`,
-              }}
-            >
-              {cleanWord.includes('kin-txt') || cleanWord === 'kin-txt' ? (
-                // Center the special branding by aligning 'i' to center
-                <div className="flex w-full items-center justify-center h-full">
-                  <div className="flex-1 text-right whitespace-nowrap">K</div>
-                  <div className="text-red-500 shrink-0 min-w-[0.4em] text-center px-[1px]">i</div>
-                  <div className="flex-1 text-left whitespace-nowrap">N-TXT</div>
-                </div>
-              ) : targetMode ? (
-                (() => {
-                  const safeWord = currentDisplayWord || '';
-                  const orpIndex = getORPIndex(safeWord);
-                  const prefix = safeWord.substring(0, orpIndex);
-                  const focalChar = safeWord[orpIndex] || '';
-                  const suffix = safeWord.substring(orpIndex + 1);
+                }
+                className={`kinetic-word select-none w-full flex items-center justify-center ${cleanWord.includes('kin-txt') || cleanWord === 'kin-txt'
+                  ? 'text-foreground'
+                  : `font-display ${isWhisperedWord && !targetMode ? 'text-muted-foreground/60 italic' : ''}`
+                  }`}
+                style={{
+                  fontSize: targetMode
+                    ? `calc(2.9rem * var(--text-size-multiplier, 1))` // Match normal text size in Target Mode
+                    : `calc(${cleanWord.includes('kin-txt') || cleanWord === 'kin-txt' ? '6rem' :
+                      isEmphasisWord ? '6rem' :
+                        isWhisperedWord ? '2.4rem' : '2.9rem'
+                    } * var(--text-size-multiplier, 1))`,
+                }}
+              >
+                {cleanWord.includes('kin-txt') || cleanWord === 'kin-txt' ? (
+                  // Center the special branding by aligning 'i' to center
+                  <div className="flex w-full items-center justify-center h-full">
+                    <div className="flex-1 text-right whitespace-nowrap">K</div>
+                    <div className="text-red-500 shrink-0 min-w-[0.4em] text-center px-[1px]">i</div>
+                    <div className="flex-1 text-left whitespace-nowrap">N-TXT</div>
+                  </div>
+                ) : targetMode ? (
+                  (() => {
+                    const safeWord = currentDisplayWord || '';
+                    const orpIndex = getORPIndex(safeWord);
+                    const prefix = safeWord.substring(0, orpIndex);
+                    const focalChar = safeWord[orpIndex] || '';
+                    const suffix = safeWord.substring(orpIndex + 1);
 
-                  return (
-                    <div className="w-full grid grid-cols-[1fr_auto_1fr] items-baseline">
-                      <span className="text-right whitespace-pre">{prefix}</span>
-                      <span className="text-center font-bold min-w-[1ch] transition-colors duration-300" style={{ color: targetColor }}>{focalChar}</span>
-                      <span className="text-left whitespace-pre">{suffix}</span>
-                    </div>
-                  );
-                })()
-              ) : (
-                currentDisplayWord
-              )}
-
-            </motion.div>
+                    return (
+                      <div className="w-full grid grid-cols-[1fr_auto_1fr] items-baseline">
+                        <span className="text-right whitespace-pre">{prefix}</span>
+                        <span className="text-center font-bold min-w-[1ch] transition-colors duration-300" style={{ color: targetColor }}>{focalChar}</span>
+                        <span className="text-left whitespace-pre">{suffix}</span>
+                      </div>
+                    );
+                  })()
+                ) : (
+                  currentDisplayWord
+                )}
+              </motion.div>
+            )
           )}
         </AnimatePresence>
       </div>
