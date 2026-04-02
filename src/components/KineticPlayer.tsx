@@ -171,8 +171,22 @@ export function KineticPlayer({
   const progressBarRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const allWords = parsedText.paragraphs.flat();
-  const totalWords = allWords.length;
+  const { allWords, totalWords, paragraphOffsets } = useMemo(() => {
+    const all = parsedText.paragraphs.flat();
+    const offsets: number[] = [];
+    let currentOffset = 0;
+    
+    parsedText.paragraphs.forEach(para => {
+      offsets.push(currentOffset);
+      currentOffset += para.length;
+    });
+    
+    return {
+      allWords: all,
+      totalWords: all.length,
+      paragraphOffsets: offsets
+    };
+  }, [parsedText.paragraphs]);
 
   // Detect chapters and sentence boundaries
   const chapters = useMemo(() => detectChapters(parsedText), [parsedText]);
@@ -199,12 +213,9 @@ export function KineticPlayer({
 
   // Calculate current word index across all paragraphs
   const getCurrentWordIndex = useCallback(() => {
-    let index = 0;
-    for (let i = 0; i < currentParagraph; i++) {
-      index += parsedText.paragraphs[i].length;
-    }
-    return index + currentWord;
-  }, [currentParagraph, currentWord, parsedText.paragraphs]);
+    if (currentParagraph < 0 || currentParagraph >= paragraphOffsets.length) return 0;
+    return paragraphOffsets[currentParagraph] + currentWord;
+  }, [currentParagraph, currentWord, paragraphOffsets]);
 
   // Helper to split word at Optimal Recognition Point (ORP)
   const getORPIndex = (word: string) => {
@@ -452,11 +463,10 @@ export function KineticPlayer({
   // Initialize rhythm immediately on mount (synchronous, no loading state needed)
   useEffect(() => {
     if (rhythmSpeeds.length === 0 && parsedText?.paragraphs?.length) {
-      const words = parsedText.paragraphs.flat();
-      const speeds = generateLocalRhythm(words);
+      const speeds = generateLocalRhythm(allWords);
       setRhythmSpeeds(speeds);
     }
-  }, [parsedText, rhythmSpeeds.length, generateLocalRhythm]);
+  }, [allWords, rhythmSpeeds.length, generateLocalRhythm]);
 
   const toggleRhythmMode = () => {
     setRhythmMode(!rhythmMode);
@@ -521,7 +531,6 @@ export function KineticPlayer({
     if (accelerationMode) {
       let progressInChunk = 0;
       if (resetInterval === 'end') {
-        const totalWords = parsedText.paragraphs.flat().length;
         progressInChunk = getCurrentWordIndex() / Math.max(1, totalWords - 1);
       } else {
         if (chunkLength <= 1) {
@@ -537,7 +546,7 @@ export function KineticPlayer({
 
     // Default static speed (use startSpeed as the base)
     return Number.isFinite(startSpeed) && startSpeed > 0 ? startSpeed : DEFAULT_SPEED;
-  }, [rhythmMode, rhythmSpeeds.length, rhythmSpeedMap, getCurrentWordIndex, rhythmMultiplier, accelerationMode, parsedText.paragraphs, wordInChunk, chunkLength, resetInterval, startSpeed, endSpeed]);
+  }, [rhythmMode, rhythmSpeeds.length, rhythmSpeedMap, getCurrentWordIndex, rhythmMultiplier, accelerationMode, totalWords, wordInChunk, chunkLength, resetInterval, startSpeed, endSpeed]);
 
   // Save progress when it changes
   useEffect(() => {
@@ -548,21 +557,16 @@ export function KineticPlayer({
 
   // Seek to a specific word index
   const seekToIndex = useCallback((targetIndex: number) => {
-    let remaining = targetIndex;
     let para = 0;
-    let word = 0;
-
-    for (let i = 0; i < parsedText.paragraphs.length; i++) {
-      const paraLength = parsedText.paragraphs[i].length;
-      if (remaining < paraLength) {
+    // Find the paragraph using binary search (or efficient loop) over offsets
+    for (let i = paragraphOffsets.length - 1; i >= 0; i--) {
+      if (targetIndex >= paragraphOffsets[i]) {
         para = i;
-        word = remaining;
         break;
       }
-      remaining -= paraLength;
-      para = i;
-      word = parsedText.paragraphs[i].length - 1;
     }
+    
+    const word = targetIndex - paragraphOffsets[para];
 
     setCurrentParagraph(para);
     setCurrentWord(word);
