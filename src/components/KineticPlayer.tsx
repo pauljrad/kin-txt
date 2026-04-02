@@ -111,6 +111,13 @@ export function KineticPlayer({
   const [isComplete, setIsComplete] = useState(false);
   const [chunkLength, setChunkLength] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
+  
+  // Ghost position for high-performance HUD updates during drag
+  // This allows the percentage/bar to move at 60fps while throttling the heavy RSVP logic
+  const [ghostPosition, setGhostPosition] = useState<number | null>(null);
+  const lastSeekTimeRef = useRef(0);
+  const isDraggingRef = useRef(false);
+
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isNavOpen, setIsNavOpen] = useState(false);
   const [showFullText, setShowFullText] = useState(false);
@@ -238,7 +245,9 @@ export function KineticPlayer({
     return 4;
   };
 
-  const progress = totalWords > 0 ? (getCurrentWordIndex() / totalWords) * 100 : 0;
+  const progress = totalWords > 0 
+    ? ((ghostPosition !== null ? ghostPosition : getCurrentWordIndex()) / totalWords) * 100 
+    : 0;
 
   // Safely get current word with fallback
   const currentDisplayWord = parsedText.paragraphs[currentParagraph]?.[currentWord] ?? '';
@@ -566,7 +575,16 @@ export function KineticPlayer({
   }, [currentParagraph, currentWord, documentId, onProgressChange]);
 
   // Seek to a specific word index
-  const seekToIndex = useCallback((targetIndex: number) => {
+  const seekToIndex = useCallback((targetIndex: number, force: boolean = false) => {
+    if (!parsedText?.paragraphs?.length || !paragraphOffsets.length) return;
+
+    // Throttling during drag to prevent animation jams
+    const now = Date.now();
+    if (!force && isDraggingRef.current && now - lastSeekTimeRef.current < 150) {
+      return;
+    }
+    lastSeekTimeRef.current = now;
+
     let para = 0;
     // Find the paragraph using binary search (or efficient loop) over offsets
     for (let i = paragraphOffsets.length - 1; i >= 0; i--) {
@@ -632,30 +650,42 @@ export function KineticPlayer({
     if (!progressBarRef.current) return;
 
     const rect = progressBarRef.current.getBoundingClientRect();
-    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+    const clientX = 'touches' in e ? e.touches[0].clientX : (e as any).clientX;
     const percentage = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
     const targetIndex = Math.floor(percentage * (totalWords - 1));
 
+    // Update ghost position for 60fps HUD feedback
+    setGhostPosition(targetIndex);
+    
+    // Throttled update of the actual reader position
     seekToIndex(targetIndex);
   }, [totalWords, seekToIndex]);
+
 
   const handleProgressMouseDown = (e: React.MouseEvent) => {
     e.stopPropagation();
     setIsDragging(true);
+    isDraggingRef.current = true;
     setIsPlaying(false);
     handleProgressBarInteraction(e);
   };
 
   const handleProgressMouseMove = useCallback((e: MouseEvent) => {
-    if (!isDragging) return;
+    if (!isDraggingRef.current) return;
     handleProgressBarInteraction(e as unknown as React.MouseEvent);
-  }, [isDragging, handleProgressBarInteraction]);
+  }, [handleProgressBarInteraction]);
 
   const handleProgressMouseUp = useCallback(() => {
-    if (isDragging) {
+    if (isDraggingRef.current) {
+      // Final sync on release
+      if (ghostPosition !== null) {
+        seekToIndex(ghostPosition, true);
+      }
       setIsDragging(false);
+      isDraggingRef.current = false;
+      setGhostPosition(null);
     }
-  }, [isDragging]);
+  }, [seekToIndex, ghostPosition]);
 
   useEffect(() => {
     if (isDragging) {
@@ -1246,95 +1276,67 @@ export function KineticPlayer({
           </div>
         )}
 
-        <AnimatePresence>
+        <AnimatePresence mode="wait">
           {!showingChapterTitle && (
-            isDragging ? (
-              // INSTANT MODE: No AnimatePresence, no motion, just direct render during drag
-              <div 
-                className={`kinetic-word select-none w-full flex items-center justify-center font-display`}
-                style={{
-                  fontSize: `calc(2.9rem * var(--text-size-multiplier, 1))`
-                }}
-              >
-                {targetMode ? (
-                  (() => {
-                    const safeWord = currentDisplayWord || '';
-                    const orpIndex = getORPIndex(safeWord);
-                    const prefix = safeWord.substring(0, orpIndex);
-                    const focalChar = safeWord[orpIndex] || '';
-                    const suffix = safeWord.substring(orpIndex + 1);
+            <motion.div
+              ref={wordRef}
+              key={`${currentParagraph}-${currentWord}`}
+              initial={targetMode ? { opacity: 0 } : { opacity: 0, scale: 0.9, y: 10, filter: 'blur(4px)' }}
+              animate={targetMode
+                ? { opacity: 1 }
+                : { opacity: isWhisperedWord ? 0.6 : 1, scale: 1, y: 0, filter: 'blur(0px)' }
+              }
+              exit={targetMode
+                ? { opacity: 0, transition: { duration: 0.05 } }
+                : { opacity: 0, scale: 1.1, y: -10, filter: 'blur(4px)', transition: { duration: 0.05 } }
+              }
+              transition={targetMode
+                ? { duration: Math.min(0.15, (currentWordDelayMs / 1000) * 0.3), ease: "easeOut" }
+                : {
+                  duration: Math.min(0.2, (currentWordDelayMs / 1000) * 0.4),
+                  ease: "easeOut"
+                }
+              }
+              className={`kinetic-word select-none w-full flex items-center justify-center ${cleanWord.includes('kin-txt') || cleanWord === 'kin-txt'
+                ? 'text-foreground'
+                : `font-display ${isWhisperedWord && !targetMode ? 'text-muted-foreground/60 italic' : ''}`
+                }`}
+              style={{
+                fontSize: targetMode
+                  ? `calc(2.9rem * var(--text-size-multiplier, 1))` // Match normal text size in Target Mode
+                  : `calc(${cleanWord.includes('kin-txt') || cleanWord === 'kin-txt' ? '6rem' :
+                    isEmphasisWord ? '6rem' :
+                      isWhisperedWord ? '2.4rem' : '2.9rem'
+                  } * var(--text-size-multiplier, 1))`,
+              }}
+            >
+              {cleanWord.includes('kin-txt') || cleanWord === 'kin-txt' ? (
+                // Center the special branding by aligning 'i' to center
+                <div className="flex w-full items-center justify-center h-full">
+                  <div className="flex-1 text-right whitespace-nowrap">K</div>
+                  <div className="text-red-500 shrink-0 min-w-[0.4em] text-center px-[1px]">i</div>
+                  <div className="flex-1 text-left whitespace-nowrap">N-TXT</div>
+                </div>
+              ) : targetMode ? (
+                (() => {
+                  const safeWord = currentDisplayWord || '';
+                  const orpIndex = getORPIndex(safeWord);
+                  const prefix = safeWord.substring(0, orpIndex);
+                  const focalChar = safeWord[orpIndex] || '';
+                  const suffix = safeWord.substring(orpIndex + 1);
 
-                    return (
-                      <div className="w-full grid grid-cols-[1fr_auto_1fr] items-baseline">
-                        <span className="text-right whitespace-pre">{prefix}</span>
-                        <span className="text-center font-bold min-w-[1ch]" style={{ color: targetColor }}>{focalChar}</span>
-                        <span className="text-left whitespace-pre">{suffix}</span>
-                      </div>
-                    );
-                  })()
-                ) : currentDisplayWord}
-              </div>
-            ) : (
-              <motion.div
-                ref={wordRef}
-                key={`${currentParagraph}-${currentWord}`}
-                initial={targetMode ? { opacity: 0 } : { opacity: 0, scale: 0.9, y: 10, filter: 'blur(4px)' }}
-                animate={targetMode
-                  ? { opacity: 1 }
-                  : { opacity: isWhisperedWord ? 0.6 : 1, scale: 1, y: 0, filter: 'blur(0px)' }
-                }
-                exit={targetMode
-                  ? { opacity: 0, transition: { duration: 0.05 } }
-                  : { opacity: 0, scale: 1.1, y: -10, filter: 'blur(4px)', transition: { duration: 0.05 } }
-                }
-                transition={targetMode
-                  ? { duration: Math.min(0.15, (currentWordDelayMs / 1000) * 0.3), ease: "easeOut" }
-                  : {
-                    duration: Math.min(0.2, (currentWordDelayMs / 1000) * 0.4),
-                    ease: "easeOut"
-                  }
-                }
-                className={`kinetic-word select-none w-full flex items-center justify-center ${cleanWord.includes('kin-txt') || cleanWord === 'kin-txt'
-                  ? 'text-foreground'
-                  : `font-display ${isWhisperedWord && !targetMode ? 'text-muted-foreground/60 italic' : ''}`
-                  }`}
-                style={{
-                  fontSize: targetMode
-                    ? `calc(2.9rem * var(--text-size-multiplier, 1))` // Match normal text size in Target Mode
-                    : `calc(${cleanWord.includes('kin-txt') || cleanWord === 'kin-txt' ? '6rem' :
-                      isEmphasisWord ? '6rem' :
-                        isWhisperedWord ? '2.4rem' : '2.9rem'
-                    } * var(--text-size-multiplier, 1))`,
-                }}
-              >
-                {cleanWord.includes('kin-txt') || cleanWord === 'kin-txt' ? (
-                  // Center the special branding by aligning 'i' to center
-                  <div className="flex w-full items-center justify-center h-full">
-                    <div className="flex-1 text-right whitespace-nowrap">K</div>
-                    <div className="text-red-500 shrink-0 min-w-[0.4em] text-center px-[1px]">i</div>
-                    <div className="flex-1 text-left whitespace-nowrap">N-TXT</div>
-                  </div>
-                ) : targetMode ? (
-                  (() => {
-                    const safeWord = currentDisplayWord || '';
-                    const orpIndex = getORPIndex(safeWord);
-                    const prefix = safeWord.substring(0, orpIndex);
-                    const focalChar = safeWord[orpIndex] || '';
-                    const suffix = safeWord.substring(orpIndex + 1);
-
-                    return (
-                      <div className="w-full grid grid-cols-[1fr_auto_1fr] items-baseline">
-                        <span className="text-right whitespace-pre">{prefix}</span>
-                        <span className="text-center font-bold min-w-[1ch] transition-colors duration-300" style={{ color: targetColor }}>{focalChar}</span>
-                        <span className="text-left whitespace-pre">{suffix}</span>
-                      </div>
-                    );
-                  })()
-                ) : (
-                  currentDisplayWord
-                )}
-              </motion.div>
-            )
+                  return (
+                    <div className="w-full grid grid-cols-[1fr_auto_1fr] items-baseline">
+                      <span className="text-right whitespace-pre">{prefix}</span>
+                      <span className="text-center font-bold min-w-[1ch] transition-colors duration-300" style={{ color: targetColor }}>{focalChar}</span>
+                      <span className="text-left whitespace-pre">{suffix}</span>
+                    </div>
+                  );
+                })()
+              ) : (
+                currentDisplayWord
+              )}
+            </motion.div>
           )}
         </AnimatePresence>
       </div>
