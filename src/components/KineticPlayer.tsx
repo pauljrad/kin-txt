@@ -80,8 +80,11 @@ export function KineticPlayer({
   const initialSettings = loadSettings();
 
   const [isPlaying, setIsPlaying] = useState(false);
-  const [currentParagraph, setCurrentParagraph] = useState(initialProgress?.paragraph || 0);
-  const [currentWord, setCurrentWord] = useState(initialProgress?.word || 0);
+  const [position, setPosition] = useState({ 
+    paragraph: initialProgress?.paragraph || 0, 
+    word: initialProgress?.word || 0 
+  });
+  const { paragraph: currentParagraph, word: currentWord } = position;
 
   // Persisted Stats
   const [startSpeed, setStartSpeed] = useState(initialSettings.startSpeed ?? 0.5);
@@ -578,8 +581,7 @@ export function KineticPlayer({
 
     const word = targetIndex - paragraphOffsets[para];
     
-    setCurrentParagraph(para);
-    setCurrentWord(word);
+    setPosition({ paragraph: para, word: word });
     setSentenceCount(0);
     setWordInChunk(0);
 
@@ -595,7 +597,7 @@ export function KineticPlayer({
       }
     }
     setChunkLength(count);
-  }, [parsedText.paragraphs]);
+  }, [parsedText.paragraphs, paragraphOffsets]);
 
   // Attribution Timer Logic
   useEffect(() => {
@@ -713,7 +715,7 @@ export function KineticPlayer({
         setSentenceCount(newSentenceCount);
         setWordInChunk(prev => prev + 1);
       }
-      setCurrentWord(prev => prev + 1);
+      setPosition(prev => ({ ...prev, word: prev.word + 1 }));
       // Track words for adaptive speed
       setWordsReadInSession(prev => prev + 1);
     } else if (currentParagraph < paragraphsLength - 1) {
@@ -749,14 +751,14 @@ export function KineticPlayer({
 
         chapterTimeoutRef.current = setTimeout(() => {
           setShowingChapterTitle(null);
-          setCurrentParagraph(nextPara);
-          setCurrentWord(0);
           
           // Only reset counters if NOT in 'end' mode
           if (resetInterval !== 'end') {
             setSentenceCount(0);
             setWordInChunk(0);
           }
+          
+          setPosition({ paragraph: nextPara, word: 0 });
           
           // Partial reset for adaptive - keep some momentum but slow down for new chapter
           setWordsReadInSession(prev => Math.floor(prev * 0.5));
@@ -783,8 +785,7 @@ export function KineticPlayer({
         }, 3000);
       } else {
         // Normal paragraph transition
-        setCurrentParagraph(nextPara);
-        setCurrentWord(0);
+        setPosition({ paragraph: nextPara, word: 0 });
         
         // Only reset counters if NOT in 'end' mode
         if (resetInterval !== 'end') {
@@ -816,7 +817,7 @@ export function KineticPlayer({
       setIsPlaying(false);
       setIsComplete(true);
     }
-  }, [currentParagraph, currentWord, parsedText.paragraphs, sentenceCount, chapters, lastChapterIndex, getCurrentWordIndex, resetInterval, accelerationMode, adaptiveSpeed]);
+  }, [currentParagraph, currentWord, parsedText.paragraphs, sentenceCount, chapters, lastChapterIndex, resetInterval, accelerationMode, isEbook]);
 
   useEffect(() => {
     // Clear any existing timeout first
@@ -994,12 +995,14 @@ export function KineticPlayer({
   };
 
   const handleRestart = () => {
-    setCurrentParagraph(0);
-    setCurrentWord(0);
+    setPosition({ paragraph: 0, word: 0 });
     setSentenceCount(0);
     setWordInChunk(0);
-    setIsPlaying(false);
     setIsComplete(false);
+    setIsPlaying(false);
+    setSessionTime(0);
+    setWordsReadInSession(0);
+    
     // Calculate initial chunk length
     const firstParagraph = parsedText.paragraphs[0];
     let count = 0;
