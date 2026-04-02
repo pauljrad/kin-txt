@@ -86,6 +86,16 @@ export function KineticPlayer({
   });
   const { paragraph: currentParagraph, word: currentWord } = position;
 
+  // Refs for logic "ground truth" to prevent stale closures and ensure absolute stability
+  const positionRef = useRef(position);
+  const sentenceCountRef = useRef(0);
+  const wordInChunkRef = useRef(0);
+
+  // Keep ref in sync with state for rendering/UI
+  useEffect(() => {
+    positionRef.current = position;
+  }, [position]);
+
   // Persisted Stats
   const [startSpeed, setStartSpeed] = useState(initialSettings.startSpeed ?? 0.5);
   const [endSpeed, setEndSpeed] = useState(initialSettings.endSpeed ?? 1.4);
@@ -97,11 +107,8 @@ export function KineticPlayer({
   const [focusMode, setFocusMode] = useState(initialSettings.focusMode ?? false);
   const [targetMode, setTargetMode] = useState(initialSettings.targetMode ?? false);
   const [targetColor, setTargetColor] = useState(initialSettings.targetColor ?? '#FFD600');
-
   const [showControls, setShowControls] = useState(true);
   const [isComplete, setIsComplete] = useState(false);
-  const [sentenceCount, setSentenceCount] = useState(0);
-  const [wordInChunk, setWordInChunk] = useState(0);
   const [chunkLength, setChunkLength] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -539,7 +546,7 @@ export function KineticPlayer({
         if (chunkLength <= 1) {
           return Number.isFinite(startSpeed) && startSpeed > 0 ? startSpeed : DEFAULT_SPEED;
         }
-        progressInChunk = wordInChunk / Math.max(1, chunkLength - 1);
+        progressInChunk = wordInChunkRef.current / Math.max(1, chunkLength - 1);
       }
       
       // Linear interpolation between start and end speed
@@ -549,7 +556,7 @@ export function KineticPlayer({
 
     // Default static speed (use startSpeed as the base)
     return Number.isFinite(startSpeed) && startSpeed > 0 ? startSpeed : DEFAULT_SPEED;
-  }, [rhythmMode, rhythmSpeeds.length, rhythmSpeedMap, getCurrentWordIndex, rhythmMultiplier, accelerationMode, totalWords, wordInChunk, chunkLength, resetInterval, startSpeed, endSpeed]);
+  }, [rhythmMode, rhythmSpeeds.length, rhythmSpeedMap, getCurrentWordIndex, rhythmMultiplier, accelerationMode, totalWords, chunkLength, resetInterval, startSpeed, endSpeed]);
 
   // Save progress when it changes
   useEffect(() => {
@@ -582,8 +589,9 @@ export function KineticPlayer({
     const word = targetIndex - paragraphOffsets[para];
     
     setPosition({ paragraph: para, word: word });
-    setSentenceCount(0);
-    setWordInChunk(0);
+    positionRef.current = { paragraph: para, word: word };
+    sentenceCountRef.current = 0;
+    wordInChunkRef.current = 0;
 
     // Recalculate chunk length for current position
     const currentPara = parsedText.paragraphs[para];
@@ -665,45 +673,44 @@ export function KineticPlayer({
   }, [isDragging, handleProgressMouseMove, handleProgressMouseUp]);
 
   const advanceWord = useCallback(() => {
+    // Safety checks: ALWAYS use ref for current position to prevent stale jump issues
+    const { paragraph: currentPara, word: currentW } = positionRef.current;
+    
     // Safety checks: ensure we have valid data before advancing
     if (!parsedText?.paragraphs?.length) return;
 
-    const paragraphsLength = parsedText.paragraphs.length;
-    if (currentParagraph >= paragraphsLength) return;
+    if (currentPara >= parsedText.paragraphs.length) return;
 
-    const currentParagraphWords = parsedText.paragraphs[currentParagraph];
+    const currentParagraphWords = parsedText.paragraphs[currentPara];
     if (!currentParagraphWords?.length) return;
 
-    const currentParagraphLength = currentParagraphWords.length;
-    if (currentWord >= currentParagraphLength) return;
+    if (currentW >= currentParagraphWords.length) return;
 
-    const word = currentParagraphWords[currentWord];
+    const word = currentParagraphWords[currentW];
     if (!word) return;
 
     // Check if this word ends a sentence
-    let newSentenceCount = sentenceCount;
     if (isSentenceEnd(word)) {
-      newSentenceCount = sentenceCount + 1;
+      sentenceCountRef.current += 1;
     }
 
     // Determine reset count based on interval setting
-    // 'end' = never reset (always accelerate), 'paragraph' = infinite
     let resetCount = Infinity;
     if (resetInterval === 'end') {
-      resetCount = Infinity; // Never reset, accelerate to end
+      resetCount = Infinity; 
     } else if (resetInterval !== 'paragraph') {
       resetCount = parseInt(resetInterval);
     }
 
-    if (currentWord < currentParagraphLength - 1) {
+    if (currentW < currentParagraphWords.length - 1) {
       // Reset speed after configured number of sentences
-      if (accelerationMode && newSentenceCount >= resetCount && isSentenceEnd(word)) {
-        setSentenceCount(0);
-        setWordInChunk(0);
+      if (accelerationMode && sentenceCountRef.current >= resetCount && isSentenceEnd(word)) {
+        sentenceCountRef.current = 0;
+        wordInChunkRef.current = 0;
         // Calculate chunk length for next sentences
         let count = 0;
         let sentences = 0;
-        for (let i = currentWord + 1; i < currentParagraphLength; i++) {
+        for (let i = currentW + 1; i < currentParagraphWords.length; i++) {
           count++;
           if (isSentenceEnd(currentParagraphWords[i])) {
             sentences++;
@@ -712,21 +719,21 @@ export function KineticPlayer({
         }
         setChunkLength(count);
       } else {
-        setSentenceCount(newSentenceCount);
-        setWordInChunk(prev => prev + 1);
+        wordInChunkRef.current += 1;
       }
-      setPosition(prev => ({ ...prev, word: prev.word + 1 }));
+      
+      const newPos = { paragraph: currentPara, word: currentW + 1 };
+      setPosition(newPos);
+      positionRef.current = newPos;
+      
       // Track words for adaptive speed
       setWordsReadInSession(prev => prev + 1);
-    } else if (currentParagraph < paragraphsLength - 1) {
+    } else if (currentPara < parsedText.paragraphs.length - 1) {
       // Move to next paragraph
-      const nextPara = currentParagraph + 1;
+      const nextPara = currentPara + 1;
 
-      // Check if entering a new chapter - find any chapter that starts at nextPara
-      // and that we haven't shown yet (index > lastChapterIndex)
-      // Only check for chapters if this is an ebook (per user request)
+      // Chapter Logic
       let enteringChapterIndex = -1;
-
       if (isEbook) {
         for (let i = 0; i < chapters.length; i++) {
           if (chapters[i].startParagraph === nextPara && i > lastChapterIndex) {
@@ -738,46 +745,39 @@ export function KineticPlayer({
 
       if (enteringChapterIndex >= 0) {
         const enteringChapter = chapters[enteringChapterIndex];
-
-        // Show chapter title for 3 seconds
         setIsPlaying(false);
         setShowingChapterTitle(enteringChapter.title);
         setLastChapterIndex(enteringChapterIndex);
 
-        // Clear any existing chapter timeout
-        if (chapterTimeoutRef.current) {
-          clearTimeout(chapterTimeoutRef.current);
-        }
+        if (chapterTimeoutRef.current) clearTimeout(chapterTimeoutRef.current);
 
         chapterTimeoutRef.current = setTimeout(() => {
           setShowingChapterTitle(null);
           
-          // Only reset counters if NOT in 'end' mode
           if (resetInterval !== 'end') {
-            setSentenceCount(0);
-            setWordInChunk(0);
+            sentenceCountRef.current = 0;
+            wordInChunkRef.current = 0;
           }
           
-          setPosition({ paragraph: nextPara, word: 0 });
+          const nextPos = { paragraph: nextPara, word: 0 };
+          setPosition(nextPos);
+          positionRef.current = nextPos;
           
-          // Partial reset for adaptive - keep some momentum but slow down for new chapter
           setWordsReadInSession(prev => Math.floor(prev * 0.5));
 
-          // Calculate chunk length for first sentences of next paragraph
           const nextParagraph = parsedText.paragraphs[nextPara];
-          let resetCount = Infinity;
-          if (resetInterval === 'end') {
-            resetCount = Infinity;
-          } else if (resetInterval !== 'paragraph') {
-            resetCount = parseInt(resetInterval);
+          let resetCountVal = 1000; // default large if paragraph
+          if (resetInterval !== 'end' && resetInterval !== 'paragraph') {
+            resetCountVal = parseInt(resetInterval);
           }
+          
           let count = 0;
           let sentences = 0;
           for (let i = 0; i < nextParagraph.length; i++) {
             count++;
             if (isSentenceEnd(nextParagraph[i])) {
               sentences++;
-              if (sentences >= resetCount) break;
+              if (sentences >= resetCountVal) break;
             }
           }
           setChunkLength(count);
@@ -785,29 +785,28 @@ export function KineticPlayer({
         }, 3000);
       } else {
         // Normal paragraph transition
-        setPosition({ paragraph: nextPara, word: 0 });
+        const nextPos = { paragraph: nextPara, word: 0 };
+        setPosition(nextPos);
+        positionRef.current = nextPos;
         
-        // Only reset counters if NOT in 'end' mode
         if (resetInterval !== 'end') {
-          setSentenceCount(0);
-          setWordInChunk(0);
+          sentenceCountRef.current = 0;
+          wordInChunkRef.current = 0;
         }
 
-        // Calculate chunk length for first sentences of next paragraph
         const nextParagraph = parsedText.paragraphs[nextPara];
-        let resetCount = Infinity;
-        if (resetInterval === 'end') {
-          resetCount = Infinity;
-        } else if (resetInterval !== 'paragraph') {
-          resetCount = parseInt(resetInterval);
+        let resetCountVal = 1000;
+        if (resetInterval !== 'end' && resetInterval !== 'paragraph') {
+          resetCountVal = parseInt(resetInterval);
         }
+        
         let count = 0;
         let sentences = 0;
         for (let i = 0; i < nextParagraph.length; i++) {
           count++;
           if (isSentenceEnd(nextParagraph[i])) {
             sentences++;
-            if (sentences >= resetCount) break;
+            if (sentences >= resetCountVal) break;
           }
         }
         setChunkLength(count);
@@ -817,7 +816,7 @@ export function KineticPlayer({
       setIsPlaying(false);
       setIsComplete(true);
     }
-  }, [currentParagraph, currentWord, parsedText.paragraphs, sentenceCount, chapters, lastChapterIndex, resetInterval, accelerationMode, isEbook]);
+  }, [parsedText, resetInterval, accelerationMode, isEbook, chapters, lastChapterIndex]);
 
   useEffect(() => {
     // Clear any existing timeout first
@@ -995,9 +994,11 @@ export function KineticPlayer({
   };
 
   const handleRestart = () => {
-    setPosition({ paragraph: 0, word: 0 });
-    setSentenceCount(0);
-    setWordInChunk(0);
+    const startPos = { paragraph: 0, word: 0 };
+    setPosition(startPos);
+    positionRef.current = startPos;
+    sentenceCountRef.current = 0;
+    wordInChunkRef.current = 0;
     setIsComplete(false);
     setIsPlaying(false);
     setSessionTime(0);
