@@ -332,13 +332,13 @@ export function KineticPlayer({
     let baseMultiplier: number;
     switch (rhythmPreset) {
       case 'slower':
-        baseMultiplier = 0.825; // Increased by 1.1x (was 0.75)
+        baseMultiplier = 0.667; // 1.5x slower (1 / 1.5)
         break;
       case 'faster':
-        baseMultiplier = 1.15; // Increased by 1.1x (was 1.05)
+        baseMultiplier = 1.5;   // 1.5x faster
         break;
       default:
-        baseMultiplier = 1.0; // Increased by 1.1x (was 0.90)
+        baseMultiplier = 1.0;
     }
 
     return baseMultiplier * adaptiveMultiplier;
@@ -1605,6 +1605,30 @@ export function KineticPlayer({
                             </button>
                           </div>
                         </div>
+
+                        {/* Rhythm Speed Presets - Only show when rhythm mode is on */}
+                        {rhythmMode && (
+                          <div className="border-t border-border/50 pt-3 space-y-2">
+                            <div className="text-xs text-muted-foreground flex items-center gap-1.5">
+                              <Music className="w-3 h-3" />
+                              <span>Rhythm Speed</span>
+                            </div>
+                            <div className="flex gap-1.5">
+                              {(['slower', 'normal', 'faster'] as const).map((preset) => (
+                                <button
+                                  key={preset}
+                                  onClick={() => setRhythmPreset(preset)}
+                                  className={`flex-1 px-2 py-1.5 rounded-lg text-xs font-medium transition-colors capitalize ${rhythmPreset === preset
+                                    ? 'bg-primary text-primary-foreground'
+                                    : 'bg-secondary hover:bg-secondary/80 text-muted-foreground'
+                                    }`}
+                                >
+                                  {preset}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
 
                         {/* Target Mode Toggle */}
                         <div className="flex items-center justify-between border-t border-border/50 pt-3">
