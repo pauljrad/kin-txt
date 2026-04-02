@@ -1252,20 +1252,17 @@ export function KineticPlayer({
             <motion.div
               ref={wordRef}
               key={`${currentParagraph}-${currentWord}`}
-              initial={isDragging ? { opacity: 1 } : (targetMode ? { opacity: 0 } : { opacity: 0, scale: 0.9, y: 10, filter: 'blur(4px)' })}
+              initial={isDragging ? { opacity: 1 } : { opacity: 0 }}
               animate={isDragging 
-                ? { opacity: 1, scale: 1, y: 0, filter: 'blur(0px)' }
+                ? { opacity: 1 }
                 : (targetMode
                   ? { opacity: 1 }
-                  : { opacity: isWhisperedWord ? 0.6 : 1, scale: 1, y: 0, filter: 'blur(0px)' }
+                  : { opacity: isWhisperedWord ? 0.6 : 1 }
                 )
               }
               exit={isDragging 
                 ? { opacity: 0, transition: { duration: 0 } }
-                : (targetMode
-                  ? { opacity: 0, transition: { duration: 0.05 } }
-                  : { opacity: 0, scale: 1.1, y: -10, filter: 'blur(4px)', transition: { duration: 0.05 } }
-                )
+                : { opacity: 0, transition: { duration: 0.05 } }
               }
               transition={isDragging 
                 ? { duration: 0 }
