@@ -111,13 +111,6 @@ export function KineticPlayer({
   const [isComplete, setIsComplete] = useState(false);
   const [chunkLength, setChunkLength] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
-  
-  // Ghost position for high-performance HUD updates during drag
-  // This allows the percentage/bar to move at 60fps while throttling the heavy RSVP logic
-  const [ghostPosition, setGhostPosition] = useState<number | null>(null);
-  const lastSeekTimeRef = useRef(0);
-  const isDraggingRef = useRef(false);
-
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isNavOpen, setIsNavOpen] = useState(false);
   const [showFullText, setShowFullText] = useState(false);
@@ -245,9 +238,7 @@ export function KineticPlayer({
     return 4;
   };
 
-  const progress = totalWords > 0 
-    ? ((ghostPosition !== null ? ghostPosition : getCurrentWordIndex()) / totalWords) * 100 
-    : 0;
+  const progress = totalWords > 0 ? (getCurrentWordIndex() / totalWords) * 100 : 0;
 
   // Safely get current word with fallback
   const currentDisplayWord = parsedText.paragraphs[currentParagraph]?.[currentWord] ?? '';
@@ -575,15 +566,8 @@ export function KineticPlayer({
   }, [currentParagraph, currentWord, documentId, onProgressChange]);
 
   // Seek to a specific word index
-  const seekToIndex = useCallback((targetIndex: number, force: boolean = false) => {
+  const seekToIndex = useCallback((targetIndex: number) => {
     if (!parsedText?.paragraphs?.length || !paragraphOffsets.length) return;
-
-    // Throttling during drag to prevent animation jams
-    const now = Date.now();
-    if (!force && isDraggingRef.current && now - lastSeekTimeRef.current < 150) {
-      return;
-    }
-    lastSeekTimeRef.current = now;
 
     let para = 0;
     // Find the paragraph using binary search (or efficient loop) over offsets
@@ -645,7 +629,6 @@ export function KineticPlayer({
     }
   }, [isComplete, documentId]);
 
-  // Handle progress bar click/drag
   const handleProgressBarInteraction = useCallback((e: React.MouseEvent | React.TouchEvent) => {
     if (!progressBarRef.current) return;
 
@@ -654,38 +637,26 @@ export function KineticPlayer({
     const percentage = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
     const targetIndex = Math.floor(percentage * (totalWords - 1));
 
-    // Update ghost position for 60fps HUD feedback
-    setGhostPosition(targetIndex);
-    
-    // Throttled update of the actual reader position
     seekToIndex(targetIndex);
   }, [totalWords, seekToIndex]);
-
 
   const handleProgressMouseDown = (e: React.MouseEvent) => {
     e.stopPropagation();
     setIsDragging(true);
-    isDraggingRef.current = true;
     setIsPlaying(false);
     handleProgressBarInteraction(e);
   };
 
   const handleProgressMouseMove = useCallback((e: MouseEvent) => {
-    if (!isDraggingRef.current) return;
+    if (!isDragging) return;
     handleProgressBarInteraction(e as unknown as React.MouseEvent);
-  }, [handleProgressBarInteraction]);
+  }, [isDragging, handleProgressBarInteraction]);
 
   const handleProgressMouseUp = useCallback(() => {
-    if (isDraggingRef.current) {
-      // Final sync on release
-      if (ghostPosition !== null) {
-        seekToIndex(ghostPosition, true);
-      }
+    if (isDragging) {
       setIsDragging(false);
-      isDraggingRef.current = false;
-      setGhostPosition(null);
     }
-  }, [seekToIndex, ghostPosition]);
+  }, [isDragging]);
 
   useEffect(() => {
     if (isDragging) {
@@ -1280,7 +1251,7 @@ export function KineticPlayer({
           {!showingChapterTitle && (
             <motion.div
               ref={wordRef}
-              key={`${currentParagraph}-${currentWord}`}
+              key={isDragging ? 'dragging-word' : `${currentParagraph}-${currentWord}`}
               initial={targetMode ? { opacity: 0 } : { opacity: 0, scale: 0.9, y: 10, filter: 'blur(4px)' }}
               animate={targetMode
                 ? { opacity: 1 }
