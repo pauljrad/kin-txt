@@ -13,6 +13,7 @@ interface TargetModePlayerProps {
     endWpm?: number; // For acceleration
     rhythmPreset?: 'slower' | 'normal' | 'faster';
     targetColor: string;
+    emphasisWords?: string[];
     isActive?: boolean;
     onComplete?: () => void;
 }
@@ -24,6 +25,7 @@ export function TargetModePlayer({
     endWpm = 600,
     rhythmPreset = 'normal',
     targetColor,
+    emphasisWords = [],
     isActive = true,
     onComplete
 }: TargetModePlayerProps) {
@@ -143,6 +145,8 @@ export function TargetModePlayer({
     }, [isActive]);
 
     const currentWord = rhythmSpeeds[currentIndex]?.word || "";
+    const cleanWord = currentWord.toLowerCase().replace(/[.,!?;:'"()[\]]/g, '');
+    const isEmphasisWord = emphasisWords.map(w => w.toLowerCase()).includes(cleanWord);
 
     // ORP Calculation (Optimal Recognition Point)
     const getOrpIndex = (word: string) => {
@@ -188,7 +192,12 @@ export function TargetModePlayer({
                     exit={{ opacity: 0, transition: { duration: 0.05 } }}
                     transition={{ duration: 0.05 }}
                     className="font-display text-white text-4xl sm:text-5xl flex items-center justify-center select-none w-full"
-                    style={{ fontWeight: 400 }}
+                    style={{ 
+                        fontWeight: 400,
+                        transform: isEmphasisWord ? 'scale(1.28)' : 'none',
+                        color: isEmphasisWord ? '#ffffff' : 'inherit',
+                        transition: 'transform 0.1s ease-out'
+                    }}
                 >
                     {isKiN ? (
                         <div className="flex w-full items-center justify-center h-full">

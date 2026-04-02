@@ -11,7 +11,8 @@ import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Landing from "./pages/Landing";
 import NotFound from "./pages/NotFound";
-
+import CinematicPromo from "./pages/CinematicPromo";
+import CinematicTargetPromo from "./pages/CinematicTargetPromo";
 import { useState, useEffect } from "react";
 import { SplashScreen } from "@/components/SplashScreen";
 import { AnimatePresence } from "framer-motion";
@@ -22,12 +23,10 @@ const AppContent = () => {
   const [showSplash, setShowSplash] = useState(true);
 
   useEffect(() => {
-    // Initial timer
     const timer = setTimeout(() => {
       setShowSplash(false);
     }, 3000);
 
-    // Handle bfcache (Back-Forward Cache) restoration
     const handlePageShow = (event: any) => {
       if (event.persisted) {
         setShowSplash(true);
@@ -41,6 +40,7 @@ const AppContent = () => {
       clearTimeout(timer);
       window.removeEventListener('pageshow', handlePageShow);
     };
+
   }, []);
 
   return (
@@ -51,6 +51,9 @@ const AppContent = () => {
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/tiktok" element={<CinematicPromo />} />
+        <Route path="/target" element={<CinematicTargetPromo />} />
+
         <Route
           path="/home"
           element={
@@ -64,6 +67,7 @@ const AppContent = () => {
     </>
   );
 };
+
 
 const App = () => (
   <QueryClientProvider client={queryClient}>

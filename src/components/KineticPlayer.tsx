@@ -1981,4 +1981,4 @@ export function KineticPlayer({
       />
     </motion.div >
   );
-}
+}// v1.0.1
