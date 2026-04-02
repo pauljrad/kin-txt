@@ -1251,22 +1251,31 @@ export function KineticPlayer({
           {!showingChapterTitle && (
             <motion.div
               ref={wordRef}
-              key={isDragging ? 'dragging-word' : `${currentParagraph}-${currentWord}`}
-              initial={targetMode ? { opacity: 0 } : { opacity: 0, scale: 0.9, y: 10, filter: 'blur(4px)' }}
-              animate={targetMode
-                ? { opacity: 1 }
-                : { opacity: isWhisperedWord ? 0.6 : 1, scale: 1, y: 0, filter: 'blur(0px)' }
+              key={`${currentParagraph}-${currentWord}`}
+              initial={isDragging ? { opacity: 1 } : (targetMode ? { opacity: 0 } : { opacity: 0, scale: 0.9, y: 10, filter: 'blur(4px)' })}
+              animate={isDragging 
+                ? { opacity: 1, scale: 1, y: 0, filter: 'blur(0px)' }
+                : (targetMode
+                  ? { opacity: 1 }
+                  : { opacity: isWhisperedWord ? 0.6 : 1, scale: 1, y: 0, filter: 'blur(0px)' }
+                )
               }
-              exit={targetMode
-                ? { opacity: 0, transition: { duration: 0.05 } }
-                : { opacity: 0, scale: 1.1, y: -10, filter: 'blur(4px)', transition: { duration: 0.05 } }
+              exit={isDragging 
+                ? { opacity: 0, transition: { duration: 0 } }
+                : (targetMode
+                  ? { opacity: 0, transition: { duration: 0.05 } }
+                  : { opacity: 0, scale: 1.1, y: -10, filter: 'blur(4px)', transition: { duration: 0.05 } }
+                )
               }
-              transition={targetMode
-                ? { duration: Math.min(0.15, (currentWordDelayMs / 1000) * 0.3), ease: "easeOut" }
-                : {
-                  duration: Math.min(0.2, (currentWordDelayMs / 1000) * 0.4),
-                  ease: "easeOut"
-                }
+              transition={isDragging 
+                ? { duration: 0 }
+                : (targetMode
+                  ? { duration: Math.min(0.15, (currentWordDelayMs / 1000) * 0.3), ease: "easeOut" }
+                  : {
+                    duration: Math.min(0.2, (currentWordDelayMs / 1000) * 0.4),
+                    ease: "easeOut"
+                  }
+                )
               }
               className={`kinetic-word select-none w-full flex items-center justify-center ${cleanWord.includes('kin-txt') || cleanWord === 'kin-txt'
                 ? 'text-foreground'
