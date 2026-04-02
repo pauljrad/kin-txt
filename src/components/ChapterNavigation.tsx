@@ -78,12 +78,12 @@ export const ChapterNavigation = forwardRef<HTMLDivElement, ChapterNavigationPro
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="fixed top-0 right-0 h-full w-80 max-w-[90vw] bg-card/95 backdrop-blur-xl border-l border-border z-50 overflow-hidden flex flex-col"
+              className="fixed top-0 right-0 h-full w-80 max-w-[90vw] bg-card/95 backdrop-blur-xl border-l border-border z-[100] overflow-hidden flex flex-col"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header */}
               <div
-                className="p-4 border-b border-border flex items-center justify-between"
+                className="p-4 pr-14 border-b border-border flex items-center justify-between"
                 style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 1rem)' }}
               >
                 <h3 className="font-display text-lg">Navigation</h3>
