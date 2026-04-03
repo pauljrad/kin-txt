@@ -29,7 +29,12 @@ export const SonarLogo = () => {
     const radarOpacity = cycleStep === 2 ? 0.4 : 1;
 
     return (
-        <div className="flex flex-col items-center justify-center py-6">
+        <a 
+            href="https://www.so-nah.uk" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="flex flex-col items-center justify-center py-6 hover:opacity-90 transition-opacity cursor-pointer group"
+        >
             <div className="mb-4 text-center">
                 <span className="text-[10px] tracking-[0.3em] text-zinc-500 block mb-2 font-mono">KiN-TXT is brought to you by</span>
                 <span className="text-xs font-bold tracking-[0.4em] text-white">So-Nah Creations</span>
@@ -95,6 +100,6 @@ export const SonarLogo = () => {
                 </div>
             </div>
 
-        </div>
+        </a>
     );
 };
