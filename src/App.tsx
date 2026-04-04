@@ -13,6 +13,7 @@ import Landing from "./pages/Landing";
 import NotFound from "./pages/NotFound";
 import CinematicPromo from "./pages/CinematicPromo";
 import CinematicTargetPromo from "./pages/CinematicTargetPromo";
+import Pricing from "./pages/Pricing";
 import { useState, useEffect } from "react";
 import { SplashScreen } from "@/components/SplashScreen";
 import { AnimatePresence } from "framer-motion";
@@ -51,6 +52,7 @@ const AppContent = () => {
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/pricing" element={<Pricing />} />
         <Route path="/tiktok" element={<CinematicPromo />} />
         <Route path="/target" element={<CinematicTargetPromo />} />
 

@@ -1,6 +1,6 @@
 import { useState, useEffect, forwardRef } from 'react';
 import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { AnimatedTitle } from '@/components/AnimatedTitle';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Input } from '@/components/ui/input';
@@ -237,21 +237,15 @@ const Login = forwardRef<HTMLDivElement>((_, ref) => {
             {isLoading ? (isSignUp ? 'Creating account...' : 'Signing in...') : (isSignUp ? 'Create Account' : 'Sign In')}
           </Button>
 
-          {/* Signup toggle hidden for testing phase */}
-          {/* 
-          <div className="text-center">
-            <button
-              type="button"
-              onClick={() => {
-                setIsSignUp(!isSignUp);
-                setErrors({});
-              }}
+          <div className="text-center pt-1">
+            <Link
+              to="/pricing"
               className="text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
-              {isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Sign up"}
-            </button>
+              New to KiN-TXT?{' '}
+              <span className="underline underline-offset-2">Register here →</span>
+            </Link>
           </div>
-*/}
         </motion.form>
       </div>
     </div>
