@@ -28,6 +28,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
+import { useSubscription } from '@/hooks/useSubscription';
 
 type TabMode = 'my-texts' | 'library' | 'news';
 
@@ -55,6 +56,7 @@ interface EmphasisAnalysis {
 const Index = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const { isSubscribed, loading: subLoading } = useSubscription();
   const [activeTab, setActiveTab] = useState<TabMode>('my-texts');
   const [activeDocument, setActiveDocument] = useState<ActiveDocument | null>(null);
   const [sharingDoc, setSharingDoc] = useState<SavedDocument | null>(null);
@@ -78,6 +80,33 @@ const Index = () => {
 
   const headerRef = useRef<HTMLDivElement | null>(null);
   const [headerHeight, setHeaderHeight] = useState(0); // Start at 0, will be measured
+
+  // Measure header height for layout
+  useEffect(() => {
+    if (headerRef.current) {
+      setHeaderHeight(headerRef.current.offsetHeight);
+    }
+  }, [activeDocument]);
+
+  // Subscription Enforcement:
+  // If the user is logged in but NOT subscribed, redirect them to pricing.
+  // Note: Existing users are grandfathered as 'lifetime' in the database.
+  useEffect(() => {
+    if (!subLoading && user && !isSubscribed) {
+      navigate('/pricing');
+    }
+  }, [user, isSubscribed, subLoading, navigate]);
+
+  // Loading state while checking subscription
+  if (subLoading && user) {
+    return (
+      <div className="h-screen w-full bg-black flex items-center justify-center">
+        <div className="animate-pulse text-white/40 font-display tracking-widest uppercase">
+          Verifying...
+        </div>
+      </div>
+    );
+  }
 
   // Listen for Pong Challenges and Global Events
   useEffect(() => {
