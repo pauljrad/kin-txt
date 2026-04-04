@@ -54,10 +54,11 @@ const Landing = () => {
                     <SonarLogo />
                     <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
                       {[
-                        { label: 'Terms', href: '/terms' },
-                        { label: 'Privacy', href: '/privacy' },
-                        { label: 'Data', href: '/data' },
-                        { label: 'Pricing', href: '/pricing' },
+                        { label: 'Terms of Use', href: '/terms' },
+                        { label: 'Privacy Policy', href: '/privacy' },
+                        { label: 'Data Policy', href: '/data' },
+                        { label: 'Copyright Policy', href: '/copyright' },
+                        { label: 'Payment Policy', href: '/payment-policy' },
                       ].map(link => (
                         <a
                           key={link.href}

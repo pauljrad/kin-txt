@@ -18,6 +18,8 @@ import Register from "./pages/Register";
 import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
 import DataPolicy from "./pages/DataPolicy";
+import CopyrightPolicy from "./pages/CopyrightPolicy";
+import PaymentPolicy from "./pages/PaymentPolicy";
 import { useState, useEffect } from "react";
 import { SplashScreen } from "@/components/SplashScreen";
 import { AnimatePresence } from "framer-motion";
@@ -61,6 +63,8 @@ const AppContent = () => {
         <Route path="/terms" element={<Terms />} />
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/data" element={<DataPolicy />} />
+        <Route path="/copyright" element={<CopyrightPolicy />} />
+        <Route path="/payment-policy" element={<PaymentPolicy />} />
         <Route path="/tiktok" element={<CinematicPromo />} />
         <Route path="/target" element={<CinematicTargetPromo />} />
 
