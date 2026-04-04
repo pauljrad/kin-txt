@@ -19,8 +19,7 @@ export function useSubscription() {
 
     async function checkSubscription() {
       try {
-        // @ts-ignore: subscriptions table is not yet in generated types
-        const { data, error } = await supabase
+        const { data, error } = await (supabase as any)
           .from('subscriptions')
           .select('status')
           .eq('user_id', user.id)

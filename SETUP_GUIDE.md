@@ -95,7 +95,7 @@ supabase functions deploy send-welcome-email
 8. Click **"Save"**
 9. Scroll back up to **"Site URL"** and set it to:
    ```
-   https://marvelous-cendol-1331d6.netlify.app
+   https://kin-txt.com
    ```
 10. Click **"Save"**
 
@@ -103,7 +103,7 @@ supabase functions deploy send-welcome-email
 
 ## ✅ Step 5: Test the System! (5 minutes)
 
-1. Go to your live site: **https://marvelous-cendol-1331d6.netlify.app**
+1. Go to your live site: **https://kin-txt.com**
 2. Click **"Sign Up"**
 3. Create a test account with a **real email address you can access**
 4. Fill in:

@@ -111,8 +111,8 @@ export const UserProfile = ({ userId }: UserProfileProps) => {
                 <Avatar className="h-16 w-16 border-2 border-border shadow-sm shrink-0">
                     <AvatarImage src={profile.avatar_url || ''} className="object-cover" />
                     <AvatarFallback
-                        className="text-lg font-bold"
-                        style={{ backgroundColor: getAvatarColor(profile.id, profile.avatar_color), color: '#000' }}
+                        className="text-2xl font-bold"
+                        style={{ backgroundColor: getAvatarColor((profile as any).id, profile.avatar_color), color: '#000' }}
                     >
                         {getInitials(profile.display_name)}
                     </AvatarFallback>

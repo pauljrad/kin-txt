@@ -35,9 +35,12 @@ export const KinPongGame = forwardRef<HTMLDivElement, KinPongGameProps>(
 
         // Ball state (Host authority)
         const [ball, setBall] = useState({ x: window.innerWidth / 2, y: window.innerHeight / 2, vx: 0, vy: 0 });
+        const [isGameOver, setIsGameOver] = useState(false);
+        const [winner, setWinner] = useState<string | null>(null);
 
         const channelRef = useRef<any>(null);
-        const animationRef = useRef<number>();
+        const animationRef = useRef<number | null>(null);
+        const audioRef = useRef<HTMLAudioElement | null>(null);
 
         // Subscribe to Realtime
         useEffect(() => {

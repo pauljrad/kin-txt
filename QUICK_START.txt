@@ -32,11 +32,11 @@
 □ 4. Enable Email Verification
    → Supabase Dashboard → Authentication → Settings
    → Turn ON "Enable email confirmations"
-   → Set Site URL: https://marvelous-cendol-1331d6.netlify.app
+   → Set Site URL: https://kin-txt.com
    → Save
 
 □ 5. Test It!
-   → Go to: https://marvelous-cendol-1331d6.netlify.app
+   → Go to: https://kin-txt.com
    → Sign up with a real email
    → Check both inboxes (user email + admin email)
 

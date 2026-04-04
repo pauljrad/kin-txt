@@ -5,7 +5,7 @@ A revolutionary reading application with Ai-powered text analysis, emphasis dete
 
 ## 🚀 Live Demo
 
-**URL**: https://dynamic-llama-64adc4.netlify.app/  
+**URL**: https://kin-txt.com
 **GitHub**: https://github.com/pauljrad/kin-txt
 
 ---

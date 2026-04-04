@@ -96,8 +96,8 @@ export const MyProfile = () => {
 
             if (error) throw error;
             if (data) {
-                setProfile(data as Profile);
-                setNewDisplayName(data.display_name || "");
+                setProfile(data as any as Profile);
+                setNewDisplayName((data as any).display_name || "");
             }
             setIsEditing(false);
             toast({
@@ -122,7 +122,7 @@ export const MyProfile = () => {
         try {
             const { error } = await supabase
                 .from('profiles')
-                .update({ avatar_color: color })
+                .update({ avatar_color: color } as any)
                 .eq('id', user.id);
 
             if (error) throw error;
@@ -153,7 +153,7 @@ export const MyProfile = () => {
                         <AvatarImage src={profile.avatar_url || ''} className="object-cover" />
                         <AvatarFallback
                             className="text-2xl font-bold"
-                            style={{ backgroundColor: getAvatarColor(profile.id, profile.avatar_color), color: '#000' }}
+                            style={{ backgroundColor: getAvatarColor((profile as any).id, profile.avatar_color), color: '#000' }}
                         >
                             {getInitials(profile.display_name)}
                         </AvatarFallback>

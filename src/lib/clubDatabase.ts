@@ -65,18 +65,18 @@ export async function createClub(
         if (clubError) throw clubError;
 
         // Add creator as accepted member
-        await supabase.from('club_memberships' as any).insert({
-            club_id: club.id,
+        await (supabase.from('club_memberships' as any) as any).insert({
+            club_id: (club as any).id,
             user_id: user.id,
             status: 'accepted'
         });
 
         // Invite other members
         if (memberIds.length > 0) {
-            await inviteMembers(club.id, memberIds);
+            await inviteMembers((club as any).id, memberIds);
         }
 
-        return { club, error: null };
+        return { club: club as any as Club, error: null };
     } catch (error) {
         console.error('Error creating club:', error);
         return { club: null, error: error as Error };
@@ -184,10 +184,10 @@ export async function getUserClubs(): Promise<{
         if (error) throw error;
 
         const clubs = data
-            ?.filter(m => m.kin_clubs)
+            ?.filter(m => (m as any).kin_clubs)
             .map(m => ({
-                ...m.kin_clubs,
-                membership_status: m.status
+                ...(m as any).kin_clubs,
+                membership_status: (m as any).status
             })) || [];
 
         return { clubs, error: null };
@@ -528,7 +528,7 @@ export async function getActiveBookSuggestion(
         const { data: profile, error: profileError } = await supabase
             .from('profiles')
             .select('display_name')
-            .eq('id', suggestion.suggested_by)
+            .eq('id', (suggestion as any).suggested_by)
             .single();
 
         if (profileError) {
@@ -536,8 +536,9 @@ export async function getActiveBookSuggestion(
         }
 
         // Combine the data
+        // Combine the data
         const enrichedSuggestion = {
-            ...suggestion,
+            ...(suggestion as any),
             profiles: profile || null
         };
 
