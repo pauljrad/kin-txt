@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { Check, ArrowLeft } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { supabase } from '@/integrations/supabase/client';
 
 // Animated KiN logo — same as splash screen, scaled down
 const KinLogo = ({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) => {
@@ -43,7 +44,7 @@ const PLANS = [
     period: '/month',
     annualEquiv: null,
     badge: null,
-    priceId: 'price_REPLACE_MONTHLY', // Replace with real Stripe Price ID
+    priceId: 'price_1TIXZ1RuFCnPyOr9FehrdF7L',
     features: [
       '1-week free trial',
       'Unlimited RSVP reading',
@@ -60,7 +61,7 @@ const PLANS = [
     period: '/year',
     annualEquiv: '£2.50/mo',
     badge: 'Save 37%',
-    priceId: 'price_REPLACE_ANNUAL', // Replace with real Stripe Price ID
+    priceId: 'price_1TIXbZRuFCnPyOr91szBn2Aq',
     features: [
       '1-week free trial',
       'Unlimited RSVP reading',
@@ -79,21 +80,20 @@ export default function Pricing() {
   const handleStartTrial = async (plan: typeof PLANS[0]) => {
     setLoadingPlan(plan.id);
     try {
-      const res = await fetch('/api/create-checkout-session', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ priceId: plan.priceId }),
+      const { data, error } = await supabase.functions.invoke('create-checkout-session', {
+        body: { priceId: plan.priceId },
       });
-      const data = await res.json();
-      if (data.url) {
+
+      if (error) throw error;
+      if (data?.url) {
         window.location.href = data.url;
       } else {
         throw new Error('No checkout URL returned');
       }
     } catch (err) {
-      console.error(err);
-      // Fallback: redirect to login if Stripe isn't wired yet
-      navigate('/login');
+      console.error('Checkout error:', err);
+      // Show a friendly message if Stripe isn't fully wired yet
+      alert('Unable to start checkout right now. Please try again shortly.');
     } finally {
       setLoadingPlan(null);
     }
