@@ -3,7 +3,6 @@ import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { Check, ArrowLeft } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
-import { supabase } from '@/integrations/supabase/client';
 
 // Animated KiN logo — same as splash screen, scaled down
 const KinLogo = ({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) => {
@@ -77,26 +76,8 @@ export default function Pricing() {
   const navigate = useNavigate();
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
 
-  const handleStartTrial = async (plan: typeof PLANS[0]) => {
-    setLoadingPlan(plan.id);
-    try {
-      const { data, error } = await supabase.functions.invoke('create-checkout-session', {
-        body: { priceId: plan.priceId },
-      });
-
-      if (error) throw error;
-      if (data?.url) {
-        window.location.href = data.url;
-      } else {
-        throw new Error('No checkout URL returned');
-      }
-    } catch (err) {
-      console.error('Checkout error:', err);
-      // Show a friendly message if Stripe isn't fully wired yet
-      alert('Unable to start checkout right now. Please try again shortly.');
-    } finally {
-      setLoadingPlan(null);
-    }
+  const handleStartTrial = (plan: typeof PLANS[0]) => {
+    navigate(`/register?plan=${plan.id}`);
   };
 
   return (
