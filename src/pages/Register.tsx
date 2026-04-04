@@ -136,10 +136,7 @@ export default function Register() {
           transition={{ duration: 0.5, delay: 0.15 }}
           className="w-full max-w-sm"
         >
-          <h1 className="font-display text-3xl text-center mb-1 tracking-wide">Create Account</h1>
-          <p className="text-center text-sm text-muted-foreground mb-8">
-            Your details, then straight to payment.
-          </p>
+          <h1 className="font-display text-3xl text-center mb-8 tracking-wide">Create Account</h1>
 
           <form onSubmit={handleSubmit} className="space-y-4" noValidate>
             {/* Display Name */}
