@@ -240,6 +240,10 @@ export default function Register() {
               {isLoading ? 'Creating account...' : 'Continue to Payment →'}
             </Button>
 
+            <p className="text-center text-xs text-muted-foreground/60 leading-snug px-2">
+              By continuing, you agree to recurring billing after your 7-day free trial. Cancel anytime before the trial ends and you will not be charged.
+            </p>
+
             <p className="text-center text-xs text-muted-foreground pt-1">
               Already have an account?{' '}
               <Link to="/login" className="text-foreground underline underline-offset-2">

@@ -52,6 +52,22 @@ const Landing = () => {
                 {/* Footer (Black) */}
                 <section className="min-h-[50vh] w-full bg-black text-white flex flex-col items-center justify-center p-8 gap-12">
                     <SonarLogo />
+                    <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
+                      {[
+                        { label: 'Terms', href: '/terms' },
+                        { label: 'Privacy', href: '/privacy' },
+                        { label: 'Data', href: '/data' },
+                        { label: 'Pricing', href: '/pricing' },
+                      ].map(link => (
+                        <a
+                          key={link.href}
+                          href={link.href}
+                          className="text-xs uppercase tracking-widest text-white/40 hover:text-white/80 transition-colors"
+                        >
+                          {link.label}
+                        </a>
+                      ))}
+                    </div>
                     <button
                         onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
                         className="relative z-50 text-sm font-light tracking-widest uppercase hover:text-red-500 transition-colors opacity-100 cursor-pointer pointer-events-auto"
