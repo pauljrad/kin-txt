@@ -46,10 +46,10 @@ const PLANS = [
     priceId: 'price_1TIXZ1RuFCnPyOr9FehrdF7L',
     features: [
       '1-week free trial',
-      'Unlimited RSVP reading',
-      'Ebooks, articles & news',
-      'KiN social reading',
-      'All reading modes',
+      'Unlimited Kinetic Reading',
+      'Free Access to KiN-TXT Ebook Library and Live News',
+      'Access to KiN-Clubs and Social Reading',
+      'Unlimited use of all reading modes',
       'Cancel anytime',
     ],
   },
@@ -63,10 +63,10 @@ const PLANS = [
     priceId: 'price_1TIXbZRuFCnPyOr91szBn2Aq',
     features: [
       '1-week free trial',
-      'Unlimited RSVP reading',
-      'Ebooks, articles & news',
-      'KiN social reading',
-      'All reading modes',
+      'Unlimited Kinetic Reading',
+      'Free Access to KiN-TXT Ebook Library and Live News',
+      'Access to KiN-Clubs and Social Reading',
+      'Unlimited use of all reading modes',
       'Cancel anytime',
     ],
   },
@@ -117,7 +117,7 @@ export default function Pricing() {
           className="text-center mb-10"
         >
           <p className="text-muted-foreground text-sm mt-3 max-w-xs mx-auto">
-            Start your free trial today. No charge for 7 days. Cancel anytime.
+            Start your 7 day free trial today. Cancel anytime.
           </p>
         </motion.div>
 
@@ -193,14 +193,22 @@ export default function Pricing() {
           <p className="text-xs text-muted-foreground leading-relaxed">
             Your free trial begins the moment you subscribe. If you do not cancel before the 7-day trial period ends, you will be charged for the plan you selected. You can cancel at any time from your account settings.
           </p>
-          <div className="flex items-center justify-center gap-3 mt-3">
-            <a href="/terms" className="text-xs text-muted-foreground hover:text-foreground transition-colors underline underline-offset-2">
-              Terms of Service
-            </a>
-            <span className="text-muted-foreground/40">·</span>
-            <a href="/privacy" className="text-xs text-muted-foreground hover:text-foreground transition-colors underline underline-offset-2">
-              Privacy Policy
-            </a>
+          <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 mt-4 px-2">
+            {[
+              { label: 'Terms of Use', href: '/terms' },
+              { label: 'Privacy Policy', href: '/privacy' },
+              { label: 'Data Policy', href: '/data' },
+              { label: 'Copyright Policy', href: '/copyright' },
+              { label: 'Payment Policy', href: '/payment-policy' },
+            ].map(link => (
+              <a
+                key={link.href}
+                href={link.href}
+                className="text-xs text-muted-foreground hover:text-foreground transition-colors underline underline-offset-2"
+              >
+                {link.label}
+              </a>
+            ))}
           </div>
         </motion.div>
       </div>

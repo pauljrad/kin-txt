@@ -250,6 +250,26 @@ export default function Register() {
                 Sign in
               </Link>
             </p>
+
+            <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 mt-8 pt-6 border-t border-border/50 px-2">
+              {[
+                { label: 'Terms of Use', href: '/terms' },
+                { label: 'Privacy Policy', href: '/privacy' },
+                { label: 'Data Policy', href: '/data' },
+                { label: 'Copyright Policy', href: '/copyright' },
+                { label: 'Payment Policy', href: '/payment-policy' },
+              ].map(link => (
+                <a
+                  key={link.href}
+                  href={link.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-muted-foreground hover:text-foreground transition-colors underline underline-offset-2"
+                >
+                  {link.label}
+                </a>
+              ))}
+            </div>
           </form>
         </motion.div>
       </div>
