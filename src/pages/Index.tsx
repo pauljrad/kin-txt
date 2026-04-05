@@ -97,16 +97,7 @@ const Index = () => {
     }
   }, [user, isSubscribed, subLoading, navigate]);
 
-  // Loading state while checking subscription
-  if (subLoading && user) {
-    return (
-      <div className="h-screen w-full bg-black flex items-center justify-center">
-        <div className="animate-pulse text-white/40 font-display tracking-widest uppercase">
-          Verifying...
-        </div>
-      </div>
-    );
-  }
+
 
   // Listen for Pong Challenges and Global Events
   useEffect(() => {
@@ -651,6 +642,17 @@ const Index = () => {
     }
   };
 
+
+  // Loading state while checking subscription (moved to bottom to avoid Rules of Hooks violations)
+  if (subLoading && user) {
+    return (
+      <div className="h-screen w-full bg-black flex items-center justify-center">
+        <div className="animate-pulse text-white/40 font-display tracking-widest uppercase">
+          Verifying...
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
