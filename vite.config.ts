@@ -131,6 +131,7 @@ export default defineConfig(({ mode }) => ({
         // Skip waiting to activate new service worker immediately
         skipWaiting: true,
         clientsClaim: true,
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
       },
     }),
   ].filter(Boolean),
