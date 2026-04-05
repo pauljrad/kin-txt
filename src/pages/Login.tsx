@@ -62,16 +62,26 @@ const Login = forwardRef<HTMLDivElement>((_, ref) => {
     return Object.keys(newErrors).length === 0;
   };
 
-  // Handle email verification redirect
+  // Handle email verification and checkout redirects
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    if (params.get('verified') === 'true') {
-      toast.success("Email address verified", {
-        description: "You have been successfully verified.",
-        duration: 5000, // Make it last longer
+    
+    // 1. Handle Stripe checkout success
+    if (params.get('checkout') === 'success') {
+      toast.success("Payment Successful! 🎉", {
+        description: "Your subscription is now active! Please check your email inbox and click the verification link to securely confirm your account before logging in.",
+        duration: 10000,
       });
-      // Clean up the URL
-      window.history.replaceState({}, '', '/');
+      window.history.replaceState({}, '', '/login');
+    }
+
+    // 2. Handle Email verification success
+    if (params.get('verified') === 'true') {
+      toast.success("Email Verified! ✅", {
+        description: "Your account is fully verified. You can now log in securely.",
+        duration: 8000,
+      });
+      window.history.replaceState({}, '', '/login');
     }
   }, []);
 
@@ -137,8 +147,10 @@ const Login = forwardRef<HTMLDivElement>((_, ref) => {
           setIsLoading(false);
           return;
         }
+        
+        // Ensure successful login gives a smooth transition
         toast.success('Welcome back to KiN-TXT');
-        navigate('/home');
+        // Let the useEffect handle navigation to give the toast half a sec to pop
       }
     } catch (err) {
       toast.error('An unexpected error occurred');

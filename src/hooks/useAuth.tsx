@@ -47,7 +47,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signUp = async (email: string, password: string, displayName?: string) => {
-    const redirectUrl = "https://kin-txt.com/";
+    const redirectUrl = "https://kin-txt.com/login?verified=true";
 
     const { data, error } = await supabase.auth.signUp({
       email,
