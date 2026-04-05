@@ -27,11 +27,17 @@ export function useSubscription() {
 
         if (error) throw error;
         
+        let resultingStatus: SubscriptionStatus = 'none';
+        
         if (data) {
-          setStatus(data.status as SubscriptionStatus);
-        } else {
-          setStatus('none');
+          if (Array.isArray(data)) {
+            resultingStatus = data.length > 0 ? (data[0]?.status || 'none') : 'none';
+          } else {
+            resultingStatus = (data as any).status || 'none';
+          }
         }
+        
+        setStatus(resultingStatus);
       } catch (err) {
         console.error('Error checking subscription:', err);
         setStatus('none');

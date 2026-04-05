@@ -1,0 +1,25 @@
+
+> vite_react_shadcn_ts@0.0.0 build
+> vite build
+
+vite v5.4.19 building for production...
+transforming...
+✓ 2830 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/registerSW.js                                      0.13 kB
+dist/manifest.webmanifest                               0.63 kB
+dist/index.html                                         5.54 kB │ gzip:   1.64 kB
+dist/assets/target_mode-CLgdTWY-.mov                  433.88 kB
+dist/assets/static_mode-CqWQ_V3T.mov                  571.05 kB
+dist/assets/acceleration-mode-WIbFMeJ5.mov          1,310.59 kB
+dist/assets/navigation_button-CVLqidit.mov          2,129.40 kB
+dist/assets/rhythm-and-emphasis-mode-Ct9Hy3be.mov   2,365.93 kB
+dist/assets/settings_button-BC-tYYSj.mov            3,623.42 kB
+dist/assets/full_txt_button-C8M5ZPYG.mov           21,040.12 kB
+dist/assets/index-Bej3P4Hw.css                        126.65 kB │ gzip:  19.68 kB
+dist/assets/vendor-C-XSZjow.js                         33.93 kB │ gzip:  11.91 kB
+dist/assets/ui-CwQ4eIHG.js                            146.78 kB │ gzip:  46.00 kB
+dist/assets/supabase-Bq8FAnSS.js                      171.55 kB │ gzip:  44.33 kB
+dist/assets/index-D6vspN_M.js                       2,096.55 kB │ gzip: 596.73 kB
+✓ built in 6.81s
