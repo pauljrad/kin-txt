@@ -41,15 +41,26 @@ export default function Terms() {
           <Section number="1" title="About KiN-TXT">
             <p>KiN-TXT is a digital reading interface that presents text in a time-based, kinetic format. It operates solely as a tool for interacting with text. KiN-TXT:</p>
             <List items={['does not act as a publisher, editor, or distributor of user content','does not create or modify underlying textual works','does not verify the accuracy, legality, or ownership of content']} />
-            <p className="mt-2">All content accessed through KiN-TXT is used at your own risk. The Service is provided for general use only. It is not intended to be relied upon for any specific outcome or purpose.</p>
+            <p className="mt-2">All content accessed through KiN-TXT is used at your own risk.</p>
+            <p>The Service is provided for general use only. It is not intended to be relied upon for any specific outcome or purpose.</p>
           </Section>
 
           <Section number="2" title="Eligibility">
-            <p>You must be at least 13 years old to use KiN-TXT. If you are under 18, you confirm that you have permission from a parent or legal guardian and that they accept these Terms on your behalf. KiN-TXT does not knowingly provide services to children under 13.</p>
+            <p>You must be at least 13 years old to use KiN-TXT.</p>
+            <p>If you are under 18, you confirm that:</p>
+            <List items={['you have permission from a parent or legal guardian','they accept these Terms on your behalf']} />
+            <p>KiN-TXT does not knowingly provide services to children under 13.</p>
           </Section>
 
           <Section number="3" title="Accounts">
-            <p>To use certain features, you must create an account. You agree to provide accurate information, keep your login details secure, and notify us of any unauthorised access. You are fully responsible for all activity under your account. KiN-TXT reserves the right to suspend or restrict access, terminate accounts, or remove or limit features where misuse, breach, risk, or abnormal usage patterns are identified.</p>
+            <p>To use certain features, you must create an account.</p>
+            <p>You agree to:</p>
+            <List items={['provide accurate information','keep your login details secure','notify us of unauthorised access']} />
+            <p>You are fully responsible for all activity under your account.</p>
+            <p>KiN-TXT reserves the right to:</p>
+            <List items={['suspend or restrict access','terminate accounts','remove or limit features']} />
+            <p>…where misuse, breach, risk, or abnormal usage patterns are identified.</p>
+            <p>We are not liable for loss resulting from unauthorised account use.</p>
           </Section>
 
           <Section number="4" title="Acceptable Use">
@@ -60,45 +71,85 @@ export default function Terms() {
             <Sub title="4.4 System Extraction / Replication"><List items={['reverse engineer, decompile, or attempt to extract source code','replicate or compete with the core functionality of KiN-TXT']} /></Sub>
             <Sub title="4.5 Automated Use"><List items={['use bots, scripts, or automated systems to access or extract data','overload or disproportionately burden infrastructure']} /></Sub>
             <Sub title="4.6 User Harm"><List items={['harass, threaten, or harm other users','misuse connection features ("KiNs")']} /></Sub>
+            <p className="mt-3">You must not use the Service in violation of export control or sanctions laws.</p>
+            <p>KiN-TXT may investigate and take action, including suspension or termination, without notice.</p>
           </Section>
 
           <Section number="5" title='KiNs (Connections)'>
-            <p>Where available, KiN-TXT may allow users to connect ("KiNs"). We do not verify user identity or monitor interactions. You use this feature at your own risk. KiN-TXT may restrict, modify, or remove this feature at any time.</p>
+            <p>Where available, KiN-TXT may allow users to connect ("KiNs").</p>
+            <p>We:</p>
+            <List items={['do not verify user identity','do not monitor interactions']} />
+            <p>You use this feature at your own risk.</p>
+            <p>KiN-TXT may restrict, modify, or remove this feature at any time.</p>
           </Section>
 
           <Section number="6" title="User Content">
-            <p>Users may upload text for private use within the Service. By uploading content, you represent and warrant that you own or have the necessary rights and that your use complies with all applicable laws.</p>
-            <Sub title="6.1 Nature of Content"><p>User content is private by default, not publicly searchable or indexed, and not distributed or promoted by KiN-TXT.</p></Sub>
-            <Sub title="6.2 Licence"><p>You grant KiN-TXT a limited, non-exclusive, worldwide licence to host, process, format, and display your content solely for the purpose of operating the Service. This licence ends when your content is deleted, except where retention is required by law.</p></Sub>
-            <Sub title="6.3 Responsibility"><p>You remain solely responsible for the legality of your content and any consequences arising from its use. KiN-TXT does not monitor content proactively and does not accept liability for user content.</p></Sub>
+            <p>Users may upload text for private use within the Service.</p>
+            <p>By uploading content, you represent and warrant that:</p>
+            <List items={['you own or have the necessary rights','your use complies with all applicable laws']} />
+            <Sub title="6.1 Nature of Content">
+              <p>User content is:</p>
+              <List items={['private by default','not publicly searchable or indexed','not distributed or promoted by KiN-TXT']} />
+            </Sub>
+            <Sub title="6.2 Licence">
+              <p>You grant KiN-TXT a limited, non-exclusive, worldwide licence to host, process, format, and display your content solely for the purpose of operating the Service.</p>
+              <p>This licence ends when your content is deleted, except where retention is required by law.</p>
+            </Sub>
+            <Sub title="6.3 Responsibility">
+              <p>You remain solely responsible for:</p>
+              <List items={['the legality of your content','any consequences arising from its use']} />
+              <p>KiN-TXT does not monitor content proactively and does not accept liability for user content.</p>
+            </Sub>
+            <Sub title="6.4 Enforcement">
+              <p>We may:</p>
+              <List items={['remove or restrict content','suspend or terminate accounts']} />
+              <p>…where infringement or risk is identified.</p>
+            </Sub>
           </Section>
 
           <Section number="7" title="Intellectual Property">
-            <p>All rights in the Service — including software, design, interface, and kinetic reading engine — are owned by KiN-TXT or its licensors. You are granted a limited, non-transferable, revocable licence to use the Service. You may not copy, modify, distribute, or commercially exploit any part of KiN-TXT without permission.</p>
+            <p>All rights in the Service — including software, design, interface, and kinetic reading engine — are owned by KiN-TXT or its licensors.</p>
+            <p>You are granted a limited, non-transferable, revocable licence to use the Service.</p>
+            <p>You may not copy, modify, distribute, or commercially exploit any part of KiN-TXT without permission.</p>
           </Section>
 
           <Section number="8" title="Third-Party Content">
-            <p>KiN-TXT may display or provide access to third-party content. We do not control or endorse such content and do not guarantee its accuracy, legality, or availability. Your interaction with third-party content is at your own risk.</p>
+            <p>KiN-TXT may display or provide access to third-party content. We do not control or endorse such content and do not guarantee its accuracy, legality, or availability.</p>
+            <p>Your interaction with third-party content is at your own risk.</p>
           </Section>
 
           <Section number="9" title="Service Availability">
-            <p>The Service is provided on an "as is" and "as available" basis. KiN-TXT does not guarantee uninterrupted access, error-free operation, data preservation, or compatibility across devices. To the fullest extent permitted by law, KiN-TXT disclaims all warranties, whether express or implied.</p>
+            <p>The Service is provided on an "as is" and "as available" basis.</p>
+            <p>KiN-TXT does not guarantee:</p>
+            <List items={['uninterrupted access','error-free operation','data preservation','compatibility across devices']} />
+            <p>To the fullest extent permitted by law, KiN-TXT disclaims all warranties, whether express or implied, including fitness for a particular purpose.</p>
+            <p>We may update, modify, suspend, or discontinue any part of the Service at any time.</p>
           </Section>
 
           <Section number="10" title="Data and Loss">
-            <p>You acknowledge that digital systems may fail and data may be lost or corrupted. KiN-TXT is not responsible for loss of user content or failure to store or retrieve data. You are responsible for maintaining your own copies where necessary.</p>
+            <p>You acknowledge that:</p>
+            <List items={['digital systems may fail','data may be lost or corrupted']} />
+            <p>KiN-TXT is not responsible for loss of user content or failure to store or retrieve data.</p>
+            <p>You are responsible for maintaining your own copies where necessary.</p>
           </Section>
 
           <Section number="11" title="Limitation of Liability">
-            <p>To the fullest extent permitted by law, KiN-TXT shall not be liable for indirect, incidental, or consequential loss, loss of profits, revenue, data, or opportunity, or claims arising from user or third-party content. Total liability for any claim shall not exceed the amount you paid to KiN-TXT in the previous 12 months. Nothing in these Terms excludes liability for death or personal injury caused by negligence, fraud or fraudulent misrepresentation, or any liability that cannot be excluded under applicable law.</p>
+            <p>To the fullest extent permitted by law, KiN-TXT shall not be liable for:</p>
+            <List items={['indirect, incidental, or consequential loss','loss of profits, revenue, data, or opportunity','claims arising from user or third-party content']} />
+            <p>Total liability for any claim shall not exceed the amount you paid to KiN-TXT in the previous 12 months.</p>
+            <p>Nothing in these Terms excludes or limits liability for:</p>
+            <List items={['death or personal injury caused by negligence','fraud or fraudulent misrepresentation','any liability that cannot be excluded under applicable law']} />
+            <p>Your statutory rights as a consumer are not affected.</p>
           </Section>
 
           <Section number="12" title="Indemnity">
-            <p>You agree to indemnify and hold harmless KiN-TXT from any claims, damages, or liabilities arising from your use of the Service, your content, or your breach of these Terms.</p>
+            <p>You agree to indemnify and hold harmless KiN-TXT from any claims, damages, or liabilities arising from:</p>
+            <List items={['your use of the Service','your content','your breach of these Terms']} />
           </Section>
 
           <Section number="13" title="Termination">
-            <p>We may suspend or terminate your access immediately and without notice where these Terms are breached or misuse or risk is identified. You may stop using the Service at any time.</p>
+            <p>We may suspend or terminate your access immediately and without notice where these Terms are breached or misuse or risk is identified.</p>
+            <p>You may stop using the Service at any time.</p>
           </Section>
 
           <Section number="14" title="Changes to the Service">
@@ -110,7 +161,16 @@ export default function Terms() {
           </Section>
 
           <Section number="16" title="App Store Terms (Apple & Third Parties)">
-            <p>If you access KiN-TXT via the Apple App Store, Apple is not responsible for the Service or its content, your use must comply with Apple's App Store Terms, and Apple has no obligation to provide support. Apple and its subsidiaries are third-party beneficiaries of these Terms. Apple has no warranty obligations and is not liable for claims relating to the Service.</p>
+            <p>If you access KiN-TXT via the Apple App Store:</p>
+            <List items={[
+              'Apple is not responsible for the Service or its content',
+              'Your use must comply with Apple\'s App Store Terms',
+              'Apple has no obligation to provide support',
+            ]} />
+            <p>In the event of a failure of the Service, you may notify Apple and Apple may refund the purchase where applicable.</p>
+            <p>To the maximum extent permitted:</p>
+            <List items={['Apple has no warranty obligations','Apple is not liable for claims relating to the Service']} />
+            <p>Apple and its subsidiaries are third-party beneficiaries of these Terms.</p>
           </Section>
 
           <Section number="17" title="Governing Law">
@@ -122,7 +182,8 @@ export default function Terms() {
           </Section>
 
           <Section number="19" title="Events Outside Our Control">
-            <p>KiN-TXT is not liable for failure or delay in performance caused by events outside our reasonable control, including infrastructure failure, network outages, third-party service disruption, or natural events or emergencies.</p>
+            <p>KiN-TXT is not liable for failure or delay in performance caused by events outside our reasonable control, including:</p>
+            <List items={['infrastructure failure','network outages','third-party service disruption','natural events or emergencies']} />
           </Section>
 
           <Section number="20" title="Contact">
