@@ -129,15 +129,21 @@ export function KineticPlayer({
   const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const sessionTimerRef = useRef<NodeJS.Timeout | null>(null);
   const chapterTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const lastSaveTimeRef = useRef<number>(0);
+  const lastSaveTimeRef = useRef<number>(initialTotalReadingTime || 0);
   const lastSaveWordsReadRef = useRef<number>(0);
-  const totalReadingTimeRef = useRef<number>(initialTotalReadingTime);
+  const lastSaveSessionTimeRef = useRef<number>(0);
+  const totalReadingTimeRef = useRef<number>(initialTotalReadingTime || 0);
   const wordsReadInSessionRef = useRef<number>(0);
+  const sessionTimeRef = useRef<number>(0);
 
-  // Sync wordsReadInSession to ref for persistReadingTime
+  // Sync session metrics to refs for persistReadingTime
   useEffect(() => {
     wordsReadInSessionRef.current = wordsReadInSession;
   }, [wordsReadInSession]);
+
+  useEffect(() => {
+    sessionTimeRef.current = sessionTime;
+  }, [sessionTime]);
 
   // Persist settings whenever they change
   useEffect(() => {
@@ -167,19 +173,23 @@ export function KineticPlayer({
   const persistReadingTime = useCallback(
     async (force: boolean = false) => {
       if (!documentId) return;
-      const current = totalReadingTimeRef.current;
+      const currentTotal = totalReadingTimeRef.current;
+      const currentSession = sessionTimeRef.current;
       const currentWords = wordsReadInSessionRef.current;
-      if (current <= 0) return;
 
       // Only persist if enough time has elapsed, unless forced.
-      if (!force && current - lastSaveTimeRef.current < 10) return;
+      if (!force && currentSession - lastSaveSessionTimeRef.current < 10) return;
 
       // Save locally (offline) and to the database (when logged in).
-      updateLocalReadingTime(documentId, current);
+      updateLocalReadingTime(documentId, currentTotal);
       try {
-        const delta = current - lastSaveTimeRef.current;
+        const delta = currentSession - lastSaveSessionTimeRef.current;
         const wordsDelta = currentWords - lastSaveWordsReadRef.current;
-        await updateDbReadingTime(documentId, current);
+        
+        // 1. Update the document's total cumulative reading time
+        await updateDbReadingTime(documentId, currentTotal);
+        
+        // 2. Log this specific incremental session for gamification/streaks
         if (delta > 0) {
           const category = isEbook ? 'book' : 'article';
           await logReadingSession(documentId, delta, category, Math.max(0, wordsDelta));
@@ -188,7 +198,8 @@ export function KineticPlayer({
         // ignore; local storage still keeps the time
       }
 
-      lastSaveTimeRef.current = current;
+      lastSaveTimeRef.current = currentTotal;
+      lastSaveSessionTimeRef.current = currentSession;
       lastSaveWordsReadRef.current = currentWords;
     },
     [documentId, isEbook]
