@@ -130,7 +130,14 @@ export function KineticPlayer({
   const sessionTimerRef = useRef<NodeJS.Timeout | null>(null);
   const chapterTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastSaveTimeRef = useRef<number>(0);
+  const lastSaveWordsReadRef = useRef<number>(0);
   const totalReadingTimeRef = useRef<number>(initialTotalReadingTime);
+  const wordsReadInSessionRef = useRef<number>(0);
+
+  // Sync wordsReadInSession to ref for persistReadingTime
+  useEffect(() => {
+    wordsReadInSessionRef.current = wordsReadInSession;
+  }, [wordsReadInSession]);
 
   // Persist settings whenever they change
   useEffect(() => {
@@ -161,6 +168,7 @@ export function KineticPlayer({
     async (force: boolean = false) => {
       if (!documentId) return;
       const current = totalReadingTimeRef.current;
+      const currentWords = wordsReadInSessionRef.current;
       if (current <= 0) return;
 
       // Only persist if enough time has elapsed, unless forced.
@@ -170,16 +178,18 @@ export function KineticPlayer({
       updateLocalReadingTime(documentId, current);
       try {
         const delta = current - lastSaveTimeRef.current;
+        const wordsDelta = currentWords - lastSaveWordsReadRef.current;
         await updateDbReadingTime(documentId, current);
         if (delta > 0) {
           const category = isEbook ? 'book' : 'article';
-          await logReadingSession(documentId, delta, category);
+          await logReadingSession(documentId, delta, category, Math.max(0, wordsDelta));
         }
       } catch {
         // ignore; local storage still keeps the time
       }
 
       lastSaveTimeRef.current = current;
+      lastSaveWordsReadRef.current = currentWords;
     },
     [documentId, isEbook]
   );

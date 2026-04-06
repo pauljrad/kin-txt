@@ -243,7 +243,7 @@ export async function updateDocumentReadingTime(id: string, totalSeconds: number
   }
 }
 
-export async function logReadingSession(documentId: string, durationSeconds: number, category: string = 'document'): Promise<void> {
+export async function logReadingSession(documentId: string, durationSeconds: number, category: string = 'document', wordsRead: number = 0): Promise<void> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user || durationSeconds <= 0) return;
 
@@ -252,6 +252,7 @@ export async function logReadingSession(documentId: string, durationSeconds: num
     p_document_id: documentId,
     p_duration_seconds: Math.floor(durationSeconds),
     p_category: category,
+    p_words_read: wordsRead,
   });
 
   if (error) {

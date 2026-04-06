@@ -314,18 +314,24 @@ export const MyProfile = () => {
                     </div>
                 </div>
 
+                <div className="grid grid-cols-2 text-center gap-2">
+                    <div className="p-3 rounded-lg bg-secondary/5 border border-border/10 flex flex-col items-center">
+                        <span className="text-xl font-display text-foreground">{gamification.averageSessionMinutes}m</span>
+                        <span className="text-[8px] text-muted-foreground uppercase tracking-widest mt-0.5">Avg Session</span>
+                    </div>
+                    <div className="p-3 rounded-lg bg-secondary/5 border border-border/10 flex flex-col items-center">
+                        <span className="text-xl font-display text-foreground">{gamification.averageSpeedWpm}</span>
+                        <span className="text-[8px] text-muted-foreground uppercase tracking-widest mt-0.5">Average WPM</span>
+                    </div>
+                </div>
+
                 <Separator className="opacity-30" />
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1">
                     <div className="p-4 rounded-xl bg-secondary/20 border border-border/40 flex flex-col items-center justify-center text-center">
                         <Users className="h-4 w-4 text-primary mb-1.5 opacity-70" />
                         <span className="text-2xl font-display text-foreground">{stats.kinCount}</span>
                         <span className="text-[10px] text-muted-foreground tracking-wider font-bold">K<span className="lowercase font-sans text-[10px] relative -top-[0.5px]">i</span>N<span className="lowercase font-sans">s</span></span>
-                    </div>
-                    <div className="p-4 rounded-xl bg-secondary/20 border border-border/40 flex flex-col items-center justify-center text-center">
-                        <Clock className="h-4 w-4 text-primary mb-1.5 opacity-70" />
-                        <span className="text-2xl font-display text-foreground">{gamification.averageSessionMinutes}</span>
-                        <span className="text-[10px] text-muted-foreground tracking-wider font-bold uppercase">Avg Mins / Session</span>
                     </div>
                 </div>
 
