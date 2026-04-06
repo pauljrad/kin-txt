@@ -4,7 +4,7 @@ import { Play, Pause, RotateCcw, ChevronLeft, Rewind, BookOpen, Clock, Music, Se
 import { ParsedText, getWordDelay, filterEmphasis } from '@/lib/textParser';
 import { detectChapters, findSentenceBoundaries, getRewindPosition, Chapter } from '@/lib/chapterParser';
 import { updateDocumentReadingTime as updateLocalReadingTime } from '@/lib/documentStorage';
-import { updateDocumentReadingTime as updateDbReadingTime, markDocumentCompleted } from '@/lib/documentDatabase';
+import { updateDocumentReadingTime as updateDbReadingTime, markDocumentCompleted, logReadingSession } from '@/lib/documentDatabase';
 import { ChapterNavigation } from './ChapterNavigation';
 import { FullTextView } from './FullTextView';
 import { supabase } from '@/integrations/supabase/client';
@@ -169,14 +169,19 @@ export function KineticPlayer({
       // Save locally (offline) and to the database (when logged in).
       updateLocalReadingTime(documentId, current);
       try {
+        const delta = current - lastSaveTimeRef.current;
         await updateDbReadingTime(documentId, current);
+        if (delta > 0) {
+          const category = isEbook ? 'book' : 'article';
+          await logReadingSession(documentId, delta, category);
+        }
       } catch {
         // ignore; local storage still keeps the time
       }
 
       lastSaveTimeRef.current = current;
     },
-    [documentId]
+    [documentId, isEbook]
   );
   const progressBarRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);

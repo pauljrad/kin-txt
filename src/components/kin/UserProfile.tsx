@@ -5,6 +5,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { getInitials, getAvatarColor } from "@/lib/utils";
 import { useToast } from "@/components/ui/use-toast";
+import { Flame, Clock } from "lucide-react";
+import { useGamification } from "@/hooks/useGamification";
 
 interface UserProfileProps {
     userId: string;
@@ -29,6 +31,7 @@ export const UserProfile = ({ userId }: UserProfileProps) => {
     const [profile, setProfile] = useState<Profile | null>(null);
     const [history, setHistory] = useState<ReadingHistory[]>([]);
     const { toast } = useToast();
+    const gamification = useGamification(userId);
 
     const [stats, setStats] = useState({ total: 0, byType: { article: 0, ebook: 0, document: 0, link: 0 } });
 
@@ -131,19 +134,34 @@ export const UserProfile = ({ userId }: UserProfileProps) => {
                 </div>
             </div>
 
-            {/* Stats Bar */}
-            <div className="grid grid-cols-4 gap-2 shrink-0 w-full">
-                {[
-                    { label: 'Articles', count: stats.byType.article },
-                    { label: 'Books', count: stats.byType.ebook },
-                    { label: 'Docs', count: stats.byType.document },
-                    { label: 'Links', count: stats.byType.link }
-                ].map(stat => (
-                    <div key={stat.label} className="bg-secondary/20 rounded-lg py-2 px-1 text-center border border-transparent hover:border-border/40 transition-colors">
-                        <span className="block text-sm font-bold">{stat.count}</span>
-                        <span className="text-[8px] uppercase tracking-wider text-muted-foreground opacity-70">{stat.label}</span>
+            {/* Stats Bar & Gamification */}
+            <div className="flex flex-col gap-2 shrink-0 w-full mb-1">
+                <div className="grid grid-cols-2 gap-2">
+                    <div className="p-3 rounded-xl bg-orange-500/10 border border-orange-500/20 flex flex-col items-center justify-center text-center">
+                        <Flame className="h-4 w-4 text-orange-500 mb-1 opacity-90 drop-shadow-md" />
+                        <span className="text-xl font-display text-foreground leading-none mb-1">{gamification.currentStreak}</span>
+                        <span className="text-[8px] text-muted-foreground uppercase tracking-widest font-bold">Day Streak</span>
                     </div>
-                ))}
+                    <div className="p-3 rounded-xl bg-secondary/10 border border-border/20 flex flex-col items-center justify-center text-center">
+                        <Clock className="h-4 w-4 text-primary mb-1 opacity-70" />
+                        <span className="text-xl font-display text-foreground leading-none mb-1">{Math.floor(gamification.totalReadingTimeSeconds / 60)}</span>
+                        <span className="text-[8px] text-muted-foreground uppercase tracking-widest font-bold">Total Mins</span>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-4 gap-2">
+                    {[
+                        { label: 'Articles', count: gamification.articlesRead },
+                        { label: 'Books', count: gamification.booksRead },
+                        { label: 'Avg Mins', count: gamification.averageSessionMinutes },
+                        { label: 'Wk Mins', count: Math.floor(gamification.timeReadThisWeekSeconds / 60) }
+                    ].map(stat => (
+                        <div key={stat.label} className="bg-secondary/20 rounded-lg py-2 px-1 text-center border border-transparent hover:border-border/40 transition-colors">
+                            <span className="block text-sm font-bold">{stat.count}</span>
+                            <span className="text-[8px] uppercase tracking-wider text-muted-foreground opacity-70">{stat.label}</span>
+                        </div>
+                    ))}
+                </div>
             </div>
 
             <Separator className="bg-border/40 shrink-0" />

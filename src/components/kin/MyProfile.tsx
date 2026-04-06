@@ -8,7 +8,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Check, Edit2, X, BookOpen, Users } from "lucide-react";
+import { Check, Edit2, X, BookOpen, Users, Flame, Clock, Calendar, Bookmark } from "lucide-react";
+import { useGamification } from "@/hooks/useGamification";
 
 interface Profile {
     id: string;
@@ -39,6 +40,7 @@ export const MyProfile = () => {
     const { toast } = useToast();
     const [stats, setStats] = useState({ kinCount: 0, txtReadCount: 0 });
     const { status: subscriptionStatus, plan, stripeCustomerId } = useSubscription();
+    const gamification = useGamification(user?.id);
     const [isRedirectingPortal, setIsRedirectingPortal] = useState(false);
 
     useEffect(() => {
@@ -273,6 +275,47 @@ export const MyProfile = () => {
 
             <div className="space-y-6">
                 {/* Stats Section */}
+                {/* Gamification Stats Section */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <div className="p-4 rounded-xl bg-secondary/10 border border-border/20 flex flex-col items-center justify-center text-center">
+                        <Flame className="h-5 w-5 text-orange-500 mb-1.5 drop-shadow-[0_0_8px_rgba(249,115,22,0.6)]" />
+                        <span className="text-2xl font-display text-foreground">{gamification.currentStreak}</span>
+                        <span className="text-[9px] text-muted-foreground uppercase tracking-widest font-bold mt-1">Day Streak</span>
+                    </div>
+                    <div className="p-4 rounded-xl bg-secondary/10 border border-border/20 flex flex-col items-center justify-center text-center">
+                        <Clock className="h-5 w-5 text-primary mb-1.5 opacity-80" />
+                        <span className="text-2xl font-display text-foreground">{Math.floor(gamification.totalReadingTimeSeconds / 60)}</span>
+                        <span className="text-[9px] text-muted-foreground uppercase tracking-widest font-bold mt-1">Total Mins</span>
+                    </div>
+                    <div className="p-4 rounded-xl bg-secondary/10 border border-border/20 flex flex-col items-center justify-center text-center">
+                        <BookOpen className="h-5 w-5 text-primary mb-1.5 opacity-80" />
+                        <span className="text-2xl font-display text-foreground">{gamification.booksRead}</span>
+                        <span className="text-[9px] text-muted-foreground uppercase tracking-widest font-bold mt-1">Books Read</span>
+                    </div>
+                    <div className="p-4 rounded-xl bg-secondary/10 border border-border/20 flex flex-col items-center justify-center text-center">
+                        <Bookmark className="h-5 w-5 text-primary mb-1.5 opacity-80" />
+                        <span className="text-2xl font-display text-foreground">{gamification.articlesRead}</span>
+                        <span className="text-[9px] text-muted-foreground uppercase tracking-widest font-bold mt-1">Articles</span>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2">
+                    <div className="p-3 rounded-lg bg-secondary/5 border border-border/10 flex flex-col items-center text-center">
+                        <span className="text-lg font-display text-foreground">{Math.floor(gamification.timeReadThisWeekSeconds / 60)}m</span>
+                        <span className="text-[8px] text-muted-foreground uppercase tracking-[0.15em] mt-0.5">This Week</span>
+                    </div>
+                    <div className="p-3 rounded-lg bg-secondary/5 border border-border/10 flex flex-col items-center text-center">
+                        <span className="text-lg font-display text-foreground">{Math.floor(gamification.timeReadThisMonthSeconds / 60)}m</span>
+                        <span className="text-[8px] text-muted-foreground uppercase tracking-[0.15em] mt-0.5">This Month</span>
+                    </div>
+                    <div className="p-3 rounded-lg bg-secondary/5 border border-border/10 flex flex-col items-center text-center">
+                        <span className="text-lg font-display text-foreground">{Math.floor(gamification.timeReadThisYearSeconds / 60)}m</span>
+                        <span className="text-[8px] text-muted-foreground uppercase tracking-[0.15em] mt-0.5">This Year</span>
+                    </div>
+                </div>
+
+                <Separator className="opacity-30" />
+
                 <div className="grid grid-cols-2 gap-4">
                     <div className="p-4 rounded-xl bg-secondary/20 border border-border/40 flex flex-col items-center justify-center text-center">
                         <Users className="h-4 w-4 text-primary mb-1.5 opacity-70" />
@@ -280,9 +323,9 @@ export const MyProfile = () => {
                         <span className="text-[10px] text-muted-foreground tracking-wider font-bold">K<span className="lowercase font-sans text-[10px] relative -top-[0.5px]">i</span>N<span className="lowercase font-sans">s</span></span>
                     </div>
                     <div className="p-4 rounded-xl bg-secondary/20 border border-border/40 flex flex-col items-center justify-center text-center">
-                        <BookOpen className="h-4 w-4 text-primary mb-1.5 opacity-70" />
-                        <span className="text-2xl font-display text-foreground">{stats.txtReadCount}</span>
-                        <span className="text-[10px] text-muted-foreground tracking-wider font-bold">TXT<span className="lowercase font-sans">s</span> READ</span>
+                        <Clock className="h-4 w-4 text-primary mb-1.5 opacity-70" />
+                        <span className="text-2xl font-display text-foreground">{gamification.averageSessionMinutes}</span>
+                        <span className="text-[10px] text-muted-foreground tracking-wider font-bold uppercase">Avg Mins / Session</span>
                     </div>
                 </div>
 

@@ -243,6 +243,22 @@ export async function updateDocumentReadingTime(id: string, totalSeconds: number
   }
 }
 
+export async function logReadingSession(documentId: string, durationSeconds: number, category: string = 'document'): Promise<void> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user || durationSeconds <= 0) return;
+
+  // @ts-ignore - RPC not yet in generated types
+  const { error } = await supabase.rpc('log_reading_session', {
+    p_document_id: documentId,
+    p_duration_seconds: Math.floor(durationSeconds),
+    p_category: category,
+  });
+
+  if (error) {
+    console.error('[documentDatabase] Error logging reading session:', error);
+  }
+}
+
 export async function updateDocumentEmphasis(id: string, emphasisWords: string[], whisperedWords: string[]): Promise<void> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return;
