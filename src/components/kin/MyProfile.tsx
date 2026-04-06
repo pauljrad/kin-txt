@@ -5,6 +5,7 @@ import { Separator } from "@/components/ui/separator";
 import { getInitials, getAvatarColor } from "@/lib/utils";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { useSubscription } from "@/hooks/useSubscription";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Check, Edit2, X, BookOpen, Users } from "lucide-react";
@@ -37,6 +38,8 @@ export const MyProfile = () => {
     const [isSaving, setIsSaving] = useState(false);
     const { toast } = useToast();
     const [stats, setStats] = useState({ kinCount: 0, txtReadCount: 0 });
+    const { status: subscriptionStatus, plan, stripeCustomerId } = useSubscription();
+    const [isRedirectingPortal, setIsRedirectingPortal] = useState(false);
 
     useEffect(() => {
         if (!user) return;
@@ -139,6 +142,39 @@ export const MyProfile = () => {
                 description: "Could not update color. Please try again.",
                 variant: "destructive"
             });
+        }
+    };
+
+    const handleManageSubscription = async () => {
+        if (!stripeCustomerId) {
+            toast({
+                title: "Unavailable",
+                description: "No billing portal associated with this account.",
+                variant: "destructive"
+            });
+            return;
+        }
+
+        setIsRedirectingPortal(true);
+        try {
+            const { data, error } = await supabase.functions.invoke('create-portal-session', {
+                body: { customerId: stripeCustomerId },
+            });
+
+            if (error) throw error;
+            if (data?.url) {
+                window.location.href = data.url;
+            } else {
+                throw new Error("No URL returned");
+            }
+        } catch (error) {
+            console.error("Error redirecting to portal:", error);
+            toast({
+                title: "Error",
+                description: "Could not open subscription management portal.",
+                variant: "destructive"
+            });
+            setIsRedirectingPortal(false);
         }
     };
 
@@ -265,6 +301,39 @@ export const MyProfile = () => {
                                 <span className="text-muted-foreground">Joined</span>
                                 <span className="text-foreground font-medium">{new Date(profile.created_at).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}</span>
                             </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h4 className="text-[10px] font-bold text-muted-foreground mb-1 uppercase tracking-[0.2em]">Subscription & Billing</h4>
+                        <div className="p-3 rounded-xl bg-secondary/10 border border-border/20 text-xs space-y-3">
+                            <div className="flex justify-between items-center">
+                                <span className="text-muted-foreground">Status</span>
+                                <span className="text-foreground font-medium capitalize">
+                                    {subscriptionStatus === 'none' ? 'No Active Plan' : subscriptionStatus === 'trialing' ? 'Free Trial' : subscriptionStatus}
+                                </span>
+                            </div>
+                            
+                            {plan && subscriptionStatus !== 'lifetime' && (
+                                <div className="flex justify-between items-center">
+                                    <span className="text-muted-foreground">Plan Tier</span>
+                                    <span className="text-foreground font-medium capitalize">{plan}</span>
+                                </div>
+                            )}
+
+                            {stripeCustomerId && subscriptionStatus !== 'lifetime' && subscriptionStatus !== 'none' && (
+                                <div className="pt-2 border-t border-border/20 mt-2">
+                                    <Button 
+                                        variant="outline" 
+                                        size="sm" 
+                                        className="w-full text-xs h-8 border-border hover:bg-secondary/50 font-display tracking-widest uppercase transition-colors"
+                                        onClick={handleManageSubscription}
+                                        disabled={isRedirectingPortal}
+                                    >
+                                        {isRedirectingPortal ? 'Redirecting...' : 'Manage Subscription'}
+                                    </Button>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

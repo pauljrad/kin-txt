@@ -7,12 +7,18 @@ export type SubscriptionStatus = 'trialing' | 'active' | 'canceled' | 'past_due'
 export function useSubscription() {
   const { user, isLoading: authLoading } = useAuth();
   const [status, setStatus] = useState<SubscriptionStatus>('none');
+  const [plan, setPlan] = useState<string | null>(null);
+  const [currentPeriodEnd, setCurrentPeriodEnd] = useState<string | null>(null);
+  const [stripeCustomerId, setStripeCustomerId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (authLoading) return;
     if (!user) {
       setStatus('none');
+      setPlan(null);
+      setCurrentPeriodEnd(null);
+      setStripeCustomerId(null);
       setLoading(false);
       return;
     }
@@ -21,26 +27,43 @@ export function useSubscription() {
       try {
         const { data, error } = await (supabase as any)
           .from('subscriptions')
-          .select('status')
+          .select('status, plan, current_period_end, stripe_customer_id')
           .eq('user_id', user.id)
           .maybeSingle();
 
         if (error) throw error;
         
         let resultingStatus: SubscriptionStatus = 'none';
+        let resultingPlan = null;
+        let resultingPeriodEnd = null;
+        let resultingCustomerId = null;
         
         if (data) {
           if (Array.isArray(data)) {
-            resultingStatus = data.length > 0 ? (data[0]?.status || 'none') : 'none';
+            if (data.length > 0) {
+              resultingStatus = data[0]?.status || 'none';
+              resultingPlan = data[0]?.plan || null;
+              resultingPeriodEnd = data[0]?.current_period_end || null;
+              resultingCustomerId = data[0]?.stripe_customer_id || null;
+            }
           } else {
             resultingStatus = (data as any).status || 'none';
+            resultingPlan = (data as any).plan || null;
+            resultingPeriodEnd = (data as any).current_period_end || null;
+            resultingCustomerId = (data as any).stripe_customer_id || null;
           }
         }
         
-        setStatus(resultingStatus);
+        setStatus(resultingStatus as SubscriptionStatus);
+        setPlan(resultingPlan);
+        setCurrentPeriodEnd(resultingPeriodEnd);
+        setStripeCustomerId(resultingCustomerId);
       } catch (err) {
         console.error('Error checking subscription:', err);
         setStatus('none');
+        setPlan(null);
+        setCurrentPeriodEnd(null);
+        setStripeCustomerId(null);
       } finally {
         setLoading(false);
       }
@@ -51,5 +74,5 @@ export function useSubscription() {
 
   const isSubscribed = ['active', 'trialing', 'lifetime'].includes(status);
 
-  return { status, loading, isSubscribed };
+  return { status, loading, isSubscribed, plan, currentPeriodEnd, stripeCustomerId };
 }
