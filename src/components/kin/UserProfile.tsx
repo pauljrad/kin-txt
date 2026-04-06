@@ -149,10 +149,11 @@ export const UserProfile = ({ userId }: UserProfileProps) => {
                     </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-3 gap-2">
                     {[
                         { label: 'Articles', count: gamification.articlesRead },
                         { label: 'Books', count: gamification.booksRead },
+                        { label: 'KiNs', count: stats.total },
                     ].map(stat => (
                         <div key={stat.label} className="bg-secondary/20 rounded-lg py-2 px-1 text-center border border-transparent hover:border-border/40 transition-colors">
                             <span className="block text-sm font-bold">{stat.count}</span>

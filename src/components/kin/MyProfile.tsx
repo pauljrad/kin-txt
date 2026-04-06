@@ -276,7 +276,7 @@ export const MyProfile = () => {
             <div className="space-y-6">
                 {/* Stats Section */}
                 {/* Gamification Stats Section */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="grid grid-cols-2 gap-3">
                     <div className="p-4 rounded-xl bg-secondary/10 border border-border/20 flex flex-col items-center justify-center text-center">
                         <Flame className="h-5 w-5 text-orange-500 mb-1.5 drop-shadow-[0_0_8px_rgba(249,115,22,0.6)]" />
                         <span className="text-2xl font-display text-foreground">{gamification.currentStreak}</span>
@@ -287,23 +287,23 @@ export const MyProfile = () => {
                         <span className="text-2xl font-display text-foreground">{Math.floor(gamification.totalReadingTimeSeconds / 60)}</span>
                         <span className="text-[9px] text-muted-foreground uppercase tracking-widest font-bold mt-1">Total Mins</span>
                     </div>
-                    <div className="p-4 rounded-xl bg-secondary/10 border border-border/20 flex flex-col items-center justify-center text-center">
-                        <BookOpen className="h-5 w-5 text-primary mb-1.5 opacity-80" />
-                        <span className="text-2xl font-display text-foreground">{gamification.booksRead}</span>
-                        <span className="text-[9px] text-muted-foreground uppercase tracking-widest font-bold mt-1">Books Read</span>
-                    </div>
-                    <div className="p-4 rounded-xl bg-secondary/10 border border-border/20 flex flex-col items-center justify-center text-center">
-                        <Bookmark className="h-5 w-5 text-primary mb-1.5 opacity-80" />
-                        <span className="text-2xl font-display text-foreground">{gamification.articlesRead}</span>
-                        <span className="text-[9px] text-muted-foreground uppercase tracking-widest font-bold mt-1">Articles</span>
-                    </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                    <div className="p-4 rounded-xl bg-secondary/20 border border-border/40 flex flex-col items-center justify-center text-center">
-                        <Users className="h-4 w-4 text-primary mb-1.5 opacity-70" />
-                        <span className="text-2xl font-display text-foreground">{stats.kinCount}</span>
-                        <span className="text-[10px] text-muted-foreground tracking-wider font-bold">K<span className="lowercase font-sans text-[10px] relative -top-[0.5px]">i</span>N<span className="lowercase font-sans">s</span></span>
+                <div className="grid grid-cols-3 gap-3">
+                    <div className="p-3 rounded-lg bg-secondary/5 border border-border/10 flex flex-col items-center text-center">
+                        <BookOpen className="h-4 w-4 text-primary mb-1 opacity-70" />
+                        <span className="text-lg font-display text-foreground">{gamification.booksRead}</span>
+                        <span className="text-[8px] text-muted-foreground uppercase tracking-widest mt-0.5">Books</span>
+                    </div>
+                    <div className="p-3 rounded-lg bg-secondary/5 border border-border/10 flex flex-col items-center text-center">
+                        <Bookmark className="h-4 w-4 text-primary mb-1 opacity-70" />
+                        <span className="text-lg font-display text-foreground">{gamification.articlesRead}</span>
+                        <span className="text-[8px] text-muted-foreground uppercase tracking-widest mt-0.5">Articles</span>
+                    </div>
+                    <div className="p-3 rounded-lg bg-secondary/5 border border-border/10 flex flex-col items-center text-center">
+                        <Users className="h-4 w-4 text-primary mb-1 opacity-70" />
+                        <span className="text-lg font-display text-foreground">{stats.kinCount}</span>
+                        <span className="text-[8px] text-muted-foreground uppercase tracking-widest mt-0.5">K<span className="lowercase font-sans text-[8px] relative -top-[0.5px]">i</span>Ns</span>
                     </div>
                 </div>
 
