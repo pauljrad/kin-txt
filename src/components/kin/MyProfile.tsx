@@ -299,21 +299,6 @@ export const MyProfile = () => {
                     </div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-2">
-                    <div className="p-3 rounded-lg bg-secondary/5 border border-border/10 flex flex-col items-center text-center">
-                        <span className="text-lg font-display text-foreground">{Math.floor(gamification.timeReadThisWeekSeconds / 60)}m</span>
-                        <span className="text-[8px] text-muted-foreground uppercase tracking-[0.15em] mt-0.5">This Week</span>
-                    </div>
-                    <div className="p-3 rounded-lg bg-secondary/5 border border-border/10 flex flex-col items-center text-center">
-                        <span className="text-lg font-display text-foreground">{Math.floor(gamification.timeReadThisMonthSeconds / 60)}m</span>
-                        <span className="text-[8px] text-muted-foreground uppercase tracking-[0.15em] mt-0.5">This Month</span>
-                    </div>
-                    <div className="p-3 rounded-lg bg-secondary/5 border border-border/10 flex flex-col items-center text-center">
-                        <span className="text-lg font-display text-foreground">{Math.floor(gamification.timeReadThisYearSeconds / 60)}m</span>
-                        <span className="text-[8px] text-muted-foreground uppercase tracking-[0.15em] mt-0.5">This Year</span>
-                    </div>
-                </div>
-
                 <div className="grid grid-cols-2 gap-4">
                     <div className="p-4 rounded-xl bg-secondary/20 border border-border/40 flex flex-col items-center justify-center text-center">
                         <Users className="h-4 w-4 text-primary mb-1.5 opacity-70" />
