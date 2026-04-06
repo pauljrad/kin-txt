@@ -53,7 +53,7 @@ export const KinClubsView = ({ createModalOpen, setCreateModalOpen }: KinClubsVi
                             <span className="font-bold uppercase tracking-wider text-sm">Create K<span className="lowercase font-sans text-xs relative -top-[0.5px]">i</span>N-Club</span>
                         </div>
 
-                        <h3 className="text-sm font-medium text-muted-foreground mb-3 uppercase tracking-wider">
+                        <h3 className="text-sm font-display font-medium text-muted-foreground mb-3 uppercase tracking-tight">
                             My Clubs
                         </h3>
                         {clubs.length === 0 ? (

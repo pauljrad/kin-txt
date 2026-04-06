@@ -34,7 +34,7 @@ export const KinUnifiedLayout = ({ onViewProfile }: { onViewProfile?: (userId: s
                     {/* Header */}
                     <div className="pt-[calc(env(safe-area-inset-top)+2rem)] px-6 pb-4 border-b border-border flex flex-col gap-4 bg-background z-50">
                         <div className="flex justify-between items-center">
-                            <h2 className="text-2xl font-bold tracking-wide uppercase shrink-0">
+                            <h2 className="text-2xl font-display font-medium tracking-wide uppercase shrink-0">
                                 K<span className="lowercase font-sans text-xl relative -top-[1px]">i</span>N-Network
                             </h2>
 
