@@ -6,7 +6,7 @@ export interface GamificationStats {
     longestStreak: number;
     booksRead: number;
     articlesRead: number;
-    averageSessionMinutes: number; // Keeping for interface stability but could be 0
+    averageSessionMinutes: number;
     timeReadThisWeekSeconds: number;
     timeReadThisMonthSeconds: number;
     timeReadThisYearSeconds: number;
@@ -38,20 +38,39 @@ export function useGamification(userId?: string) {
             }
 
             try {
-                // Fetch ALL documents for this user to calculate everything from one source
-                const { data: documents, error } = await supabase
+                // 1. Fetch ALL documents for the "Library Grand Total"
+                const { data: documents } = await supabase
                     .from('documents')
-                    .select('total_reading_time, updated_at, completed_at, is_completed, file_type, source, title, word_count')
+                    .select('total_reading_time, is_completed, file_type, source, title, word_count, updated_at')
                     .eq('user_id', userId);
 
-                if (error) throw error;
+                // 2. Fetch ALL granular sessions for the "Temporal Stats" (Week/Month/Year/Streak)
+                // @ts-ignore
+                const { data: sessions } = await supabase
+                    .from('reading_sessions')
+                    .select('duration_seconds, created_at')
+                    .eq('user_id', userId);
 
-                if (!documents || documents.length === 0) {
-                    if (mounted) setStats(s => ({ ...s, isLoading: false }));
-                    return;
+                let libraryTotalSecs = 0;
+                let booksDone = 0;
+                let articlesDone = 0;
+
+                if (documents) {
+                    documents.forEach(doc => {
+                        libraryTotalSecs += (doc.total_reading_time || 0);
+                        if (doc.is_completed) {
+                            const isBook = doc.file_type === 'epub' || 
+                                           doc.file_type === 'mobi' || 
+                                           doc.source === 'ebook' || 
+                                           (doc.word_count && doc.word_count > 8000) ||
+                                           /\.(epub|mobi|azw)$/i.test(doc.title);
+                            if (isBook) booksDone++;
+                            else articlesDone++;
+                        }
+                    });
                 }
 
-                // Date Ranges
+                // Date Ranges for temporal attribution
                 const now = new Date();
                 const startOfWeek = new Date(now);
                 startOfWeek.setDate(now.getDate() - now.getDay());
@@ -60,65 +79,49 @@ export function useGamification(userId?: string) {
                 const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
                 const startOfYear = new Date(now.getFullYear(), 0, 1);
 
-                let totalSecs = 0;
-                let booksDone = 0;
-                let articlesDone = 0;
                 let weekSecs = 0;
                 let monthSecs = 0;
                 let yearSecs = 0;
-
-                // For Streak calculation
+                let totalSessionSecs = 0;
+                
                 const activityDates = new Set<string>();
 
-                documents.forEach(doc => {
-                    const time = doc.total_reading_time || 0;
-                    totalSecs += time;
+                if (sessions) {
+                    sessions.forEach((session: any) => {
+                        const dur = session.duration_seconds || 0;
+                        const createdAt = new Date(session.created_at);
+                        const dateStr = createdAt.toISOString().split('T')[0];
 
-                    // Activity Tracking (for streaks)
-                    if (doc.updated_at) {
-                        activityDates.add(new Date(doc.updated_at).toISOString().split('T')[0]);
-                    }
-                    if (doc.completed_at) {
-                        activityDates.add(new Date(doc.completed_at).toISOString().split('T')[0]);
-                    }
-
-                    // Categorization and Finished stats
-                    if (doc.is_completed) {
-                        const isBook = doc.file_type === 'epub' || 
-                                       doc.file_type === 'mobi' || 
-                                       doc.source === 'ebook' || 
-                                       (doc.word_count && doc.word_count > 8000) ||
-                                       /\.(epub|mobi|azw)$/i.test(doc.title);
+                        activityDates.add(dateStr);
                         
-                        if (isBook) booksDone++;
-                        else articlesDone++;
+                        totalSessionSecs += dur;
+                        if (createdAt >= startOfYear) yearSecs += dur;
+                        if (createdAt >= startOfMonth) monthSecs += dur;
+                        if (createdAt >= startOfWeek) weekSecs += dur;
+                    });
+                }
 
-                        // Attribution logic: If finished in this period, count its total time for that period
-                        if (doc.completed_at) {
-                            const completedDate = new Date(doc.completed_at);
-                            if (completedDate >= startOfYear) yearSecs += time;
-                            if (completedDate >= startOfMonth) monthSecs += time;
-                            if (completedDate >= startOfWeek) weekSecs += time;
+                // If sessions are empty (new system), we can supplement the streak with document updated_at 
+                // to avoid showing 0 for old power users who haven't logged a new session yet.
+                if (activityDates.size === 0 && documents) {
+                    documents.forEach(doc => {
+                        if (doc.updated_at) {
+                            activityDates.add(new Date(doc.updated_at).toISOString().split('T')[0]);
                         }
-                    }
-                });
+                    });
+                }
 
-                // Streak Calculation Logic
+                // Streak Calculation
                 const sortedDates = Array.from(activityDates).sort((a, b) => b.localeCompare(a));
                 let streak = 0;
-                
                 if (sortedDates.length > 0) {
                     const todayStr = new Date().toISOString().split('T')[0];
                     const yesterday = new Date();
                     yesterday.setDate(yesterday.getDate() - 1);
                     const yesterdayStr = yesterday.toISOString().split('T')[0];
 
-                    let checkDate = (sortedDates[0] === todayStr || sortedDates[0] === yesterdayStr) 
-                                    ? sortedDates[0] 
-                                    : null;
-
-                    if (checkDate) {
-                        let currentPos = new Date(checkDate);
+                    if (sortedDates[0] === todayStr || sortedDates[0] === yesterdayStr) {
+                        let currentPos = new Date(sortedDates[0]);
                         while (true) {
                             const dStr = currentPos.toISOString().split('T')[0];
                             if (activityDates.has(dStr)) {
@@ -131,32 +134,31 @@ export function useGamification(userId?: string) {
                     }
                 }
 
+                const avgSessionMins = sessions && sessions.length > 0 ? (totalSessionSecs / sessions.length) / 60 : 0;
+
                 if (mounted) {
                     setStats({
                         currentStreak: streak,
-                        longestStreak: streak, // Simple approximation for now
+                        longestStreak: streak,
                         booksRead: booksDone,
                         articlesRead: articlesDone,
-                        averageSessionMinutes: 0,
+                        averageSessionMinutes: Math.round(avgSessionMins),
                         timeReadThisWeekSeconds: weekSecs,
                         timeReadThisMonthSeconds: monthSecs,
                         timeReadThisYearSeconds: yearSecs,
-                        totalReadingTimeSeconds: totalSecs,
+                        totalReadingTimeSeconds: libraryTotalSecs, // THE LIBRARY TOTAL SOURCE
                         isLoading: false,
                     });
                 }
 
             } catch (err) {
-                console.error('[useGamification] Error fetching document-based stats:', err);
+                console.error('[useGamification] Error fetching hybrid stats:', err);
                 if (mounted) setStats(s => ({ ...s, isLoading: false }));
             }
         }
 
         fetchStats();
-
-        return () => {
-            mounted = false;
-        };
+        return () => { mounted = false; };
     }, [userId]);
 
     return stats;
