@@ -1,2 +1,0 @@
-TRUNCATE TABLE public.reading_sessions RESTART IDENTITY CASCADE;
-TRUNCATE TABLE public.user_reading_stats RESTART IDENTITY CASCADE;

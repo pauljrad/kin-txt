@@ -153,7 +153,7 @@ export const UserProfile = ({ userId }: UserProfileProps) => {
                     {[
                         { label: 'Articles', count: gamification.articlesRead },
                         { label: 'Books', count: gamification.booksRead },
-                        { label: 'Avg WPM', count: gamification.averageSpeedWpm },
+                        { label: 'Mo Mins', count: Math.floor(gamification.timeReadThisMonthSeconds / 60) },
                         { label: 'Wk Mins', count: Math.floor(gamification.timeReadThisWeekSeconds / 60) }
                     ].map(stat => (
                         <div key={stat.label} className="bg-secondary/20 rounded-lg py-2 px-1 text-center border border-transparent hover:border-border/40 transition-colors">
