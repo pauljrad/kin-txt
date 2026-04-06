@@ -50,7 +50,7 @@ export const KinClubsView = ({ createModalOpen, setCreateModalOpen }: KinClubsVi
                             className="bg-primary/5 border border-primary/20 hover:bg-primary/10 transition-colors rounded-lg p-3 flex items-center justify-center gap-2 cursor-pointer text-primary mb-6"
                             onClick={() => setCreateModalOpen(true)}
                         >
-                            <span className="font-bold uppercase tracking-wider text-sm">Create K<span className="lowercase font-sans text-xs relative -top-[0.5px]">i</span>N-Club</span>
+                            <span className="font-bold uppercase tracking-wider text-sm">Create KiN-Club</span>
                         </div>
 
                         <h3 className="text-sm font-display font-medium text-muted-foreground mb-3 uppercase tracking-tight">

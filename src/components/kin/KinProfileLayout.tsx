@@ -21,7 +21,7 @@ export const KinProfileLayout = () => {
                 {/* Header with Safe Area support */}
                 <div className="pt-[calc(env(safe-area-inset-top)+2rem)] px-6 pb-6 border-b border-border">
                     <h2 className="text-2xl font-display font-medium tracking-wide uppercase">
-                        K<span className="lowercase font-sans text-xl relative -top-[1px]">i</span>N-Profile
+                        KiN-Profile
                     </h2>
                 </div>
 
