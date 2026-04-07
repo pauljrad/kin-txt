@@ -124,8 +124,33 @@ export function KineticPlayer({
   const [showingAttribution, setShowingAttribution] = useState<boolean>(!!attribution);
   const [lastChapterIndex, setLastChapterIndex] = useState(-1);
   const [activeAtmosphere, setActiveAtmosphere] = useState<'none' | 'noir' | 'fret'>('none');
-
   const atmosphereAudioRef = useRef<HTMLAudioElement>(null);
+
+  // Sync atmosphere audio with state
+  useEffect(() => {
+    const audio = atmosphereAudioRef.current;
+    if (!audio) return;
+
+    if (activeAtmosphere === 'none') {
+      audio.pause();
+    } else {
+      const src = activeAtmosphere === 'noir' ? "/atmosphere-jazz.mp3" : "/atmosphere-guitar.mp3";
+      // Only update src if it's different to prevent restart on re-render
+      const fullSrc = window.location.origin + src;
+      if (audio.src !== fullSrc) {
+        audio.src = src;
+        audio.load();
+      }
+      
+      audio.play().catch(err => {
+        console.error("Audio block:", err);
+        if (err.name === 'NotAllowedError') {
+          toast.info("Click again to enable audio (Browser restriction)");
+        }
+      });
+    }
+  }, [activeAtmosphere]);
+
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const sessionTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -914,8 +939,8 @@ export function KineticPlayer({
       // Stop atmosphere on cleanup
       if (atmosphereAudioRef.current) {
         atmosphereAudioRef.current.pause();
-        atmosphereAudioRef.current = null;
       }
+
     };
   }, []);
 
@@ -1821,41 +1846,24 @@ export function KineticPlayer({
                     <PopoverContent className="w-48 bg-card border-border p-2 mb-2" side="top" align="center">
                       <div className="flex flex-col gap-1">
                         <button
-                          onClick={() => {
-                            const audio = atmosphereAudioRef.current;
-                            if (audio) audio.pause();
-                            setActiveAtmosphere('none');
-                          }}
+                          onClick={() => setActiveAtmosphere('none')}
                           className={`flex items-center justify-between w-full px-3 py-2 rounded-lg transition-colors ${activeAtmosphere === 'none' ? 'bg-primary/10 text-primary' : 'hover:bg-secondary text-muted-foreground'}`}
                         >
                           <span className="text-sm font-medium">Silent</span>
                         </button>
                         <button
-                          onClick={() => {
-                            const audio = atmosphereAudioRef.current;
-                            if (audio) {
-                              audio.src = "/atmosphere-jazz.mp3";
-                              audio.play().catch(err => console.error("Audio block:", err));
-                            }
-                            setActiveAtmosphere('noir');
-                          }}
+                          onClick={() => setActiveAtmosphere('noir')}
                           className={`flex items-center justify-between w-full px-3 py-2 rounded-lg transition-colors ${activeAtmosphere === 'noir' ? 'bg-primary/10 text-primary' : 'hover:bg-secondary text-muted-foreground'}`}
                         >
                           <span className="text-sm font-medium">Preset 1</span>
                         </button>
                         <button
-                          onClick={() => {
-                            const audio = atmosphereAudioRef.current;
-                            if (audio) {
-                              audio.src = "/atmosphere-guitar.mp3";
-                              audio.play().catch(err => console.error("Audio block:", err));
-                            }
-                            setActiveAtmosphere('fret');
-                          }}
+                          onClick={() => setActiveAtmosphere('fret')}
                           className={`flex items-center justify-between w-full px-3 py-2 rounded-lg transition-colors ${activeAtmosphere === 'fret' ? 'bg-primary/10 text-primary' : 'hover:bg-secondary text-muted-foreground'}`}
                         >
                           <span className="text-sm font-medium">Preset 2</span>
                         </button>
+
                       </div>
                     </PopoverContent>
                   </Popover>
