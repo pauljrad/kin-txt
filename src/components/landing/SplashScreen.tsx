@@ -370,28 +370,6 @@ export const InteractiveSplashScreen = forwardRef<HTMLDivElement, AnimatedTitleP
             lettersControls.set({ opacity: 1, y: 0, filter: "blur(0px)" });
         }, [dragY, stemControls, dotControls, hyphenControls, lettersControls, onGameStateChange]);
 
-
-        // Scroll tracking for fade-out logic
-        const [scrollY, setScrollY] = useState(0);
-        const [viewportHeight, setViewportHeight] = useState(0);
-
-        useEffect(() => {
-            if (typeof window === "undefined") return;
-
-            // eslint-disable-next-line react-hooks/set-state-in-effect
-            setViewportHeight(window.innerHeight);
-            const handleScroll = () => setScrollY(window.scrollY);
-            const handleResize = () => setViewportHeight(window.innerHeight);
-
-            window.addEventListener("scroll", handleScroll, { passive: true });
-            window.addEventListener("resize", handleResize);
-
-            return () => {
-                window.removeEventListener("scroll", handleScroll);
-                window.removeEventListener("resize", handleResize);
-            };
-        }, []);
-
         const isInteracting = isIntro || pullProgress > 0 || isBouncing || isHyphenBouncing || showPongGame || isTransitioningToGame;
 
         return (
@@ -415,11 +393,8 @@ export const InteractiveSplashScreen = forwardRef<HTMLDivElement, AnimatedTitleP
 
                 <div
                     ref={ref}
-                    className={`${className ?? ""} fixed inset-0 flex items-center justify-center pointer-events-none z-[100]`}
+                    className={`${className ?? ""} absolute top-0 left-0 w-full h-screen flex items-center justify-center pointer-events-none z-[100]`}
                     aria-label="Kin-TXT animated title"
-                    style={{
-                        display: scrollY > viewportHeight * 0.6 ? 'none' : 'flex'
-                    }}
                     {...props}
                 >
                     <h1 className="select-none kinxt-pull-trigger pointer-events-auto cursor-grab touch-none text-7xl sm:text-8xl font-display text-white tracking-wide flex items-baseline justify-center leading-none mix-blend-difference">
