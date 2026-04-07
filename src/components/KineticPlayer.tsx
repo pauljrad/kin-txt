@@ -123,7 +123,8 @@ export function KineticPlayer({
   const [showingChapterTitle, setShowingChapterTitle] = useState<string | null>(null);
   const [showingAttribution, setShowingAttribution] = useState<boolean>(!!attribution);
   const [lastChapterIndex, setLastChapterIndex] = useState(-1);
-  const [activeAtmosphere, setActiveAtmosphere] = useState<'none' | 'noir' | 'fret'>('none');
+  const [activeAtmosphere, setActiveAtmosphere] = useState<'none' | 'noir' | 'fret' | 'fret2'>('none');
+
   const atmosphereAudioRef = useRef<HTMLAudioElement>(null);
 
   // Sync atmosphere audio with state
@@ -134,8 +135,13 @@ export function KineticPlayer({
     if (activeAtmosphere === 'none') {
       audio.pause();
     } else {
-      const src = activeAtmosphere === 'noir' ? "/atmosphere-jazz.mp3" : "/atmosphere-guitar.mp3";
+      const src = 
+        activeAtmosphere === 'noir' ? "/atmosphere-jazz.mp3" : 
+        activeAtmosphere === 'fret' ? "/atmosphere-guitar.mp3" :
+        "/atmosphere-guitar-2.mp3";
+      
       // Only update src if it's different to prevent restart on re-render
+
       const fullSrc = window.location.origin + src;
       if (audio.src !== fullSrc) {
         audio.src = src;
@@ -1862,6 +1868,12 @@ export function KineticPlayer({
                           className={`flex items-center justify-between w-full px-3 py-2 rounded-lg transition-colors ${activeAtmosphere === 'fret' ? 'bg-primary/10 text-primary' : 'hover:bg-secondary text-muted-foreground'}`}
                         >
                           <span className="text-sm font-medium">Preset 2</span>
+                        </button>
+                        <button
+                          onClick={() => setActiveAtmosphere('fret2')}
+                          className={`flex items-center justify-between w-full px-3 py-2 rounded-lg transition-colors ${activeAtmosphere === 'fret2' ? 'bg-primary/10 text-primary' : 'hover:bg-secondary text-muted-foreground'}`}
+                        >
+                          <span className="text-sm font-medium">Preset 3</span>
                         </button>
 
                       </div>
