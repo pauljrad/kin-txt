@@ -123,7 +123,8 @@ export function KineticPlayer({
   const [showingChapterTitle, setShowingChapterTitle] = useState<string | null>(null);
   const [showingAttribution, setShowingAttribution] = useState<boolean>(!!attribution);
   const [lastChapterIndex, setLastChapterIndex] = useState(-1);
-  const [atmospherePlaying, setAtmospherePlaying] = useState(false);
+  const [activeAtmosphere, setActiveAtmosphere] = useState<'none' | 'noir' | 'fret'>('none');
+
   const atmosphereAudioRef = useRef<HTMLAudioElement>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -1803,34 +1804,65 @@ export function KineticPlayer({
                     </PopoverContent>
                   </Popover>
 
-                  {/* Atmosphere Music toggle */}
-                  <button
-                    className="hud-icon-button transition-all duration-300"
-                    title={atmospherePlaying ? "Turn off Jazz Atmosphere" : "Turn on Jazz Atmosphere"}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      const audio = atmosphereAudioRef.current;
-                      if (!audio) return;
+                  {/* Atmosphere Music Presets */}
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <button
+                        className="hud-icon-button transition-all duration-300"
+                        title="Atmosphere Music"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <Music
+                          className={`w-4 h-4 sm:w-6 sm:h-6 transition-all duration-300 ${activeAtmosphere !== 'none' ? 'text-primary' : 'text-foreground/40'}`}
+                          strokeWidth={activeAtmosphere !== 'none' ? 3 : 1.5}
+                        />
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-48 bg-card border-border p-2 mb-2" side="top" align="center">
+                      <div className="flex flex-col gap-1">
+                        <button
+                          onClick={() => {
+                            const audio = atmosphereAudioRef.current;
+                            if (audio) audio.pause();
+                            setActiveAtmosphere('none');
+                          }}
+                          className={`flex items-center justify-between w-full px-3 py-2 rounded-lg transition-colors ${activeAtmosphere === 'none' ? 'bg-primary/10 text-primary' : 'hover:bg-secondary text-muted-foreground'}`}
+                        >
+                          <span className="text-sm font-medium">None</span>
+                          <span className="text-lg">🔇</span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            const audio = atmosphereAudioRef.current;
+                            if (audio) {
+                              audio.src = "/atmosphere-jazz.mp3";
+                              audio.play().catch(err => console.error("Audio block:", err));
+                            }
+                            setActiveAtmosphere('noir');
+                          }}
+                          className={`flex items-center justify-between w-full px-3 py-2 rounded-lg transition-colors ${activeAtmosphere === 'noir' ? 'bg-primary/10 text-primary' : 'hover:bg-secondary text-muted-foreground'}`}
+                        >
+                          <span className="text-sm font-medium">Noir</span>
+                          <span className="text-lg">🎷</span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            const audio = atmosphereAudioRef.current;
+                            if (audio) {
+                              audio.src = "/atmosphere-guitar.mp3";
+                              audio.play().catch(err => console.error("Audio block:", err));
+                            }
+                            setActiveAtmosphere('fret');
+                          }}
+                          className={`flex items-center justify-between w-full px-3 py-2 rounded-lg transition-colors ${activeAtmosphere === 'fret' ? 'bg-primary/10 text-primary' : 'hover:bg-secondary text-muted-foreground'}`}
+                        >
+                          <span className="text-sm font-medium">Fret</span>
+                          <span className="text-lg">🎸</span>
+                        </button>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
 
-                      if (atmospherePlaying) {
-                        audio.pause();
-                        setAtmospherePlaying(false);
-                      } else {
-                        audio.play().then(() => {
-                          setAtmospherePlaying(true);
-                        }).catch(err => {
-                          console.error("Audio block:", err);
-                          toast.error("Please click again to play (Browser blocked sound)");
-                          setAtmospherePlaying(false);
-                        });
-                      }
-                    }}
-                  >
-                    <Music
-                      className={`w-4 h-4 sm:w-6 sm:h-6 transition-all duration-300 ${atmospherePlaying ? 'text-primary' : 'text-foreground/40'}`}
-                      strokeWidth={atmospherePlaying ? 3 : 1.5}
-                    />
-                  </button>
 
                   {/* Divider */}
                   <div className="w-px h-6 sm:h-8 bg-border" />
@@ -1952,10 +1984,10 @@ export function KineticPlayer({
 
       <audio
         ref={atmosphereAudioRef}
-        src="/atmosphere-jazz.mp3"
         loop
         preload="auto"
       />
+
     </motion.div >
   );
 }// v1.0.1
