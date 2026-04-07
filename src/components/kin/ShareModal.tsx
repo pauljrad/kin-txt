@@ -11,6 +11,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Send } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import { ScrollArea } from "@/components/ui/scroll-area";
+
 
 interface ShareModalProps {
     open: boolean;
@@ -131,31 +133,34 @@ export const ShareModal = ({ open, onOpenChange, onShare, onGenerateLink }: Shar
                     {kins.length === 0 ? (
                         <p className="text-center text-white/40 text-sm">You don't have any connections yet.</p>
                     ) : (
-                        <div className="space-y-2">
-                            {kins.map(kin => (
-                                <div key={kin.id} className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-colors">
-                                    <div className="flex items-center gap-3">
-                                        <Avatar>
-                                            <AvatarImage src={kin.avatar_url || ''} />
-                                            <AvatarFallback>{kin.display_name?.substring(0, 2).toUpperCase()}</AvatarFallback>
-                                        </Avatar>
-                                        <span className="font-medium">{kin.display_name}</span>
+                        <ScrollArea className="max-h-[300px] -mr-2 pr-2">
+                            <div className="space-y-2 pr-1">
+                                {kins.map(kin => (
+                                    <div key={kin.id} className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-colors">
+                                        <div className="flex items-center gap-3">
+                                            <Avatar>
+                                                <AvatarImage src={kin.avatar_url || ''} />
+                                                <AvatarFallback>{kin.display_name?.substring(0, 2).toUpperCase()}</AvatarFallback>
+                                            </Avatar>
+                                            <span className="font-medium">{kin.display_name}</span>
+                                        </div>
+                                        <Button
+                                            size="sm"
+                                            variant="secondary"
+                                            onClick={() => {
+                                                onShare(kin.id);
+                                                onOpenChange(false);
+                                            }}
+                                        >
+                                            <Send className="w-4 h-4 mr-2" />
+                                            Send
+                                        </Button>
                                     </div>
-                                    <Button
-                                        size="sm"
-                                        variant="secondary"
-                                        onClick={() => {
-                                            onShare(kin.id);
-                                            onOpenChange(false);
-                                        }}
-                                    >
-                                        <Send className="w-4 h-4 mr-2" />
-                                        Send
-                                    </Button>
-                                </div>
-                            ))}
-                        </div>
+                                ))}
+                            </div>
+                        </ScrollArea>
                     )}
+
                 </div>
             </DialogContent>
         </Dialog>
