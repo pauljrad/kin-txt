@@ -1838,20 +1838,23 @@ export function KineticPlayer({
                   </Popover>
 
                   {/* Atmosphere Music Presets */}
-                  <Popover open={musicMenuOpen} onOpenChange={setMusicMenuOpen}>
+                  <Popover 
+                    open={musicMenuOpen} 
+                    onOpenChange={(open) => {
+                      if (open && activeAtmosphere !== 'none') {
+                        // If music is on, turn it off and don't open the menu
+                        setActiveAtmosphere('none');
+                        setMusicMenuOpen(false);
+                        return;
+                      }
+                      setMusicMenuOpen(open);
+                    }}
+                  >
                     <PopoverTrigger asChild>
                       <button
                         className="hud-icon-button transition-all duration-300"
                         title="Atmosphere Music"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (activeAtmosphere !== 'none') {
-                            // If music is on, turn it off and don't open the menu
-                            setActiveAtmosphere('none');
-                            setMusicMenuOpen(false);
-                          }
-                          // If music is off, the PopoverTrigger will handle opening the menu
-                        }}
+                        onClick={(e) => e.stopPropagation()}
                       >
                         <Music
                           className={`w-4 h-4 sm:w-6 sm:h-6 transition-all duration-300 ${activeAtmosphere !== 'none' ? 'text-primary' : 'text-foreground/40'}`}
