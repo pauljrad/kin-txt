@@ -124,6 +124,8 @@ export function KineticPlayer({
   const [showingAttribution, setShowingAttribution] = useState<boolean>(!!attribution);
   const [lastChapterIndex, setLastChapterIndex] = useState(-1);
   const [activeAtmosphere, setActiveAtmosphere] = useState<'none' | 'noir' | 'fret' | 'fret2'>('none');
+  const [musicMenuOpen, setMusicMenuOpen] = useState(false);
+
 
   const atmosphereAudioRef = useRef<HTMLAudioElement>(null);
 
@@ -1836,12 +1838,20 @@ export function KineticPlayer({
                   </Popover>
 
                   {/* Atmosphere Music Presets */}
-                  <Popover>
+                  <Popover open={musicMenuOpen} onOpenChange={setMusicMenuOpen}>
                     <PopoverTrigger asChild>
                       <button
                         className="hud-icon-button transition-all duration-300"
                         title="Atmosphere Music"
-                        onClick={(e) => e.stopPropagation()}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (activeAtmosphere !== 'none') {
+                            // If music is on, turn it off and don't open the menu
+                            setActiveAtmosphere('none');
+                            setMusicMenuOpen(false);
+                          }
+                          // If music is off, the PopoverTrigger will handle opening the menu
+                        }}
                       >
                         <Music
                           className={`w-4 h-4 sm:w-6 sm:h-6 transition-all duration-300 ${activeAtmosphere !== 'none' ? 'text-primary' : 'text-foreground/40'}`}
@@ -1849,32 +1859,46 @@ export function KineticPlayer({
                         />
                       </button>
                     </PopoverTrigger>
+
                     <PopoverContent className="w-48 bg-card border-border p-2 mb-2" side="top" align="center">
                       <div className="flex flex-col gap-1">
                         <button
-                          onClick={() => setActiveAtmosphere('none')}
+                          onClick={() => {
+                            setActiveAtmosphere('none');
+                            setMusicMenuOpen(false);
+                          }}
                           className={`flex items-center justify-between w-full px-3 py-2 rounded-lg transition-colors ${activeAtmosphere === 'none' ? 'bg-primary/10 text-primary' : 'hover:bg-secondary text-muted-foreground'}`}
                         >
                           <span className="text-sm font-medium">Silent</span>
                         </button>
                         <button
-                          onClick={() => setActiveAtmosphere('noir')}
+                          onClick={() => {
+                            setActiveAtmosphere('noir');
+                            setMusicMenuOpen(false);
+                          }}
                           className={`flex items-center justify-between w-full px-3 py-2 rounded-lg transition-colors ${activeAtmosphere === 'noir' ? 'bg-primary/10 text-primary' : 'hover:bg-secondary text-muted-foreground'}`}
                         >
                           <span className="text-sm font-medium">Preset 1</span>
                         </button>
                         <button
-                          onClick={() => setActiveAtmosphere('fret')}
+                          onClick={() => {
+                            setActiveAtmosphere('fret');
+                            setMusicMenuOpen(false);
+                          }}
                           className={`flex items-center justify-between w-full px-3 py-2 rounded-lg transition-colors ${activeAtmosphere === 'fret' ? 'bg-primary/10 text-primary' : 'hover:bg-secondary text-muted-foreground'}`}
                         >
                           <span className="text-sm font-medium">Preset 2</span>
                         </button>
                         <button
-                          onClick={() => setActiveAtmosphere('fret2')}
+                          onClick={() => {
+                            setActiveAtmosphere('fret2');
+                            setMusicMenuOpen(false);
+                          }}
                           className={`flex items-center justify-between w-full px-3 py-2 rounded-lg transition-colors ${activeAtmosphere === 'fret2' ? 'bg-primary/10 text-primary' : 'hover:bg-secondary text-muted-foreground'}`}
                         >
                           <span className="text-sm font-medium">Preset 3</span>
                         </button>
+
 
                       </div>
                     </PopoverContent>
