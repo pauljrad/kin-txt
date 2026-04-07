@@ -117,7 +117,7 @@ export default function Register() {
         Back
       </motion.button>
 
-      <div className="flex-1 flex flex-col items-center justify-start sm:justify-center px-4 py-12 pt-24 sm:pt-12">
+      <div className="flex-1 flex flex-col items-center justify-start sm:justify-center px-4 py-12 pt-32 sm:pt-16">
 
         {/* Selected plan pill */}
         <motion.div
