@@ -29,10 +29,10 @@ export const KinUnifiedLayout = ({ onViewProfile }: { onViewProfile?: (userId: s
                     <span className="sr-only">KiN</span>
                 </button>
             </SheetTrigger>
-            <SheetContent className="bg-card border-l border-border text-foreground w-full sm:max-w-4xl p-0 overflow-hidden flex flex-col items-stretch focus-visible:outline-none focus:outline-none">
+            <SheetContent className="bg-card text-foreground w-full sm:max-w-4xl p-0 overflow-hidden flex flex-col items-stretch focus-visible:outline-none focus:outline-none">
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col h-full overflow-hidden">
                     {/* Header */}
-                    <div className="pt-[calc(env(safe-area-inset-top)+2rem)] px-6 pb-4 border-b border-border flex flex-col gap-4 bg-background z-50">
+                    <div className="pt-[calc(env(safe-area-inset-top)+2rem)] px-6 pb-4 flex flex-col gap-4 bg-background z-50">
                         <div className="flex justify-between items-center">
                             <h2 className="text-2xl font-display font-medium tracking-wide uppercase shrink-0">
                                 K<span className="lowercase font-sans text-xl relative -top-[1px]">i</span>N-Network

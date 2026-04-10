@@ -82,11 +82,11 @@ export const InfoMenu = forwardRef<HTMLDivElement, InfoMenuProps>(function InfoM
                 animate={{ x: 0 }}
                 exit={{ x: '100%' }}
                 transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                className="absolute right-0 top-0 h-full w-full max-w-2xl bg-background shadow-xl border-l border-border touch-pan-y"
+                className="absolute right-0 top-0 h-full w-full max-w-2xl bg-background shadow-xl touch-pan-y"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Header - Added pt-safe for mobile with extra breathing room */}
-                <div className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b border-border pt-[calc(env(safe-area-inset-top)+1.5rem)]">
+                <div className="sticky top-0 z-10 bg-background/95 backdrop-blur pt-[calc(env(safe-area-inset-top)+1.5rem)]">
                     <div className="flex items-center justify-between p-4 sm:p-5 mt-2">
                         <div className="flex items-center gap-3">
                             <div className="flex items-center gap-1.5">

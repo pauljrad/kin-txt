@@ -74,7 +74,7 @@ export const FullTextView = forwardRef<HTMLDivElement, FullTextViewProps>(functi
       >
         {/* Header */}
         <div
-          className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b border-border"
+          className="sticky top-0 z-10 bg-background/95 backdrop-blur"
           style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
         >
           <div className="flex items-center justify-between p-4 pr-14">

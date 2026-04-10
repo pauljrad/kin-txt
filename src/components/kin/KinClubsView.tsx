@@ -41,7 +41,7 @@ export const KinClubsView = ({ createModalOpen, setCreateModalOpen }: KinClubsVi
                 {/* Clubs List Sidebar */}
                 <div
                     className={`
-                        w-full md:w-72 border-r border-border overflow-y-auto p-4 absolute inset-0 md:static bg-card transition-transform duration-300 z-10
+                        w-full md:w-72 overflow-y-auto p-4 absolute inset-0 md:static bg-card transition-transform duration-300 z-10
                         ${selectedClubId ? '-translate-x-full md:translate-x-0' : 'translate-x-0'}
                     `}
                 >
