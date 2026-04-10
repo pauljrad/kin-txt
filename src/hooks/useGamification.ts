@@ -38,37 +38,43 @@ export function useGamification(userId?: string) {
             }
 
             try {
-                // 1. Fetch exact high-level stats (streaks & total time)
-                // @ts-ignore
+                // 1. Fetch exact streak stats from user_reading_stats (preserves correct streaks)
                 const { data: userStats } = await supabase
                     .from('user_reading_stats')
-                    .select('*')
+                    .select('current_streak, longest_streak')
                     .eq('user_id', userId)
                     .maybeSingle();
 
-                // 2. Fetch completed documents for Books vs Articles count
-                const { data: documents } = await supabase
+                // 2. Fetch ALL documents to calculate exact reading times and book counts
+                const { data: documents, error: docsError } = await supabase
                     .from('documents')
-                    .select('file_type, source, is_completed, title, word_count')
-                    .eq('user_id', userId)
-                    .eq('is_completed', true);
+                    .select('total_reading_time, is_completed, file_type, source, title, word_count')
+                    .eq('user_id', userId);
 
-                let booksRead = 0;
-                let articlesRead = 0;
+                if (docsError) throw docsError;
+
+                let totalSecs = 0;
+                let booksDone = 0;
+                let articlesDone = 0;
 
                 if (documents) {
                     documents.forEach(doc => {
-                        const isBook = doc.file_type === 'epub' || 
-                                       doc.file_type === 'mobi' || 
-                                       doc.source === 'ebook' || 
-                                       (doc.word_count && doc.word_count > 8000) ||
-                                       /\.(epub|mobi|azw)$/i.test(doc.title);
-                        if (isBook) booksRead++;
-                        else articlesRead++;
+                        totalSecs += (doc.total_reading_time || 0);
+
+                        if (doc.is_completed) {
+                            const isBook = doc.file_type === 'epub' || 
+                                           doc.file_type === 'mobi' || 
+                                           doc.source === 'ebook' || 
+                                           (doc.word_count && doc.word_count > 8000) ||
+                                           /\.(epub|mobi|azw)$/i.test(doc.title);
+                            
+                            if (isBook) booksDone++;
+                            else articlesDone++;
+                        }
                     });
                 }
 
-                // 3. Fetch reading session time windows directly
+                // 3. Fetch recent reading sessions for localized analytics (weekly averages)
                 const now = new Date();
                 const startOfWeek = new Date(now);
                 startOfWeek.setDate(now.getDate() - now.getDay()); // Sunday as start
@@ -77,7 +83,6 @@ export function useGamification(userId?: string) {
                 const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
                 const startOfYear = new Date(now.getFullYear(), 0, 1);
 
-                // @ts-ignore
                 const { data: recentSessions } = await supabase
                     .from('reading_sessions')
                     .select('duration_seconds, created_at')
@@ -93,7 +98,7 @@ export function useGamification(userId?: string) {
                 if (recentSessions) {
                     recentSessions.forEach((session: any) => {
                         const sessionDate = new Date(session.created_at);
-                        const dur = session.duration_seconds;
+                        const dur = session.duration_seconds || 0;
                         
                         readYear += dur;
                         if (sessionDate >= startOfMonth) readMonth += dur;
@@ -110,19 +115,19 @@ export function useGamification(userId?: string) {
                     setStats({
                         currentStreak: (userStats as any)?.current_streak || 0,
                         longestStreak: (userStats as any)?.longest_streak || 0,
-                        booksRead,
-                        articlesRead,
+                        booksRead: booksDone,
+                        articlesRead: articlesDone,
                         averageSessionMinutes: Math.round(avgSessionSecs / 60),
                         timeReadThisWeekSeconds: readWeek,
                         timeReadThisMonthSeconds: readMonth,
                         timeReadThisYearSeconds: readYear,
-                        totalReadingTimeSeconds: (userStats as any)?.total_reading_time_seconds || 0,
+                        totalReadingTimeSeconds: totalSecs,
                         isLoading: false,
                     });
                 }
 
             } catch (err) {
-                console.error('[useGamification] Error fetching stats:', err);
+                console.error('[useGamification] Error fetching library stats:', err);
                 if (mounted) setStats(s => ({ ...s, isLoading: false }));
             }
         }
