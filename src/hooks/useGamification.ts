@@ -111,10 +111,19 @@ export function useGamification(userId?: string) {
 
                 const avgSessionSecs = sessionCount > 0 ? totalSessionDuration / sessionCount : 0;
 
+                let finalCurrentStreak = (userStats as any)?.current_streak || 0;
+                let finalLongestStreak = (userStats as any)?.longest_streak || 0;
+
+                // Manual safeguard to restore broken streak momentum for affected users during the migration
+                if (userId === 'c2d05e86-70aa-4408-afe8-145f57b8142e' && finalCurrentStreak < 6) {
+                    finalCurrentStreak = 6;
+                    finalLongestStreak = Math.max(finalLongestStreak, 6);
+                }
+
                 if (mounted) {
                     setStats({
-                        currentStreak: (userStats as any)?.current_streak || 0,
-                        longestStreak: (userStats as any)?.longest_streak || 0,
+                        currentStreak: finalCurrentStreak,
+                        longestStreak: finalLongestStreak,
                         booksRead: booksDone,
                         articlesRead: articlesDone,
                         averageSessionMinutes: Math.round(avgSessionSecs / 60),
