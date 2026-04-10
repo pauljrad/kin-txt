@@ -1,6 +1,7 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { BookOpen, Loader2 } from 'lucide-react';
+import { BookOpen, Loader2, Search } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 import { parseFile, ParsedText } from '@/lib/textParser';
 
 export interface Ebook {
@@ -140,6 +141,16 @@ interface EbookLibraryProps {
 export function EbookLibrary({ onSelectEbook }: EbookLibraryProps) {
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const filteredEbooks = useMemo(() => {
+    if (!searchQuery.trim()) return AVAILABLE_EBOOKS;
+    const query = searchQuery.toLowerCase().trim();
+    return AVAILABLE_EBOOKS.filter(ebook => 
+      ebook.title.toLowerCase().includes(query) || 
+      ebook.author.toLowerCase().includes(query)
+    );
+  }, [searchQuery]);
 
   const handleSelectEbook = useCallback(async (ebook: Ebook) => {
     setLoadingId(ebook.id);
@@ -172,8 +183,20 @@ export function EbookLibrary({ onSelectEbook }: EbookLibraryProps) {
       transition={{ duration: 0.5 }}
       className="w-full max-w-5xl mx-auto mt-3"
     >
+      <div className="px-4 mb-6">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search titles or authors..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9 bg-secondary/50 border-border text-foreground placeholder:text-muted-foreground"
+          />
+        </div>
+      </div>
+
       <div className="grid grid-cols-3 gap-4 px-4">
-        {AVAILABLE_EBOOKS.map((ebook, idx) => (
+        {filteredEbooks.map((ebook, idx) => (
           <motion.button
             key={ebook.id}
             onClick={() => handleSelectEbook(ebook)}
@@ -209,10 +232,10 @@ export function EbookLibrary({ onSelectEbook }: EbookLibraryProps) {
         </motion.p>
       )}
 
-      {AVAILABLE_EBOOKS.length === 0 && (
+      {filteredEbooks.length === 0 && (
         <div className="text-center py-12">
           <BookOpen className="w-16 h-16 mx-auto text-muted-foreground/30 mb-4" />
-          <p className="text-muted-foreground">No ebooks available yet</p>
+          <p className="text-muted-foreground">No ebooks found</p>
         </div>
       )}
     </motion.div>
