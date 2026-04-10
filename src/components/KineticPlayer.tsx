@@ -991,6 +991,14 @@ export function KineticPlayer({
     const newPlaying = !isPlaying;
     setIsPlaying(newPlaying);
 
+    // If pausing — show controls immediately on the same tap, not after a re-render cycle
+    if (!newPlaying) {
+      setShowControls(true);
+      if (controlsTimeoutRef.current) {
+        clearTimeout(controlsTimeoutRef.current);
+      }
+    }
+
     // Enter fullscreen when starting to play
     if (newPlaying && !isFullscreen) {
       await enterFullscreen();
