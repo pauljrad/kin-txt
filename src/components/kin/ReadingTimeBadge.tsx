@@ -45,7 +45,7 @@ const TIERS = [
   {
     name: 'Platinum',
     label: 'LEGEND',
-    minMins: 10000,
+    minMins: 15000,
     color: '#E5E4E2',
     glow: 'rgba(229,228,226,0.55)',
     bg: 'rgba(229,228,226,0.08)',
