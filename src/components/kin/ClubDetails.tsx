@@ -4,7 +4,9 @@ import { BookOpen, Plus, Users, LogOut } from "lucide-react";
 import { getClubMembers, getActiveBookSuggestion, getClubProgress, leaveClub, respondToBookSuggestion } from "@/lib/clubDatabase";
 import { getInitials, getAvatarColor } from "@/lib/utils";
 import { SuggestBookModal } from "./SuggestBookModal";
+import { UserProfile } from "./UserProfile";
 import { supabase } from "@/integrations/supabase/client";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -30,6 +32,7 @@ export const ClubDetails = ({ club, onRefresh, onBack }: ClubDetailsProps) => {
     const [userProgress, setUserProgress] = useState<any | null>(null);
     const [suggestModalOpen, setSuggestModalOpen] = useState(false);
     const [leaveDialogOpen, setLeaveDialogOpen] = useState(false);
+    const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
 
     const fetchProgress = async (suggestionId: string) => {
         try {
@@ -212,7 +215,8 @@ export const ClubDetails = ({ club, onRefresh, onBack }: ClubDetailsProps) => {
                     {members.map(member => (
                         <div
                             key={member.id}
-                            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-secondary/30 border border-border/50"
+                            onClick={() => setSelectedMemberId(member.user_id)}
+                            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-secondary/30 border border-border/50 cursor-pointer hover:bg-secondary/60 hover:border-primary/30 transition-all"
                         >
                             <div
                                 className="h-6 w-6 rounded-full border border-primary/5 flex items-center justify-center text-[10px] font-bold"
@@ -307,7 +311,11 @@ export const ClubDetails = ({ club, onRefresh, onBack }: ClubDetailsProps) => {
                         <div className="space-y-2">
                             <h5 className="text-sm font-medium">Reading Progress</h5>
                             {progress.map(p => (
-                                <div key={p.id} className="flex items-center gap-3">
+                                <div 
+                                    key={p.id} 
+                                    className="flex items-center gap-3 cursor-pointer group/prog hover:bg-secondary/20 p-2 rounded-lg -mx-2 transition-colors"
+                                    onClick={() => setSelectedMemberId(p.user_id)}
+                                >
                                     <div
                                         className="h-6 w-6 rounded-full border border-primary/5 flex items-center justify-center text-[10px] font-bold"
                                         style={{ backgroundColor: getAvatarColor(p.user_id, p.profiles?.avatar_color), color: '#000' }}
@@ -322,10 +330,10 @@ export const ClubDetails = ({ club, onRefresh, onBack }: ClubDetailsProps) => {
                                             getInitials(p.profiles?.display_name || "?")
                                         )}
                                     </div>
-                                    <div className="flex-1">
+                                    <div className="flex-1 min-w-0">
                                         <div className="flex justify-between text-sm mb-1">
-                                            <span>{p.profiles?.display_name}</span>
-                                            <span className="text-muted-foreground">
+                                            <span className="truncate group-hover/prog:text-primary transition-colors">{p.profiles?.display_name}</span>
+                                            <span className="text-muted-foreground ml-2 shrink-0">
                                                 {p.status === 'invited' ? 'Invited' : `${Math.round(p.progress || 0)}%`}
                                             </span>
                                         </div>
@@ -351,6 +359,15 @@ export const ClubDetails = ({ club, onRefresh, onBack }: ClubDetailsProps) => {
                     </div>
                 )}
             </div>
+
+            <Dialog open={!!selectedMemberId} onOpenChange={(open) => !open && setSelectedMemberId(null)}>
+                <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-md bg-card border-border p-4 sm:p-6">
+                    <DialogHeader className="mb-2">
+                        <DialogTitle className="sr-only">User Profile</DialogTitle>
+                    </DialogHeader>
+                    {selectedMemberId && <UserProfile userId={selectedMemberId} />}
+                </DialogContent>
+            </Dialog>
 
             <SuggestBookModal
                 open={suggestModalOpen}
