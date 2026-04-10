@@ -104,32 +104,75 @@ export const AVAILABLE_EBOOKS: Ebook[] = [
   },
 ];
 
-const BookCover = ({ title, index }: { title: string; index: number }) => {
-  const isDark = index % 2 === 0;
-  const bgColor = isDark ? 'bg-[#000000]' : 'bg-[#ffffff]';
-  const textColor = isDark ? 'text-white' : 'text-black';
-  const logoColor = isDark ? 'bg-white' : 'bg-black';
+const CarouselItem = ({ 
+  ebook, 
+  index, 
+  x, 
+  totalCount, 
+  velocityRef, 
+  onSelect 
+}: { 
+  ebook: Ebook; 
+  index: number; 
+  x: any; 
+  totalCount: number; 
+  velocityRef: React.RefObject<number>;
+  onSelect: (ebook: Ebook) => void;
+}) => {
+  const itemX = useTransform(x, (val: number) => {
+    // Calculate raw offset
+    let offset = (index * 250) + val;
+    
+    // Infinite loop logic
+    const totalWidth = totalCount * 250;
+    const halfWidth = totalWidth / 2;
+    
+    // Wrap the offset
+    offset = ((offset + halfWidth) % totalWidth + totalWidth) % totalWidth - halfWidth;
+    
+    return offset;
+  });
+
+  const scale = useTransform(itemX, [-500, 0, 500], [0.6, 1.2, 0.6]);
+  const rotateY = useTransform(itemX, [-500, 0, 500], [45, 0, -45]);
+  const opacity = useTransform(itemX, [-600, -300, 0, 300, 600], [0, 0.5, 1, 0.5, 0]);
+  const zIndex = useTransform(itemX, [-100, 0, 100], [0, 10, 0]);
+  const blur = useTransform(itemX, [-300, 0, 300], ["blur(4px)", "blur(0px)", "blur(4px)"]);
 
   return (
-    <div className={`aspect-[2/3] mb-2 rounded-md ${bgColor} flex flex-col items-center justify-between p-2 sm:p-4 relative border border-border/10 shadow-inner group-hover:shadow-lg transition-all duration-500 overflow-hidden`}>
-      {/* Centered KiN-TXT "i -" Logo */}
-      <div className="flex-1 flex items-center justify-center">
-        <div className="flex items-center gap-1.5 sm:gap-3">
-          <div className="relative flex flex-col items-center justify-center w-3 h-5 sm:w-6 sm:h-10">
-            <span className={`w-1 h-1 sm:w-2 sm:h-2 rounded-full ${logoColor} mb-0.5 sm:mb-1`} />
-            <span className={`w-1 h-2.5 sm:w-2 sm:h-5 ${logoColor} rounded-sm`} />
-          </div>
-          <div className={`w-2.5 h-0.5 sm:w-5 sm:h-1 ${logoColor} rounded-full opacity-80`} />
+    <motion.div
+      style={{
+        x: itemX,
+        scale,
+        rotateY,
+        opacity,
+        zIndex,
+        filter: blur,
+        position: 'absolute'
+      }}
+      transition={{ type: "spring", stiffness: 300, damping: 30 }}
+      className="w-48 sm:w-64"
+    >
+      <div 
+        className="group cursor-pointer select-none"
+        onClick={() => {
+          // Only select if it's the centered book or if we're not moving fast
+          if (velocityRef.current !== undefined && Math.abs(velocityRef.current) < 2) {
+            onSelect(ebook);
+          }
+        }}
+      >
+        <BookCover title={ebook.title} index={index} />
+        <div className="mt-4 text-center">
+          <motion.h3 className="font-display font-medium text-xs sm:text-sm uppercase tracking-widest text-foreground line-clamp-1">
+            {ebook.title}
+          </motion.h3>
+          <p className="text-[10px] text-muted-foreground uppercase tracking-[0.3em] mt-1">
+            {ebook.author}
+          </p>
         </div>
       </div>
-
-      {/* Title at the bottom */}
-      <div className="w-full">
-        <h4 className={`text-center font-display font-medium text-[6px] sm:text-[10px] leading-tight uppercase tracking-widest ${textColor} line-clamp-3`}>
-          {title}
-        </h4>
-      </div>
-    </div>
+    </motion.div>
   );
 };
 
@@ -138,7 +181,7 @@ interface EbookLibraryProps {
 }
 
 export function EbookLibrary({ onSelectEbook }: EbookLibraryProps) {
-  const [viewType, setViewType] = useState<'grid' | 'carousel'>('carousel');
+  const [viewType, setViewType] = useState<'grid' | 'carousel'>('grid');
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [carouselIndex, setCarouselIndex] = useState(0);
@@ -149,7 +192,6 @@ export function EbookLibrary({ onSelectEbook }: EbookLibraryProps) {
   
   // Custom momentum state
   const velocityRef = useRef(0);
-  const lastXRef = useRef(0);
   const isDraggingRef = useRef(false);
 
   const springX = useSpring(x, {
@@ -161,15 +203,16 @@ export function EbookLibrary({ onSelectEbook }: EbookLibraryProps) {
   // Effect to update the visible carousel index based on springX
   useEffect(() => {
     return springX.on("change", (v) => {
+      if (viewType !== 'carousel') return;
       const index = Math.round(-v / 250);
       const normalizedIndex = ((index % AVAILABLE_EBOOKS.length) + AVAILABLE_EBOOKS.length) % AVAILABLE_EBOOKS.length;
       setCarouselIndex(normalizedIndex);
     });
-  }, [springX]);
+  }, [springX, viewType]);
 
   // Handle "spinning freely" momentum
   useAnimationFrame((time, delta) => {
-    if (isDraggingRef.current) return;
+    if (viewType !== 'carousel' || isDraggingRef.current) return;
     
     if (Math.abs(velocityRef.current) > 0.1) {
       // Apply friction
@@ -290,64 +333,17 @@ export function EbookLibrary({ onSelectEbook }: EbookLibraryProps) {
             />
 
             <div className="relative w-full h-full flex items-center justify-center perspective-[1000px]">
-              {AVAILABLE_EBOOKS.map((ebook, index) => {
-                const itemX = useTransform(x, (val) => {
-                  // Calculate raw offset
-                  let offset = (index * 250) + val;
-                  
-                  // Infinite loop logic
-                  const totalWidth = AVAILABLE_EBOOKS.length * 250;
-                  const halfWidth = totalWidth / 2;
-                  
-                  // Wrap the offset
-                  offset = ((offset + halfWidth) % totalWidth + totalWidth) % totalWidth - halfWidth;
-                  
-                  return offset;
-                });
-
-                const scale = useTransform(itemX, [-500, 0, 500], [0.6, 1.2, 0.6]);
-                const rotateY = useTransform(itemX, [-500, 0, 500], [45, 0, -45]);
-                const opacity = useTransform(itemX, [-600, -300, 0, 300, 600], [0, 0.5, 1, 0.5, 0]);
-                const zIndex = useTransform(itemX, [-100, 0, 100], [0, 10, 0]);
-                const blur = useTransform(itemX, [-300, 0, 300], ["blur(4px)", "blur(0px)", "blur(4px)"]);
-
-                return (
-                  <motion.div
-                    key={ebook.id}
-                    style={{
-                      x: itemX,
-                      scale,
-                      rotateY,
-                      opacity,
-                      zIndex,
-                      filter: blur,
-                      position: 'absolute'
-                    }}
-                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                    className="w-48 sm:w-64"
-                  >
-                    <div 
-                      className="group cursor-pointer select-none"
-                      onClick={() => {
-                        // Only select if it's the centered book or if we're not moving fast
-                        if (Math.abs(velocityRef.current) < 2) {
-                          handleSelectEbook(ebook);
-                        }
-                      }}
-                    >
-                      <BookCover title={ebook.title} index={index} />
-                      <div className="mt-4 text-center">
-                        <motion.h3 className="font-display font-medium text-xs sm:text-sm uppercase tracking-widest text-foreground line-clamp-1">
-                          {ebook.title}
-                        </motion.h3>
-                        <p className="text-[10px] text-muted-foreground uppercase tracking-[0.3em] mt-1">
-                          {ebook.author}
-                        </p>
-                      </div>
-                    </div>
-                  </motion.div>
-                );
-              })}
+              {AVAILABLE_EBOOKS.map((ebook, index) => (
+                <CarouselItem
+                  key={ebook.id}
+                  ebook={ebook}
+                  index={index}
+                  x={x}
+                  totalCount={AVAILABLE_EBOOKS.length}
+                  velocityRef={velocityRef}
+                  onSelect={handleSelectEbook}
+                />
+              ))}
             </div>
           </motion.div>
         )}
