@@ -116,7 +116,7 @@ const CarouselItem = ({
   index: number; 
   x: any; 
   totalCount: number; 
-  velocityRef: React.RefObject<number>;
+  velocityRef: React.MutableRefObject<number>;
   onSelect: (ebook: Ebook) => void;
 }) => {
   const itemX = useTransform(x, (val: number) => {
@@ -184,8 +184,6 @@ export function EbookLibrary({ onSelectEbook }: EbookLibraryProps) {
   const [viewType, setViewType] = useState<'grid' | 'carousel'>('grid');
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [carouselIndex, setCarouselIndex] = useState(0);
-
   // Motion values for carousel momentum
   const x = useMotionValue(0);
   const cursorX = useMotionValue(0);
@@ -199,16 +197,6 @@ export function EbookLibrary({ onSelectEbook }: EbookLibraryProps) {
     damping: 25,
     mass: 0.5
   });
-
-  // Effect to update the visible carousel index based on springX
-  useEffect(() => {
-    return springX.on("change", (v) => {
-      if (viewType !== 'carousel') return;
-      const index = Math.round(-v / 250);
-      const normalizedIndex = ((index % AVAILABLE_EBOOKS.length) + AVAILABLE_EBOOKS.length) % AVAILABLE_EBOOKS.length;
-      setCarouselIndex(normalizedIndex);
-    });
-  }, [springX, viewType]);
 
   // Handle "spinning freely" momentum
   useAnimationFrame((time, delta) => {
@@ -253,7 +241,12 @@ export function EbookLibrary({ onSelectEbook }: EbookLibraryProps) {
   }, [onSelectEbook]);
 
   return (
-    <div className="w-full max-w-5xl mx-auto mt-3">
+    <motion.div 
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+      className="w-full max-w-5xl mx-auto mt-3"
+    >
       {/* View Toggle */}
       <div className="flex justify-end mb-6 gap-2 px-4">
         <button
@@ -365,6 +358,6 @@ export function EbookLibrary({ onSelectEbook }: EbookLibraryProps) {
           <p className="text-muted-foreground">No ebooks available yet</p>
         </div>
       )}
-    </div>
+    </motion.div>
   );
 }
