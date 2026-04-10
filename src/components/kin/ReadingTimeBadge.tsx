@@ -1,141 +1,135 @@
 import { motion } from 'framer-motion';
 
 // Badge tiers — thresholds are in MINUTES
-const TIERS = [
+export const LAPEL_TIERS = [
   {
     name: 'Blue',
-    label: 'READER',
+    label: 'BLUE LAPEL',
     minMins: 600,
     color: '#0EA5E9',
-    glow: 'rgba(14,165,233,0.45)',
-    bg: 'rgba(14,165,233,0.12)',
-    border: 'rgba(14,165,233,0.35)',
-    icon: '📖',
+    glow: 'rgba(14,165,233,0.5)',
+    bg: 'rgba(14,165,233,0.15)',
+    border: 'rgba(14,165,233,0.4)',
   },
   {
     name: 'Bronze',
-    label: 'DEVOTED',
+    label: 'BRONZE LAPEL',
     minMins: 1200,
     color: '#CD7F32',
-    glow: 'rgba(205,127,50,0.45)',
-    bg: 'rgba(205,127,50,0.12)',
-    border: 'rgba(205,127,50,0.35)',
-    icon: '🔥',
+    glow: 'rgba(205,127,50,0.5)',
+    bg: 'rgba(205,127,50,0.15)',
+    border: 'rgba(205,127,50,0.4)',
   },
   {
     name: 'Silver',
-    label: 'FOCUS',
+    label: 'SILVER LAPEL',
     minMins: 2400,
     color: '#C0C0C0',
-    glow: 'rgba(192,192,192,0.45)',
-    bg: 'rgba(192,192,192,0.10)',
-    border: 'rgba(192,192,192,0.35)',
-    icon: '⚡',
+    glow: 'rgba(192,192,192,0.5)',
+    bg: 'rgba(192,192,192,0.12)',
+    border: 'rgba(192,192,192,0.4)',
   },
   {
     name: 'Gold',
-    label: 'ELITE',
+    label: 'GOLD LAPEL',
     minMins: 6000,
     color: '#FFD600',
-    glow: 'rgba(255,214,0,0.5)',
-    bg: 'rgba(255,214,0,0.10)',
-    border: 'rgba(255,214,0,0.35)',
-    icon: '👑',
+    glow: 'rgba(255,214,0,0.55)',
+    bg: 'rgba(255,214,0,0.12)',
+    border: 'rgba(255,214,0,0.4)',
   },
   {
     name: 'Platinum',
-    label: 'LEGEND',
+    label: 'PLATINUM LAPEL',
     minMins: 15000,
     color: '#E5E4E2',
-    glow: 'rgba(229,228,226,0.55)',
-    bg: 'rgba(229,228,226,0.08)',
-    border: 'rgba(229,228,226,0.4)',
-    icon: '🏆',
+    glow: 'rgba(229,228,226,0.6)',
+    bg: 'rgba(229,228,226,0.10)',
+    border: 'rgba(229,228,226,0.45)',
   },
 ] as const;
+
+/** Returns the highest earned lapel tier for a given total reading time in seconds. */
+export function getHighestLapel(totalReadingTimeSeconds: number) {
+  const totalMins = Math.floor(totalReadingTimeSeconds / 60);
+  for (let i = LAPEL_TIERS.length - 1; i >= 0; i--) {
+    if (totalMins >= LAPEL_TIERS[i].minMins) return LAPEL_TIERS[i];
+  }
+  return null;
+}
+
+function getCurrentTierIndex(totalMins: number) {
+  for (let i = LAPEL_TIERS.length - 1; i >= 0; i--) {
+    if (totalMins >= LAPEL_TIERS[i].minMins) return i;
+  }
+  return -1;
+}
 
 interface ReadingTimeBadgeProps {
   totalReadingTimeSeconds: number;
 }
 
-function getCurrentTier(totalMins: number) {
-  // Walk backwards to find the highest earned tier
-  for (let i = TIERS.length - 1; i >= 0; i--) {
-    if (totalMins >= TIERS[i].minMins) return { earned: TIERS[i], tierIndex: i };
-  }
-  return { earned: null, tierIndex: -1 };
-}
-
-function getNextTier(tierIndex: number) {
-  if (tierIndex < TIERS.length - 1) return TIERS[tierIndex + 1];
-  return null; // already at max
-}
-
 export function ReadingTimeBadge({ totalReadingTimeSeconds }: ReadingTimeBadgeProps) {
   const totalMins = Math.floor(totalReadingTimeSeconds / 60);
-  const { earned, tierIndex } = getCurrentTier(totalMins);
-  const nextTier = getNextTier(tierIndex);
-  // The first milestone is always the first tier even if unearned
-  const firstTier = TIERS[0];
+  const tierIndex = getCurrentTierIndex(totalMins);
+  const earned = tierIndex >= 0 ? LAPEL_TIERS[tierIndex] : null;
+  const nextTier = tierIndex < LAPEL_TIERS.length - 1 ? LAPEL_TIERS[tierIndex + 1] : null;
+  const firstTier = LAPEL_TIERS[0];
 
-  // Progress bar calculation
+  // Progress bar
   let progressPct = 0;
   let progressLabel = '';
   let progressColor = '#0EA5E9';
 
-  if (!earned && nextTier === null) {
-    // Edge case: no tiers at all (shouldn't happen)
-    progressPct = 0;
-  } else if (!earned) {
-    // Heading to first tier
+  if (!earned) {
     progressPct = Math.min(100, (totalMins / firstTier.minMins) * 100);
-    progressLabel = `${totalMins} / ${firstTier.minMins} mins to ${firstTier.label}`;
+    progressLabel = `${totalMins} / ${firstTier.minMins} mins to ${firstTier.name}`;
     progressColor = firstTier.color;
   } else if (!nextTier) {
-    // Max tier — full bar
     progressPct = 100;
-    progressLabel = `${totalMins} mins — LEGEND STATUS`;
+    progressLabel = `${totalMins} mins — Platinum Status`;
     progressColor = earned.color;
   } else {
-    // Between tiers
-    const fromMins = earned.minMins;
-    const toMins = nextTier.minMins;
-    progressPct = Math.min(100, ((totalMins - fromMins) / (toMins - fromMins)) * 100);
-    progressLabel = `${totalMins} / ${toMins} mins to ${nextTier.label}`;
+    progressPct = Math.min(100, ((totalMins - earned.minMins) / (nextTier.minMins - earned.minMins)) * 100);
+    progressLabel = `${totalMins} / ${nextTier.minMins} mins to ${nextTier.name}`;
     progressColor = nextTier.color;
   }
 
   return (
     <div className="w-full space-y-3">
-      {/* Badge Row */}
-      <div className="flex items-center gap-2 flex-wrap">
-        {TIERS.map((tier, i) => {
+      {/* Lapel Badge Row */}
+      <div className="flex items-center gap-3 flex-wrap">
+        {LAPEL_TIERS.map((tier) => {
           const isEarned = totalMins >= tier.minMins;
           const isCurrent = earned?.name === tier.name;
           return (
             <motion.div
               key={tier.name}
               title={`${tier.label} — ${tier.minMins} mins`}
-              whileHover={{ scale: 1.08 }}
-              className="relative flex flex-col items-center"
+              whileHover={{ scale: 1.1 }}
+              className="flex flex-col items-center gap-0.5"
             >
+              {/* Coloured circle lapel — greyed when unearned */}
               <div
-                className="flex items-center justify-center rounded-full text-base transition-all duration-300"
+                className="rounded-full transition-all duration-300"
                 style={{
-                  width: isCurrent ? 40 : 32,
-                  height: isCurrent ? 40 : 32,
-                  background: isEarned ? tier.bg : 'rgba(255,255,255,0.03)',
-                  border: `1.5px solid ${isEarned ? tier.border : 'rgba(255,255,255,0.08)'}`,
-                  boxShadow: isCurrent ? `0 0 14px 3px ${tier.glow}` : isEarned ? `0 0 6px 1px ${tier.glow}` : 'none',
-                  opacity: isEarned ? 1 : 0.3,
-                  filter: isEarned ? 'none' : 'grayscale(100%)',
+                  width: isCurrent ? 26 : 20,
+                  height: isCurrent ? 26 : 20,
+                  background: isEarned ? tier.color : 'rgba(255,255,255,0.08)',
+                  boxShadow: isCurrent
+                    ? `0 0 16px 4px ${tier.glow}, 0 0 4px 1px ${tier.glow}`
+                    : isEarned
+                    ? `0 0 8px 2px ${tier.glow}`
+                    : 'none',
+                  border: isEarned
+                    ? `2px solid ${tier.border}`
+                    : '2px solid rgba(255,255,255,0.1)',
+                  opacity: isEarned ? 1 : 0.35,
                 }}
-              >
-                <span style={{ fontSize: isCurrent ? 18 : 14 }}>{tier.icon}</span>
-              </div>
+              />
               <span
-                className="text-[7px] font-bold uppercase tracking-widest mt-0.5 leading-none"
-                style={{ color: isEarned ? tier.color : 'rgba(255,255,255,0.2)' }}
+                className="text-[7px] font-bold uppercase tracking-widest leading-none"
+                style={{ color: isEarned ? tier.color : 'rgba(255,255,255,0.18)' }}
               >
                 {tier.name}
               </span>
@@ -144,11 +138,11 @@ export function ReadingTimeBadge({ totalReadingTimeSeconds }: ReadingTimeBadgePr
         })}
       </div>
 
-      {/* Progress Bar toward next tier */}
+      {/* Progress Bar */}
       <div className="space-y-1">
         <div className="flex justify-between items-center">
           <span className="text-[9px] uppercase tracking-widest text-muted-foreground font-bold">
-            Reading Time
+            Lapels
           </span>
           <span className="text-[9px] text-muted-foreground tabular-nums">
             {progressLabel}
@@ -162,16 +156,46 @@ export function ReadingTimeBadge({ totalReadingTimeSeconds }: ReadingTimeBadgePr
             animate={{ width: `${progressPct}%` }}
             transition={{ duration: 0.8, ease: 'easeOut' }}
           />
-          {/* Subtle sheen */}
           <div
-            className="absolute inset-0 rounded-full"
+            className="absolute inset-0 rounded-full pointer-events-none"
             style={{
-              background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.12) 50%, transparent 100%)',
-              pointerEvents: 'none',
+              background:
+                'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.12) 50%, transparent 100%)',
             }}
           />
         </div>
       </div>
     </div>
+  );
+}
+
+/** Small lapel pin to overlay on an avatar. Size defaults to 18px. */
+export function AvatarLapel({
+  totalReadingTimeSeconds,
+  size = 18,
+}: {
+  totalReadingTimeSeconds: number;
+  size?: number;
+}) {
+  const lapel = getHighestLapel(totalReadingTimeSeconds);
+  if (!lapel) return null;
+
+  return (
+    <motion.div
+      initial={{ scale: 0, opacity: 0 }}
+      animate={{ scale: 1, opacity: 1 }}
+      transition={{ type: 'spring', stiffness: 300, damping: 18, delay: 0.3 }}
+      title={lapel.label}
+      className="absolute rounded-full pointer-events-none z-10"
+      style={{
+        width: size,
+        height: size,
+        bottom: 2,
+        right: 2,
+        background: lapel.color,
+        border: '2.5px solid var(--background, #09090b)',
+        boxShadow: `0 0 10px 3px ${lapel.glow}`,
+      }}
+    />
   );
 }

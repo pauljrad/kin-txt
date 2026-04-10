@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Check, Edit2, X, BookOpen, Users, Flame, Clock, Calendar, Bookmark } from "lucide-react";
 import { useGamification } from "@/hooks/useGamification";
-import { ReadingTimeBadge } from "./ReadingTimeBadge";
+import { ReadingTimeBadge, AvatarLapel } from "./ReadingTimeBadge";
 
 interface Profile {
     id: string;
@@ -197,6 +197,7 @@ export const MyProfile = () => {
                             {getInitials(profile.display_name)}
                         </AvatarFallback>
                     </Avatar>
+                    <AvatarLapel totalReadingTimeSeconds={gamification.totalReadingTimeSeconds} size={22} />
                 </div>
 
                 {isEditing ? (

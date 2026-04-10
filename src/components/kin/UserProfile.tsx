@@ -7,7 +7,7 @@ import { getInitials, getAvatarColor } from "@/lib/utils";
 import { useToast } from "@/components/ui/use-toast";
 import { Flame, Clock } from "lucide-react";
 import { useGamification } from "@/hooks/useGamification";
-import { ReadingTimeBadge } from "./ReadingTimeBadge";
+import { ReadingTimeBadge, AvatarLapel } from "./ReadingTimeBadge";
 
 interface UserProfileProps {
     userId: string;
@@ -112,15 +112,18 @@ export const UserProfile = ({ userId }: UserProfileProps) => {
         <div className="flex flex-col gap-5 w-full h-full max-h-[60vh] overflow-hidden">
             {/* Header: Horizontal Layout */}
             <div className="flex items-start gap-4 shrink-0 w-full pr-10 sm:pr-0">
-                <Avatar className="h-16 w-16 border-2 border-border shadow-sm shrink-0">
-                    <AvatarImage src={profile.avatar_url || ''} className="object-cover" />
-                    <AvatarFallback
-                        className="text-2xl font-bold"
-                        style={{ backgroundColor: getAvatarColor((profile as any).id, profile.avatar_color), color: '#000' }}
-                    >
-                        {getInitials(profile.display_name)}
-                    </AvatarFallback>
-                </Avatar>
+                <div className="relative shrink-0">
+                    <Avatar className="h-16 w-16 border-2 border-border shadow-sm">
+                        <AvatarImage src={profile.avatar_url || ''} className="object-cover" />
+                        <AvatarFallback
+                            className="text-2xl font-bold"
+                            style={{ backgroundColor: getAvatarColor((profile as any).id, profile.avatar_color), color: '#000' }}
+                        >
+                            {getInitials(profile.display_name)}
+                        </AvatarFallback>
+                    </Avatar>
+                    <AvatarLapel totalReadingTimeSeconds={gamification.totalReadingTimeSeconds} size={16} />
+                </div>
 
                 <div className="flex-1 min-w-0 flex flex-col justify-center pt-1">
                     <h3 className="text-lg font-display font-bold leading-tight mb-1 tracking-tight break-words pr-2">{profile.display_name}</h3>
