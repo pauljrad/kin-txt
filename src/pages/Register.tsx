@@ -75,22 +75,22 @@ export default function Register() {
         return;
       }
 
-      // 2. Send welcome email (fire and forget)
-      supabase.functions.invoke('send-welcome-email', {
-        body: { email, displayName }
-      }).catch(() => {});
+      // 2. Launch background emails safely and concurrently without blocking execution permanently
+      await Promise.allSettled([
+        supabase.functions.invoke('send-welcome-email', {
+          body: { email, displayName }
+        }),
+        supabase.functions.invoke('notify-admin-signup', {
+          body: { 
+            email, 
+            displayName,
+            userId: user?.id || 'pending',
+            createdAt: new Date().toISOString()
+          }
+        })
+      ]);
 
-      // 3. Notify Admin of new signup (fire and forget)
-      supabase.functions.invoke('notify-admin-signup', {
-        body: { 
-          email, 
-          displayName,
-          userId: user?.id || 'pending',
-          createdAt: new Date().toISOString()
-        }
-      }).catch(() => {});
-
-      // 4. Create Stripe Checkout session with their email pre-filled
+      // 3. Create Stripe Checkout session with their email pre-filled
       const { data, error: stripeError } = await supabase.functions.invoke('create-checkout-session', {
         body: { priceId: planInfo.priceId, email },
       });
