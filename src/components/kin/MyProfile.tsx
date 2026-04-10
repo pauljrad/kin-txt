@@ -278,6 +278,11 @@ export const MyProfile = () => {
             <div className="space-y-6">
                 {/* Stats Section */}
                 {/* Gamification Stats Section */}
+                {/* Reading Time Badges / Lapels */}
+                <ReadingTimeBadge totalReadingTimeSeconds={gamification.totalReadingTimeSeconds} />
+
+                {/* Stats Section */}
+                {/* Gamification Stats Section */}
                 <div className="grid grid-cols-2 gap-3">
                     <div className="p-4 rounded-xl bg-secondary/10 border border-border/20 flex flex-col items-center justify-center text-center">
                         <Flame className="h-5 w-5 text-orange-500 mb-1.5 drop-shadow-[0_0_8px_rgba(249,115,22,0.6)]" />
@@ -290,9 +295,6 @@ export const MyProfile = () => {
                         <span className="text-[9px] text-muted-foreground uppercase tracking-widest font-bold mt-1">Total Mins</span>
                     </div>
                 </div>
-
-                {/* Reading Time Badges */}
-                <ReadingTimeBadge totalReadingTimeSeconds={gamification.totalReadingTimeSeconds} />
 
                 <div className="grid grid-cols-3 gap-3">
                     <div className="p-3 rounded-lg bg-secondary/5 border border-border/10 flex flex-col items-center text-center">
