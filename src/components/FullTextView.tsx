@@ -57,11 +57,19 @@ export const FullTextView = forwardRef<HTMLDivElement, FullTextViewProps>(functi
       {/* Panel */}
       <motion.div
         ref={panelRef}
+        drag="x"
+        dragConstraints={{ left: 0, right: 0 }}
+        dragElastic={{ left: 0, right: 0.5 }}
+        onDragEnd={(_, info) => {
+          if (info.offset.x > 100) {
+            onClose();
+          }
+        }}
         initial={{ x: '100%' }}
         animate={{ x: 0 }}
         exit={{ x: '100%' }}
         transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-        className="absolute right-0 top-0 h-full w-full max-w-2xl bg-background shadow-xl"
+        className="absolute right-0 top-0 h-full w-full max-w-2xl bg-background shadow-xl touch-pan-y"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}

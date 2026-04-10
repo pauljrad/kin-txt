@@ -293,14 +293,12 @@
   .kinetic-word {
     font-family: var(--font-display);
     @apply text-foreground uppercase tracking-wide;
-    text-shadow: 0 0 40px hsl(var(--foreground) / 0.1);
   }
 
   .kinetic-word-emphasis {
     font-family: var(--font-display);
     @apply text-foreground uppercase tracking-wide;
     transform: scale(2.5);
-    text-shadow: 0 0 60px hsl(var(--focus-glow) / 0.5);
   }
 
   /* Focus mode backgrounds */

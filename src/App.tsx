@@ -20,6 +20,7 @@ import Privacy from "./pages/Privacy";
 import DataPolicy from "./pages/DataPolicy";
 import CopyrightPolicy from "./pages/CopyrightPolicy";
 import PaymentPolicy from "./pages/PaymentPolicy";
+import ResetPassword from "./pages/ResetPassword";
 import { useState, useEffect } from "react";
 import { SplashScreen } from "@/components/SplashScreen";
 import { AnimatePresence } from "framer-motion";
@@ -65,6 +66,7 @@ const AppContent = () => {
         <Route path="/data" element={<DataPolicy />} />
         <Route path="/copyright" element={<CopyrightPolicy />} />
         <Route path="/payment-policy" element={<PaymentPolicy />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/tiktok" element={<CinematicPromo />} />
         <Route path="/target" element={<CinematicTargetPromo />} />
 

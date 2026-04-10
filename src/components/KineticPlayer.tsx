@@ -1251,12 +1251,12 @@ export function KineticPlayer({
             {/* Top Anchor - Adjusted for better sight alignment */}
             <div
               className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[64px] w-0.5 h-10 opacity-90 transition-colors duration-300"
-              style={{ backgroundColor: targetColor, boxShadow: `0 0 8px ${targetColor}80` }}
+              style={{ backgroundColor: targetColor }}
             />
             {/* Bottom Anchor - Adjusted for better sight alignment */}
             <div
               className="absolute top-1/2 left-1/2 -translate-x-1/2 translate-y-[24px] w-0.5 h-10 opacity-90 transition-colors duration-300"
-              style={{ backgroundColor: targetColor, boxShadow: `0 0 8px ${targetColor}80` }}
+              style={{ backgroundColor: targetColor }}
             />
           </div>
         )}

@@ -74,11 +74,19 @@ export const ChapterNavigation = forwardRef<HTMLDivElement, ChapterNavigationPro
             />
             
             <motion.div
+              drag="x"
+              dragConstraints={{ left: 0, right: 0 }}
+              dragElastic={{ left: 0, right: 0.5 }}
+              onDragEnd={(_, info) => {
+                if (info.offset.x > 100) {
+                  onToggle();
+                }
+              }}
               initial={{ opacity: 0, x: '100%' }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="fixed top-0 right-0 h-full w-80 max-w-[90vw] bg-card/95 backdrop-blur-xl border-l border-border z-[100] overflow-hidden flex flex-col"
+              className="fixed top-0 right-0 h-full w-80 max-w-[90vw] bg-card/95 backdrop-blur-xl border-l border-border z-[100] overflow-hidden flex flex-col touch-pan-y"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header */}

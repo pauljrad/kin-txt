@@ -104,7 +104,7 @@ export const ShareModal = ({ open, onOpenChange, onShare, onGenerateLink }: Shar
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="bg-zinc-950 border-white/10 text-white sm:max-w-md">
+            <DialogContent className="bg-card border-border text-foreground sm:max-w-md">
                 <DialogHeader>
                     <DialogTitle className="font-display tracking-wide text-xl">Share TXT</DialogTitle>
                 </DialogHeader>
@@ -124,10 +124,10 @@ export const ShareModal = ({ open, onOpenChange, onShare, onGenerateLink }: Shar
 
                     <div className="relative">
                         <div className="absolute inset-0 flex items-center">
-                            <span className="w-full border-t border-white/10" />
+                            <span className="w-full border-t border-border" />
                         </div>
                         <div className="relative flex justify-center text-xs uppercase">
-                            <span className="bg-zinc-950 px-2 text-muted-foreground">Or send to KiN</span>
+                            <span className="bg-card px-2 text-muted-foreground">Or send to KiN</span>
                         </div>
                     </div>
 
@@ -137,7 +137,7 @@ export const ShareModal = ({ open, onOpenChange, onShare, onGenerateLink }: Shar
                         <div className="max-h-[380px] overflow-y-auto pr-2 -mr-2">
                             <div className="space-y-2">
                                 {kins.map(kin => (
-                                    <div key={kin.id} className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-colors">
+                                    <div key={kin.id} className="flex items-center justify-between p-3 rounded-lg bg-secondary/50 border border-border hover:bg-secondary transition-colors">
                                         <div className="flex items-center gap-3">
                                             <Avatar>
                                                 <AvatarImage src={kin.avatar_url || ''} />

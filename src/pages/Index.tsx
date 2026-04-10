@@ -707,6 +707,7 @@ const Index = () => {
                     <Library className="w-4 h-4" />
                     <span>Ebooks</span>
                   </button>
+
                   <button
                     onClick={() => setActiveTab('news')}
                     className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all ${activeTab === 'news'

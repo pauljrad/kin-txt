@@ -24,6 +24,8 @@ const Login = forwardRef<HTMLDivElement>((_, ref) => {
   const [isSignUp, setIsSignUp] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   const [isPongGameActive, setIsPongGameActive] = useState(false);
+  const [isResetMode, setIsResetMode] = useState(false);
+  const { resetPassword } = useAuth();
 
   // Redirect if already logged in
   useEffect(() => {
@@ -158,6 +160,36 @@ const Login = forwardRef<HTMLDivElement>((_, ref) => {
     }
   };
 
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    const emailResult = emailSchema.safeParse(email);
+    if (!emailResult.success) {
+      setErrors({ email: emailResult.error.errors[0].message });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const { error } = await resetPassword(email);
+      if (error) {
+        toast.error(error.message);
+        setIsLoading(false);
+        return;
+      }
+      
+      toast.success('Reset link sent! 📧', {
+        description: 'Please check your inbox for instructions to reset your password.',
+        duration: 8000,
+      });
+      setIsResetMode(false);
+      setIsLoading(false);
+    } catch (err) {
+      toast.error('An unexpected error occurred');
+      setIsLoading(false);
+    }
+  };
+
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -170,7 +202,7 @@ const Login = forwardRef<HTMLDivElement>((_, ref) => {
     <div className="min-h-[100svh] relative bg-background overflow-hidden flex flex-col">
       <ThemeToggle />
 
-      <div className="flex-1 flex flex-col items-center justify-start sm:justify-center px-4 pt-32 sm:pt-4">
+      <div className="flex-1 flex flex-col items-center justify-start sm:justify-center px-4 pt-44 sm:pt-12">
         {/* Animated Title */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -190,11 +222,18 @@ const Login = forwardRef<HTMLDivElement>((_, ref) => {
             filter: isPongGameActive ? 'blur(6px)' : 'blur(0px)',
           }}
           transition={{ duration: 0.4, delay: isPongGameActive ? 0 : 0.4 }}
-          onSubmit={handleSubmit}
+          onSubmit={isResetMode ? handleResetPassword : handleSubmit}
           className="w-full max-w-sm space-y-4"
           style={{ pointerEvents: isPongGameActive ? 'none' : 'auto' }}
         >
-          {isSignUp && (
+          {isResetMode && (
+             <div className="text-center mb-4">
+              <h1 className="text-xl font-medium tracking-tight">Reset Password</h1>
+              <p className="text-sm text-muted-foreground mt-1">Enter your email and we'll send you a link to reset your password.</p>
+            </div>
+          )}
+
+          {isSignUp && !isResetMode && (
             <div className="space-y-1">
               <Input
                 type="text"
@@ -224,39 +263,66 @@ const Login = forwardRef<HTMLDivElement>((_, ref) => {
             )}
           </div>
 
-          <div className="space-y-1">
-            <Input
-              type="password"
-              placeholder="Password"
-              value={password}
-              onChange={(e) => {
-                setPassword(e.target.value);
-                setErrors(prev => ({ ...prev, password: undefined }));
-              }}
-              className={`h-12 text-center bg-card/50 border-border/50 focus:border-foreground/30 ${errors.password ? 'border-destructive' : ''}`}
-              autoComplete={isSignUp ? 'new-password' : 'current-password'}
-            />
-            {errors.password && (
-              <p className="text-xs text-destructive text-center">{errors.password}</p>
-            )}
-          </div>
+          {!isResetMode && (
+            <div className="space-y-1">
+              <Input
+                type="password"
+                placeholder="Password"
+                value={password}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  setErrors(prev => ({ ...prev, password: undefined }));
+                }}
+                className={`h-12 text-center bg-card/50 border-border/50 focus:border-foreground/30 ${errors.password ? 'border-destructive' : ''}`}
+                autoComplete={isSignUp ? 'new-password' : 'current-password'}
+              />
+              {errors.password && (
+                <p className="text-xs text-destructive text-center">{errors.password}</p>
+              )}
+            </div>
+          )}
+
+          {!isSignUp && !isResetMode && (
+            <div className="text-center">
+              <button
+                type="button"
+                onClick={() => setIsResetMode(true)}
+                className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Forgot your password?
+              </button>
+            </div>
+          )}
 
           <Button
             type="submit"
-            disabled={isLoading || !email || !password}
+            disabled={isLoading || !email || (!isResetMode && !password)}
             className="w-full h-12 text-base"
           >
-            {isLoading ? (isSignUp ? 'Creating account...' : 'Signing in...') : (isSignUp ? 'Create Account' : 'Sign In')}
+            {isLoading 
+              ? (isResetMode ? 'Sending link...' : (isSignUp ? 'Creating account...' : 'Signing in...')) 
+              : (isResetMode ? 'Send Reset Link' : (isSignUp ? 'Create Account' : 'Sign In'))
+            }
           </Button>
 
           <div className="text-center pt-1">
-            <Link
-              to="/pricing"
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              New to KiN-TXT?{' '}
-              <span className="underline underline-offset-2">Register here →</span>
-            </Link>
+            {isResetMode ? (
+              <button
+                type="button"
+                onClick={() => setIsResetMode(false)}
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors underline underline-offset-2"
+              >
+                Back to Login
+              </button>
+            ) : (
+              <Link
+                to="/pricing"
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                New to KiN-TXT?{' '}
+                <span className="underline underline-offset-2 text-white">Register here →</span>
+              </Link>
+            )}
           </div>
         </motion.form>
       </div>
