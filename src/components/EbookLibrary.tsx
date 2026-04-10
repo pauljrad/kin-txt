@@ -245,7 +245,13 @@ export function EbookLibrary({ onSelectEbook }: EbookLibraryProps) {
       const targetX = Math.round(x.get() / 250) * 250;
       const dist = targetX - x.get();
       if (Math.abs(dist) > 0.1) {
-        x.set(x.get() + dist * 0.1 * timeScale);
+        const step = dist * 0.1 * timeScale;
+        // Clamp the step to the total distance to prevent unstable oscillation (explosions)
+        if (Math.abs(step) >= Math.abs(dist)) {
+          x.set(targetX);
+        } else {
+          x.set(x.get() + step);
+        }
       }
     }
   });
