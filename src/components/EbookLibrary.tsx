@@ -1,6 +1,6 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
-import { motion, useMotionValue, useTransform, useSpring, AnimatePresence, useAnimationFrame } from 'framer-motion';
-import { BookOpen, Loader2, LayoutGrid, GalleryHorizontal } from 'lucide-react';
+import { useState, useCallback } from 'react';
+import { motion } from 'framer-motion';
+import { BookOpen, Loader2 } from 'lucide-react';
 import { parseFile, ParsedText } from '@/lib/textParser';
 
 export interface Ebook {
@@ -133,128 +133,13 @@ const BookCover = ({ title, index }: { title: string; index: number }) => {
   );
 };
 
-const CarouselItem = ({ 
-  ebook, 
-  index, 
-  x, 
-  totalCount, 
-  velocityRef,
-  onSelect 
-}: { 
-  ebook: Ebook; 
-  index: number; 
-  x: any; 
-  totalCount: number; 
-  velocityRef: React.MutableRefObject<number>;
-  onSelect: (ebook: Ebook) => void;
-}) => {
-  const itemX = useTransform(x, (val: number) => {
-    // Calculate raw offset
-    let offset = (index * 250) + val;
-    
-    // Infinite loop logic
-    const totalWidth = totalCount * 250;
-    const halfWidth = totalWidth / 2;
-    
-    // Wrap the offset
-    offset = ((offset + halfWidth) % totalWidth + totalWidth) % totalWidth - halfWidth;
-    
-    return offset;
-  });
-
-  const scale = useTransform(itemX, [-500, 0, 500], [0.6, 1.2, 0.6]);
-  const rotateY = useTransform(itemX, [-500, 0, 500], [45, 0, -45]);
-  const opacity = useTransform(itemX, [-600, -300, 0, 300, 600], [0, 0.5, 1, 0.5, 0]);
-  const zIndex = useTransform(itemX, [-100, 0, 100], [0, 10, 0]);
-  const blur = useTransform(itemX, [-300, 0, 300], ["blur(4px)", "blur(0px)", "blur(4px)"]);
-
-  return (
-    <motion.div
-      style={{
-        x: itemX,
-        scale,
-        rotateY,
-        opacity,
-        zIndex,
-        filter: blur,
-        position: 'absolute'
-      }}
-      transition={{ type: "spring", stiffness: 300, damping: 30 }}
-      className="w-48 sm:w-64"
-    >
-      <div 
-        className="group cursor-pointer select-none"
-        onClick={() => {
-          // Only select if it's the centered book or if we're not moving fast
-          if (velocityRef.current !== undefined && Math.abs(velocityRef.current) < 2) {
-            onSelect(ebook);
-          }
-        }}
-      >
-        <BookCover title={ebook.title} index={index} />
-        <div className="mt-4 text-center">
-          <motion.h3 className="font-display font-medium text-xs sm:text-sm uppercase tracking-widest text-foreground line-clamp-1">
-            {ebook.title}
-          </motion.h3>
-          <p className="text-[10px] text-muted-foreground uppercase tracking-[0.3em] mt-1">
-            {ebook.author}
-          </p>
-        </div>
-      </div>
-    </motion.div>
-  );
-};
-
 interface EbookLibraryProps {
   onSelectEbook: (parsed: ParsedText, title: string, initialProgress?: { paragraph: number; word: number }) => void;
 }
 
 export function EbookLibrary({ onSelectEbook }: EbookLibraryProps) {
-  const [viewType, setViewType] = useState<'grid' | 'carousel'>('grid');
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  // Motion values for carousel momentum
-  const x = useMotionValue(0);
-  const cursorX = useMotionValue(0);
-  
-  // Custom momentum state
-  const velocityRef = useRef(0);
-  const isDraggingRef = useRef(false);
-
-  const springX = useSpring(x, {
-    stiffness: 150,
-    damping: 25,
-    mass: 0.5
-  });
-
-  // Custom frame-rate independent physics for endless smooth looping
-  useAnimationFrame((time, delta) => {
-    if (viewType !== 'carousel' || isDraggingRef.current) return;
-    
-    // Normalize delta so physics behave identically on 60hz vs 120hz screens
-    const timeScale = delta / 16.66;
-    
-    if (Math.abs(velocityRef.current) > 0.1) {
-      // Apply smooth velocity
-      x.set(x.get() + (velocityRef.current * timeScale));
-      // Friction: retains 98.5% of speed per frame (approx 40% speed remaining after 1 sec)
-      velocityRef.current *= Math.pow(0.985, timeScale);
-    } else {
-      velocityRef.current = 0;
-      // Snap to nearest 250 boundary with a smooth interpolation
-      const targetX = Math.round(x.get() / 250) * 250;
-      const dist = targetX - x.get();
-      if (Math.abs(dist) > 0.1) {
-        const step = dist * 0.1 * timeScale;
-        // Clamp the step to the total distance to prevent unstable oscillation (explosions)
-        if (Math.abs(step) >= Math.abs(dist)) {
-          x.set(targetX);
-        } else {
-          x.set(x.get() + step);
-        }
-      }
-    }
-  });
 
   const handleSelectEbook = useCallback(async (ebook: Ebook) => {
     setLoadingId(ebook.id);
@@ -287,104 +172,32 @@ export function EbookLibrary({ onSelectEbook }: EbookLibraryProps) {
       transition={{ duration: 0.5 }}
       className="w-full max-w-5xl mx-auto mt-3"
     >
-      {/* View Toggle */}
-      <div className="flex justify-end mb-6 gap-2 px-4">
-        <button
-          onClick={() => setViewType('grid')}
-          className={`p-2 rounded-lg transition-all ${viewType === 'grid' ? 'bg-foreground text-background shadow-lg' : 'bg-secondary/50 text-muted-foreground hover:bg-secondary'}`}
-        >
-          <LayoutGrid className="w-4 h-4" />
-        </button>
-        <button
-          onClick={() => setViewType('carousel')}
-          className={`p-2 rounded-lg transition-all ${viewType === 'carousel' ? 'bg-foreground text-background shadow-lg' : 'bg-secondary/50 text-muted-foreground hover:bg-secondary'}`}
-        >
-          <GalleryHorizontal className="w-4 h-4" />
-        </button>
+      <div className="grid grid-cols-3 gap-4 px-4">
+        {AVAILABLE_EBOOKS.map((ebook, idx) => (
+          <motion.button
+            key={ebook.id}
+            onClick={() => handleSelectEbook(ebook)}
+            disabled={loadingId !== null}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            className="group relative glass-panel p-3 text-left transition-all duration-300 hover:ring-1 hover:ring-primary/30 disabled:opacity-50"
+          >
+            <BookCover title={ebook.title} index={idx} />
+            <h3 className="font-medium text-[10px] leading-tight text-foreground mb-0.5 line-clamp-2 group-hover:text-primary">
+              {ebook.title}
+            </h3>
+            <p className="text-[8px] text-muted-foreground truncate uppercase tracking-widest">
+              {ebook.author}
+            </p>
+
+            {loadingId === ebook.id && (
+              <div className="absolute inset-0 bg-background/80 backdrop-blur-sm rounded-lg flex items-center justify-center z-10">
+                <Loader2 className="w-4 h-4 animate-spin text-primary" />
+              </div>
+            )}
+          </motion.button>
+        ))}
       </div>
-
-      <AnimatePresence mode="wait">
-        {viewType === 'grid' ? (
-          <motion.div
-            key="grid"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.3 }}
-            className="grid grid-cols-3 gap-4 px-4"
-          >
-            {AVAILABLE_EBOOKS.map((ebook, idx) => (
-              <motion.button
-                key={ebook.id}
-                onClick={() => handleSelectEbook(ebook)}
-                disabled={loadingId !== null}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className="group relative glass-panel p-3 text-left transition-all duration-300 hover:ring-1 hover:ring-primary/30 disabled:opacity-50"
-              >
-                <BookCover title={ebook.title} index={idx} />
-                <h3 className="font-medium text-[10px] leading-tight text-foreground mb-0.5 line-clamp-2 group-hover:text-primary">
-                  {ebook.title}
-                </h3>
-                <p className="text-[8px] text-muted-foreground truncate uppercase tracking-widest">
-                  {ebook.author}
-                </p>
-
-                {loadingId === ebook.id && (
-                  <div className="absolute inset-0 bg-background/80 backdrop-blur-sm rounded-lg flex items-center justify-center z-10">
-                    <Loader2 className="w-4 h-4 animate-spin text-primary" />
-                  </div>
-                )}
-              </motion.button>
-            ))}
-          </motion.div>
-        ) : (
-          <motion.div
-            key="carousel"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="relative h-[450px] flex items-center justify-center overflow-hidden"
-          >
-            {/* Drag Capture Overlay */}
-            <motion.div
-              drag="x"
-              style={{ x: cursorX }}
-              onDragStart={() => {
-                isDraggingRef.current = true;
-                velocityRef.current = 0;
-              }}
-              onDrag={(e, info) => {
-                x.set(x.get() + info.delta.x);
-                velocityRef.current = info.delta.x; // Track current frame delta in case of drag stop
-              }}
-              onDragEnd={(e, info) => {
-                isDraggingRef.current = false;
-                cursorX.set(0);
-                
-                // Convert px/sec velocity to per-frame velocity (px/16.66ms)
-                // This gives us the exact flick speed to seed the customized inertia engine!
-                velocityRef.current = info.velocity.x / 60;
-              }}
-              className="absolute inset-0 z-20 cursor-grab active:cursor-grabbing"
-            />
-
-            <div className="relative w-full h-full flex items-center justify-center perspective-[1000px]">
-              {AVAILABLE_EBOOKS.map((ebook, index) => (
-                <CarouselItem
-                  key={ebook.id}
-                  ebook={ebook}
-                  index={index}
-                  x={x}
-                  totalCount={AVAILABLE_EBOOKS.length}
-                  velocityRef={velocityRef}
-                  onSelect={handleSelectEbook}
-                />
-              ))}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       {error && (
         <motion.p
