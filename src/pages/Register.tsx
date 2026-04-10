@@ -64,7 +64,7 @@ export default function Register() {
     setIsLoading(true);
     try {
       // 1. Create Supabase account
-      const { error: signUpError } = await signUp(email, password, displayName);
+      const { user, error: signUpError } = await signUp(email, password, displayName);
       if (signUpError) {
         if (signUpError.message.includes('already registered')) {
           setServerError('An account with this email already exists. Please sign in instead.');
@@ -80,7 +80,17 @@ export default function Register() {
         body: { email, displayName }
       }).catch(() => {});
 
-      // 3. Create Stripe Checkout session with their email pre-filled
+      // 3. Notify Admin of new signup (fire and forget)
+      supabase.functions.invoke('notify-admin-signup', {
+        body: { 
+          email, 
+          displayName,
+          userId: user?.id || 'pending',
+          createdAt: new Date().toISOString()
+        }
+      }).catch(() => {});
+
+      // 4. Create Stripe Checkout session with their email pre-filled
       const { data, error: stripeError } = await supabase.functions.invoke('create-checkout-session', {
         body: { priceId: planInfo.priceId, email },
       });
