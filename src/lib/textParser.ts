@@ -89,10 +89,30 @@ export function parseTextContent(text: string): ParsedText {
     .map(p => p.trim())
     .filter(p => p.length > 0)
     .map(paragraph => {
-      // Split paragraph into words, preserving punctuation attached to words
-      return paragraph
-        .split(/\s+/)
-        .filter(word => word.length > 0);
+      // Split paragraph into words by whitespace first
+      const rawWords = paragraph.split(/\s+/).filter(word => word.length > 0);
+      
+      const processedWords: string[] = [];
+      
+      for (const word of rawWords) {
+        // Only split if word contains hyphen(s) and isn't JUST a dash or double dash
+        // Also don't split KiN-TXT to preserve branding
+        if (word.includes('-') && word.length > 1 && !word.includes('--') && !word.toLowerCase().includes('kin-txt')) {
+          const parts = word.split('-');
+          for (let i = 0; i < parts.length; i++) {
+            if (i < parts.length - 1) {
+              // Add trailing hyphen to all but the last part
+              if (parts[i].length > 0) processedWords.push(parts[i] + '-');
+              else if (i === 0) processedWords.push('-'); // Handle case where word starts with hyphen
+            } else {
+              if (parts[i].length > 0) processedWords.push(parts[i]);
+            }
+          }
+        } else {
+          processedWords.push(word);
+        }
+      }
+      return processedWords;
     })
     .filter(words => words.length > 0);
 
@@ -126,7 +146,7 @@ export function getWordDelay(word: string, baseSpeed: number, mode: WordDelayMod
   // so we keep these multipliers lighter to avoid a "double penalty" that can feel like stalling.
   const sentenceEndMult = mode === 'rhythm' ? 1.7 : 3;
   const clauseMult = mode === 'rhythm' ? 1.3 : 1.8;
-  const dashMult = mode === 'rhythm' ? 1.2 : 1.5;
+  const dashMult = mode === 'rhythm' ? 1.4 : 1.8; // Increased slightly for hyphenated transitions
 
   // Longer pause for sentence-ending punctuation
   if (['.', '!', '?'].includes(lastChar)) {

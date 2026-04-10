@@ -865,9 +865,9 @@ export function KineticPlayer({
       delay = 300; // fallback to 300ms
     }
 
-    // Slightly longer pause at paragraph start (only if not rhythm mode)
+    // Significantly longer pause at paragraph start (only if not rhythm mode)
     if (currentWord === 0 && !rhythmMode) {
-      delay = delay * 1.3;
+      delay = delay * 2.5;
     }
 
     // Extra pause for emphasis words (only if not rhythm mode)
