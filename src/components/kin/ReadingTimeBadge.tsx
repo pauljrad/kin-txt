@@ -98,7 +98,7 @@ export function ReadingTimeBadge({ totalReadingTimeSeconds }: ReadingTimeBadgePr
   return (
     <div className="w-full space-y-3">
       {/* Label */}
-      <span className="text-[9px] uppercase tracking-widest text-muted-foreground font-bold">Lapels</span>
+      <span className="text-[9px] uppercase tracking-widest text-muted-foreground font-bold mb-2 block">Lapels</span>
 
       {/* Lapel Badge Row */}
       <div className="flex items-center gap-3 flex-wrap">
