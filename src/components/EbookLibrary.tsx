@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { motion, useMotionValue, useTransform, useSpring, AnimatePresence, animate } from 'framer-motion';
+import { motion, useMotionValue, useTransform, useSpring, AnimatePresence, useAnimationFrame } from 'framer-motion';
 import { BookOpen, Loader2, LayoutGrid, GalleryHorizontal } from 'lucide-react';
 import { parseFile, ParsedText } from '@/lib/textParser';
 
@@ -138,12 +138,14 @@ const CarouselItem = ({
   index, 
   x, 
   totalCount, 
+  velocityRef,
   onSelect 
 }: { 
   ebook: Ebook; 
   index: number; 
   x: any; 
   totalCount: number; 
+  velocityRef: React.MutableRefObject<number>;
   onSelect: (ebook: Ebook) => void;
 }) => {
   const itemX = useTransform(x, (val: number) => {
@@ -182,7 +184,12 @@ const CarouselItem = ({
     >
       <div 
         className="group cursor-pointer select-none"
-        onClick={() => onSelect(ebook)}
+        onClick={() => {
+          // Only select if it's the centered book or if we're not moving fast
+          if (velocityRef.current !== undefined && Math.abs(velocityRef.current) < 2) {
+            onSelect(ebook);
+          }
+        }}
       >
         <BookCover title={ebook.title} index={index} />
         <div className="mt-4 text-center">
@@ -211,12 +218,36 @@ export function EbookLibrary({ onSelectEbook }: EbookLibraryProps) {
   const cursorX = useMotionValue(0);
   
   // Custom momentum state
+  const velocityRef = useRef(0);
   const isDraggingRef = useRef(false);
 
   const springX = useSpring(x, {
     stiffness: 150,
     damping: 25,
     mass: 0.5
+  });
+
+  // Custom frame-rate independent physics for endless smooth looping
+  useAnimationFrame((time, delta) => {
+    if (viewType !== 'carousel' || isDraggingRef.current) return;
+    
+    // Normalize delta so physics behave identically on 60hz vs 120hz screens
+    const timeScale = delta / 16.66;
+    
+    if (Math.abs(velocityRef.current) > 0.1) {
+      // Apply smooth velocity
+      x.set(x.get() + (velocityRef.current * timeScale));
+      // Friction: retains 98.5% of speed per frame (approx 40% speed remaining after 1 sec)
+      velocityRef.current *= Math.pow(0.985, timeScale);
+    } else {
+      velocityRef.current = 0;
+      // Snap to nearest 250 boundary with a smooth interpolation
+      const targetX = Math.round(x.get() / 250) * 250;
+      const dist = targetX - x.get();
+      if (Math.abs(dist) > 0.1) {
+        x.set(x.get() + dist * 0.1 * timeScale);
+      }
+    }
   });
 
   const handleSelectEbook = useCallback(async (ebook: Ebook) => {
@@ -315,23 +346,19 @@ export function EbookLibrary({ onSelectEbook }: EbookLibraryProps) {
               style={{ x: cursorX }}
               onDragStart={() => {
                 isDraggingRef.current = true;
-                x.stop(); // Stop inertia when starting a new drag
+                velocityRef.current = 0;
               }}
               onDrag={(e, info) => {
                 x.set(x.get() + info.delta.x);
+                velocityRef.current = info.delta.x; // Track current frame delta in case of drag stop
               }}
               onDragEnd={(e, info) => {
                 isDraggingRef.current = false;
                 cursorX.set(0);
                 
-                // Add inertia momentum
-                animate(x, x.get() + (info.velocity.x * 0.1), {
-                  type: "inertia",
-                  velocity: info.velocity.x,
-                  power: 0.8,
-                  timeConstant: 400,
-                  modifyTarget: (target) => Math.round(target / 250) * 250,
-                });
+                // Convert px/sec velocity to per-frame velocity (px/16.66ms)
+                // This gives us the exact flick speed to seed the customized inertia engine!
+                velocityRef.current = info.velocity.x / 60;
               }}
               className="absolute inset-0 z-20 cursor-grab active:cursor-grabbing"
             />
@@ -344,6 +371,7 @@ export function EbookLibrary({ onSelectEbook }: EbookLibraryProps) {
                   index={index}
                   x={x}
                   totalCount={AVAILABLE_EBOOKS.length}
+                  velocityRef={velocityRef}
                   onSelect={handleSelectEbook}
                 />
               ))}
