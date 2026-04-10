@@ -97,6 +97,9 @@ export function ReadingTimeBadge({ totalReadingTimeSeconds }: ReadingTimeBadgePr
 
   return (
     <div className="w-full space-y-3">
+      {/* Label */}
+      <span className="text-[9px] uppercase tracking-widest text-muted-foreground font-bold">Lapels</span>
+
       {/* Lapel Badge Row */}
       <div className="flex items-center gap-3 flex-wrap">
         {LAPEL_TIERS.map((tier) => {
@@ -140,10 +143,7 @@ export function ReadingTimeBadge({ totalReadingTimeSeconds }: ReadingTimeBadgePr
 
       {/* Progress Bar */}
       <div className="space-y-1">
-        <div className="flex justify-between items-center">
-          <span className="text-[9px] uppercase tracking-widest text-muted-foreground font-bold">
-            Lapels
-          </span>
+        <div className="flex justify-end items-center">
           <span className="text-[9px] text-muted-foreground tabular-nums">
             {progressLabel}
           </span>
