@@ -64,6 +64,7 @@ export function KineticPlayer({
     focusMode: boolean;
     targetMode: boolean;
     targetColor: string;
+    activeAtmosphere: 'none' | 'noir' | 'fret' | 'fret2';
   }
 
   const loadSettings = (): Partial<ReaderSettings> => {
@@ -123,7 +124,7 @@ export function KineticPlayer({
   const [showingChapterTitle, setShowingChapterTitle] = useState<string | null>(null);
   const [showingAttribution, setShowingAttribution] = useState<boolean>(!!attribution);
   const [lastChapterIndex, setLastChapterIndex] = useState(-1);
-  const [activeAtmosphere, setActiveAtmosphere] = useState<'none' | 'noir' | 'fret' | 'fret2'>('none');
+  const [activeAtmosphere, setActiveAtmosphere] = useState<'none' | 'noir' | 'fret' | 'fret2'>(initialSettings.activeAtmosphere ?? 'none');
   const [musicMenuOpen, setMusicMenuOpen] = useState(false);
 
 
@@ -158,6 +159,28 @@ export function KineticPlayer({
       });
     }
   }, [activeAtmosphere]);
+  
+  // Persist settings whenever they change
+  useEffect(() => {
+    const settings: ReaderSettings = {
+      startSpeed,
+      endSpeed,
+      rhythmMode,
+      rhythmPreset,
+      accelerationMode,
+      adaptiveSpeed,
+      resetInterval,
+      focusMode,
+      targetMode,
+      targetColor,
+      activeAtmosphere
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+  }, [
+    startSpeed, endSpeed, rhythmMode, rhythmPreset, 
+    accelerationMode, adaptiveSpeed, resetInterval, 
+    focusMode, targetMode, targetColor, activeAtmosphere
+  ]);
 
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
