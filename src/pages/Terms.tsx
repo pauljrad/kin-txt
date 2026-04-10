@@ -31,7 +31,7 @@ export default function Terms() {
         style={{ top: 'calc(1rem + env(safe-area-inset-top, 0px))' }}>
         <ArrowLeft className="w-4 h-4" /> Back
       </motion.button>
-      <div className="flex-1 max-w-2xl mx-auto px-6 pt-20 pb-16 w-full">
+      <div className="flex-1 max-w-2xl mx-auto px-6 pt-[calc(6.5rem+env(safe-area-inset-top,0px))] pb-16 w-full">
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
           <p className="text-xs uppercase tracking-widest text-muted-foreground font-display mb-2">KiN-TXT</p>
           <h1 className="font-display text-4xl tracking-wide text-foreground mb-2">Terms of Use</h1>

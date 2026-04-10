@@ -433,7 +433,7 @@ export const InteractiveSplashScreen = forwardRef<HTMLDivElement, AnimatedTitleP
                             onClick={() => navigate('/login')}
                             className="mb-12 px-6 py-2 border border-white/30 text-white text-xs tracking-[0.2em] hover:bg-white hover:text-black transition-colors uppercase font-medium"
                         >
-                            Login
+                            Login / Sign-Up
                         </motion.button>
                     </div>
 
