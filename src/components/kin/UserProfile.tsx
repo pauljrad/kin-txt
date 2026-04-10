@@ -7,6 +7,7 @@ import { getInitials, getAvatarColor } from "@/lib/utils";
 import { useToast } from "@/components/ui/use-toast";
 import { Flame, Clock } from "lucide-react";
 import { useGamification } from "@/hooks/useGamification";
+import { ReadingTimeBadge } from "./ReadingTimeBadge";
 
 interface UserProfileProps {
     userId: string;
@@ -161,6 +162,9 @@ export const UserProfile = ({ userId }: UserProfileProps) => {
                         </div>
                     ))}
                 </div>
+
+                {/* Reading Time Badges */}
+                <ReadingTimeBadge totalReadingTimeSeconds={gamification.totalReadingTimeSeconds} />
             </div>
 
             <Separator className="bg-border/40 shrink-0" />

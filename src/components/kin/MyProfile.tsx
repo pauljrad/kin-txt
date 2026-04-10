@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Check, Edit2, X, BookOpen, Users, Flame, Clock, Calendar, Bookmark } from "lucide-react";
 import { useGamification } from "@/hooks/useGamification";
+import { ReadingTimeBadge } from "./ReadingTimeBadge";
 
 interface Profile {
     id: string;
@@ -288,6 +289,9 @@ export const MyProfile = () => {
                         <span className="text-[9px] text-muted-foreground uppercase tracking-widest font-bold mt-1">Total Mins</span>
                     </div>
                 </div>
+
+                {/* Reading Time Badges */}
+                <ReadingTimeBadge totalReadingTimeSeconds={gamification.totalReadingTimeSeconds} />
 
                 <div className="grid grid-cols-3 gap-3">
                     <div className="p-3 rounded-lg bg-secondary/5 border border-border/10 flex flex-col items-center text-center">
