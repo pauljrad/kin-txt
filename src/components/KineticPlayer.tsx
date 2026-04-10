@@ -1144,7 +1144,7 @@ export function KineticPlayer({
       exit={{ opacity: 0 }}
       className="fixed inset-0 h-[100dvh] w-screen flex items-center justify-center overflow-hidden cursor-pointer transition-all duration-700 bg-background touch-none z-50"
       onMouseMove={handleMouseMove}
-      onClick={handleScreenTap}
+      onPointerUp={handleScreenTap}
     >
       {/* Attribution Splash Overlay */}
       <AnimatePresence>
