@@ -2029,24 +2029,23 @@ export function KineticPlayer({
       <AnimatePresence>
         {isComplete && (
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="absolute inset-0 z-30 flex items-center justify-center bg-background/80"
+            initial={{ opacity: 0, scale: 0.9, y: -8 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9, y: -8 }}
+            transition={{ duration: 0.25, ease: [0.34, 1.56, 0.64, 1] }}
+            className="absolute z-30 left-4"
+            style={{ top: 'calc(3.75rem + env(safe-area-inset-top, 0px))' }}
             onClick={(e) => e.stopPropagation()}
           >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              className="glass-panel p-6 sm:p-8 text-center mx-4"
-            >
-              <h2 className="text-2xl sm:text-3xl font-display mb-3 sm:mb-4">Finished</h2>
-              <p className="text-sm sm:text-base text-muted-foreground mb-4 sm:mb-6">
-                {totalWords} words displayed
-              </p>
-              <div className="flex gap-2 sm:gap-3 justify-center">
-                <button onClick={handleRestart} className="control-button-secondary text-sm sm:text-base">
-                  <RotateCcw className="w-3 h-3 sm:w-4 sm:h-4 inline mr-1 sm:mr-2" />
+            <div className="glass-panel p-3 flex flex-col gap-2" style={{ maxWidth: '180px' }}>
+              <h2 className="text-sm font-display tracking-wide">Finished</h2>
+              <p className="text-[11px] text-muted-foreground">{totalWords} words</p>
+              <div className="flex gap-1.5">
+                <button
+                  onClick={handleRestart}
+                  className="control-button-secondary text-[11px] px-2.5 py-1 flex items-center gap-1"
+                >
+                  <RotateCcw className="w-3 h-3" />
                   Replay
                 </button>
                 <button
@@ -2054,12 +2053,12 @@ export function KineticPlayer({
                     void persistReadingTime(true);
                     onBack();
                   }}
-                  className="control-button text-sm sm:text-base"
+                  className="control-button text-[11px] px-2.5 py-1"
                 >
                   New Text
                 </button>
               </div>
-            </motion.div>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
