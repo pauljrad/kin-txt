@@ -1022,6 +1022,17 @@ export function KineticPlayer({
       return;
     }
 
+    // If settings or music menu is open, just close it — don't resume playback.
+    // This prevents the dismiss-tap from toggling play/pause unintentionally.
+    if (showSettingsPopover) {
+      setShowSettingsPopover(false);
+      return;
+    }
+    if (musicMenuOpen) {
+      setMusicMenuOpen(false);
+      return;
+    }
+
     if (isComplete) {
       handleRestart();
       return;
@@ -1044,7 +1055,7 @@ export function KineticPlayer({
     if (newPlaying && !isFullscreen) {
       await enterFullscreen();
     }
-  }, [isComplete, isPlaying, isFullscreen, enterFullscreen, showingChapterTitle]);
+  }, [isComplete, isPlaying, isFullscreen, enterFullscreen, showingChapterTitle, showSettingsPopover, musicMenuOpen]);
 
   const handlePlayPause = async (e: React.MouseEvent) => {
     e.stopPropagation();
