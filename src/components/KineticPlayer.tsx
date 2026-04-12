@@ -1024,9 +1024,10 @@ export function KineticPlayer({
       return;
     }
 
-    // If a menu (settings or music) was just dismissed by this same tap, don't also toggle play.
-    if (justClosedMenuRef.current) {
-      justClosedMenuRef.current = false;
+    // If a settings or music menu is open, don't toggle play —
+    // button clicks inside the popover still fire their own handlers,
+    // this just prevents them from also toggling the reader.
+    if (showSettingsPopover || musicMenuOpen) {
       return;
     }
 
@@ -1052,7 +1053,7 @@ export function KineticPlayer({
     if (newPlaying && !isFullscreen) {
       await enterFullscreen();
     }
-  }, [isComplete, isPlaying, isFullscreen, enterFullscreen, showingChapterTitle]);
+  }, [isComplete, isPlaying, isFullscreen, enterFullscreen, showingChapterTitle, showSettingsPopover, musicMenuOpen]);
 
   const handlePlayPause = async (e: React.MouseEvent) => {
     e.stopPropagation();
