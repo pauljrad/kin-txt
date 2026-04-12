@@ -1,4 +1,3 @@
-import { TickerBanner } from '@/components/landing/TickerBanner'
 import { InteractiveSplashScreen } from '@/components/landing/SplashScreen'
 import { usePullGesture } from '@/hooks/usePullGesture'
 import { KineticScrollSection } from '@/components/landing/KineticScrollSection'
@@ -28,9 +27,7 @@ const Landing = () => {
             <main className="relative z-10 font-body">
 
                 {/* Section 1: Intro (Black) */}
-                {/* This sits behind the initial splash screen position */}
                 <section className="h-screen w-full bg-black flex flex-col items-center justify-start pt-12">
-                    <TickerBanner />
                 </section>
 
                 <KineticScrollSection />
