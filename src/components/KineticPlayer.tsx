@@ -189,6 +189,8 @@ export function KineticPlayer({
   const lastSaveTimeRef = useRef<number>(initialTotalReadingTime || 0);
   const totalReadingTimeRef = useRef<number>(initialTotalReadingTime || 0);
   const unloggedWordsRef = useRef<number>(0);
+  // Track when a menu just closed so handleScreenTap doesn't also toggle play
+  const justClosedMenuRef = useRef(false);
 
   // Keep a ref updated so we can persist the latest value on exit/unmount without stale closures.
   useEffect(() => {
@@ -1022,14 +1024,9 @@ export function KineticPlayer({
       return;
     }
 
-    // If settings or music menu is open, just close it — don't resume playback.
-    // This prevents the dismiss-tap from toggling play/pause unintentionally.
-    if (showSettingsPopover) {
-      setShowSettingsPopover(false);
-      return;
-    }
-    if (musicMenuOpen) {
-      setMusicMenuOpen(false);
+    // If a menu (settings or music) was just dismissed by this same tap, don't also toggle play.
+    if (justClosedMenuRef.current) {
+      justClosedMenuRef.current = false;
       return;
     }
 
@@ -1055,7 +1052,7 @@ export function KineticPlayer({
     if (newPlaying && !isFullscreen) {
       await enterFullscreen();
     }
-  }, [isComplete, isPlaying, isFullscreen, enterFullscreen, showingChapterTitle, showSettingsPopover, musicMenuOpen]);
+  }, [isComplete, isPlaying, isFullscreen, enterFullscreen, showingChapterTitle]);
 
   const handlePlayPause = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -1651,7 +1648,10 @@ export function KineticPlayer({
                   </button>
 
                   {/* Settings Button */}
-                  <Popover open={showSettingsPopover} onOpenChange={setShowSettingsPopover}>
+                  <Popover open={showSettingsPopover} onOpenChange={(open) => {
+                    if (!open) justClosedMenuRef.current = true;
+                    setShowSettingsPopover(open);
+                  }}>
                     <PopoverTrigger asChild>
                       <button
                         onClick={(e) => e.stopPropagation()}
@@ -1899,8 +1899,9 @@ export function KineticPlayer({
 
                   {/* Atmosphere Music Presets */}
                   <Popover 
-                    open={musicMenuOpen} 
+                    open={musicMenuOpen}
                     onOpenChange={(open) => {
+                      if (!open) justClosedMenuRef.current = true;
                       if (open && activeAtmosphere !== 'none') {
                         // If music is on, turn it off and don't open the menu
                         setActiveAtmosphere('none');
