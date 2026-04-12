@@ -2037,15 +2037,17 @@ export function KineticPlayer({
             style={{ top: 'calc(3.75rem + env(safe-area-inset-top, 0px))' }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="glass-panel p-3 flex flex-col gap-2" style={{ maxWidth: '180px' }}>
-              <h2 className="text-sm font-display tracking-wide">Finished</h2>
-              <p className="text-[11px] text-muted-foreground">{totalWords} words</p>
-              <div className="flex gap-1.5">
+            <div className="glass-panel p-2 flex flex-col justify-between" style={{ maxWidth: '140px', height: '4.25rem' }}>
+              <div>
+                <h2 className="text-xs font-display tracking-wide leading-tight">Finished</h2>
+                <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">{totalWords} words</p>
+              </div>
+              <div className="flex gap-1">
                 <button
                   onClick={handleRestart}
-                  className="control-button-secondary text-[11px] px-2.5 py-1 flex items-center gap-1"
+                  className="control-button-secondary text-[10px] px-1.5 py-1 flex items-center gap-0.5 leading-tight"
                 >
-                  <RotateCcw className="w-3 h-3" />
+                  <RotateCcw className="w-2.5 h-2.5 shrink-0" />
                   Replay
                 </button>
                 <button
@@ -2053,7 +2055,7 @@ export function KineticPlayer({
                     void persistReadingTime(true);
                     onBack();
                   }}
-                  className="control-button text-[11px] px-2.5 py-1"
+                  className="control-button text-[10px] px-1.5 py-1 leading-tight"
                 >
                   New Text
                 </button>
