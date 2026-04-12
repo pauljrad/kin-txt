@@ -191,6 +191,8 @@ export function KineticPlayer({
   const unloggedWordsRef = useRef<number>(0);
   // Track when a menu just closed so handleScreenTap doesn't also toggle play
   const justClosedMenuRef = useRef(false);
+  // Cache the progress bar rect at drag-start so moves never need progressBarRef (avoids null during HUD transitions)
+  const dragRectRef = useRef<DOMRect | null>(null);
 
   // Keep a ref updated so we can persist the latest value on exit/unmount without stale closures.
   useEffect(() => {
@@ -683,11 +685,16 @@ export function KineticPlayer({
     }
   }, [isComplete, documentId, persistReadingTime]);
 
-  const handleProgressBarInteraction = useCallback((e: React.MouseEvent | React.TouchEvent) => {
-    if (!progressBarRef.current) return;
+  const handleProgressBarInteraction = useCallback((e: React.MouseEvent | React.TouchEvent | MouseEvent | TouchEvent) => {
+    // Use the cached rect from drag start (avoids null-ref if HUD unmounts mid-drag)
+    const rect = dragRectRef.current ?? progressBarRef.current?.getBoundingClientRect();
+    if (!rect) return;
 
-    const rect = progressBarRef.current.getBoundingClientRect();
-    const clientX = 'touches' in e ? e.touches[0].clientX : (e as any).clientX;
+    const clientX = 'touches' in e
+      ? (e as TouchEvent).touches[0]?.clientX ?? (e as TouchEvent).changedTouches[0]?.clientX
+      : (e as MouseEvent).clientX;
+    if (clientX === undefined) return;
+
     const percentage = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
     const targetIndex = Math.floor(percentage * (totalWords - 1));
 
@@ -696,6 +703,8 @@ export function KineticPlayer({
 
   const handleProgressMouseDown = (e: React.MouseEvent) => {
     e.stopPropagation();
+    // Cache rect immediately so moves work even if progress bar briefly unmounts during HUD transition
+    dragRectRef.current = progressBarRef.current?.getBoundingClientRect() ?? null;
     setIsDragging(true);
     setIsPlaying(false);
     handleProgressBarInteraction(e);
@@ -709,6 +718,9 @@ export function KineticPlayer({
   const handleProgressMouseUp = useCallback(() => {
     if (isDragging) {
       setIsDragging(false);
+      dragRectRef.current = null;
+      // Ensure completion state is cleared so the user can resume from the seeked position
+      setIsComplete(false);
     }
   }, [isDragging]);
 
@@ -1163,7 +1175,7 @@ export function KineticPlayer({
 
   // In focus mode, minimal controls (Back + Eye) are ALWAYS visible
   // so user can exit focus mode any time. Full HUD only when showControls & not focus.
-  const isHudVisible = showControls && !focusMode;
+  const isHudVisible = (showControls || isDragging) && !focusMode;
   const minimalControlsVisible = focusMode;
 
   // Error state: if parsedText is invalid, show error and back button
@@ -1383,6 +1395,8 @@ export function KineticPlayer({
             onMouseDown={handleProgressMouseDown}
             onTouchStart={(e) => {
               e.stopPropagation();
+              // Cache rect immediately so subsequent touchmove events work even if HUD transitions
+              dragRectRef.current = progressBarRef.current?.getBoundingClientRect() ?? null;
               setIsDragging(true);
               setIsPlaying(false);
               handleProgressBarInteraction(e);
