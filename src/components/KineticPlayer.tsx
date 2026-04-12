@@ -210,28 +210,15 @@ export function KineticPlayer({
       try {
         await updateDbReadingTime(documentId, current);
         
-        // Log the session for streak calculation & analytics
+        // Log the session for streak calculation & analytics (silent — no toasts)
         if (elapsed > 0) {
           console.log(`[KineticPlayer] Logging session: ${elapsed}s, ${unloggedWordsRef.current} words`);
-          const result = await logReadingSession(
+          void logReadingSession(
             documentId, 
             elapsed, 
             isEbook ? 'book' : 'document', 
             unloggedWordsRef.current
           );
-          
-          if (result?.status === 'success') {
-            toast.success(`Session Logged! Streak: ${result.current_streak} days`, {
-              description: `Recorded ${elapsed} seconds of reading.`,
-              duration: 2000,
-            });
-          } else if (result?.status === 'error') {
-            toast.error("Cloud Sync Error", {
-              description: result.message || "Failed to update streak.",
-              duration: 5000,
-            });
-          }
-          
           unloggedWordsRef.current = 0;
         }
       } catch (err) {
