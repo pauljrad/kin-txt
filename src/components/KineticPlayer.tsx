@@ -1279,28 +1279,7 @@ export function KineticPlayer({
         )}
       </AnimatePresence>
 
-      {/* Tap indicator */}
-      <AnimatePresence>
-        {!isPlaying && !isComplete && showControls && !showingChapterTitle && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.9 }}
-            className="absolute inset-0 flex items-center justify-center z-5 pointer-events-none"
-          >
-            <motion.div
-              className={`w-20 h-20 rounded-full flex items-center justify-center backdrop-blur-sm ${focusMode
-                ? 'bg-white/20 border border-white/30'
-                : 'bg-muted/60 border border-border/50'
-                }`}
-              animate={{ scale: [1, 1.05, 1] }}
-              transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-            >
-              <Play className={`w-8 h-8 ml-1 ${focusMode ? 'text-white' : 'text-foreground'}`} />
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+
 
       {/* Word Display */}
       <div className="relative z-10 flex items-center justify-center px-4 sm:px-8 h-[25vh] min-h-[160px]">
