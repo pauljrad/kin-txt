@@ -137,6 +137,102 @@ export const AVAILABLE_EBOOKS: Ebook[] = [
     wordCount: 32000,
     synopsis: "Jack London's powerful adventure of Buck, a domesticated dog stolen and sold into the brutal life of an Alaskan sled dog during the Klondike Gold Rush, who must embrace his primal instincts to survive."
   },
+  {
+    id: 'heart-darkness',
+    title: 'Heart of Darkness',
+    author: 'Joseph Conrad',
+    filePath: '/ebooks/heart-of-darkness.epub',
+    wordCount: 38000,
+    synopsis: "Joseph Conrad's dark journey into the Congo Free State, following Charles Marlow as he searches for the mysterious and enigmatic ivory trader Kurtz, exploring the themes of colonialism and the darkness within the human heart."
+  },
+  {
+    id: 'time-machine',
+    title: 'The Time Machine',
+    author: 'H. G. Wells',
+    filePath: '/ebooks/the-time-machine.epub',
+    wordCount: 32000,
+    synopsis: "H.G. Wells' seminal science fiction novella about an anonymous inventor who travels hundreds of thousands of years into the future, discovering the divergent evolution of humanity into the gentle Eloi and the subterranean Morlocks."
+  },
+  {
+    id: 'carmilla',
+    title: 'Carmilla',
+    author: 'Sheridan Le Fanu',
+    filePath: '/ebooks/carmilla.epub',
+    wordCount: 31000,
+    synopsis: "A foundational work of vampire fiction, this gothic novella tells the haunting story of a young woman's susceptibility to the attentions of a mysterious and beautiful visitor named Carmilla, long before Bram Stoker's Dracula."
+  },
+  {
+    id: 'turn-screw',
+    title: 'The Turn of the Screw',
+    author: 'Henry James',
+    filePath: '/ebooks/turn-of-the-screw.epub',
+    wordCount: 42000,
+    synopsis: "Henry James' masterful ghost story about a young governess sent to a remote country estate to care for two orphaned children, where she becomes convinced the house is haunted by the malevolent spirits of former employees."
+  },
+  {
+    id: 'the-gambler',
+    title: 'The Gambler',
+    author: 'Fyodor Dostoevsky',
+    filePath: '/ebooks/the-gambler.epub',
+    wordCount: 45000,
+    synopsis: "Dostoevsky's intense psychological novella about an impoverished tutor's obsession with gambling and the complex social hierarchy and desperate romance of a fictional German spa town."
+  },
+  {
+    id: 'candide',
+    title: 'Candide',
+    author: 'Voltaire',
+    filePath: '/ebooks/candide.epub',
+    wordCount: 30000,
+    synopsis: "Voltaire's satirical masterpiece following the optimistic Candide as he travels the world, encountering relentless misfortune and catastrophe that challenge his mentor Pangloss's philosophy that 'all is for the best in the best of all possible worlds.'"
+  },
+  {
+    id: 'white-fang',
+    title: 'White Fang',
+    author: 'Jack London',
+    filePath: '/ebooks/white-fang.epub',
+    wordCount: 73000,
+    synopsis: "Jack London's companion to The Call of the Wild, depicting a wild wolf-dog's journey from the harsh Yukon wilderness to civilization, exploring the powerful themes of survival, nature versus nurture, and redemption."
+  },
+  {
+    id: 'rip-van-winkle',
+    title: 'Rip Van Winkle',
+    author: 'Washington Irving',
+    filePath: '/ebooks/rip-van-winkle.epub',
+    wordCount: 8000,
+    synopsis: "Washington Irving's classic American short story about a Dutch-American villager who falls asleep in the Catskill Mountains for twenty years and wakes up to find a transformed world after the American Revolution."
+  },
+  {
+    id: 'sleepy-hollow',
+    title: 'The Legend of Sleepy Hollow',
+    author: 'Washington Irving',
+    filePath: '/ebooks/the-legend-of-sleepy-hollow.epub',
+    wordCount: 12000,
+    synopsis: "Washington Irving's iconic gothic story centered on the superstitious schoolmaster Ichabod Crane and his terrifying encounter with the Headless Horseman in a secluded, enchanted glen."
+  },
+  {
+    id: 'bartleby',
+    title: 'Bartleby, the Scrivener',
+    author: 'Herman Melville',
+    filePath: '/ebooks/bartleby-the-scrivener.epub',
+    wordCount: 14000,
+    synopsis: "Herman Melville's haunting story of a Wall Street lawyer who hires a new clerk, Bartleby, who initially performs well but soon begins to decline all requests with the famous phrase, 'I would prefer not to.'"
+  },
+  {
+    id: 'house-usher',
+    title: 'The Fall of the House of Usher',
+    author: 'Edgar Allan Poe',
+    filePath: '/ebooks/the-fall-of-the-house-of-usher.epub',
+    wordCount: 11000,
+    synopsis: "Edgar Allan Poe's quintessential gothic tale of terror, featuring a decaying mansion, a family curse, and the psychological descent of its inhabitants into madness and doom."
+  },
+  {
+    id: 'thirty-nine-steps',
+    title: 'The Thirty-Nine Steps',
+    author: 'John Buchan',
+    filePath: '/ebooks/the-thirty-nine-steps.epub',
+    wordCount: 40000,
+    synopsis: "John Buchan's classic adventure thriller following Richard Hannay as he becomes entangled in a high-stakes conspiracy, leading to a desperate chase across the Scottish moors to stop a secret society from stealing British naval secrets."
+  },
 ];
 
 const BookCover = ({ title, index }: { title: string; index: number }) => {
