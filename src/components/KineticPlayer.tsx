@@ -188,6 +188,7 @@ export function KineticPlayer({
   const chapterTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastSaveTimeRef = useRef<number>(initialTotalReadingTime || 0);
   const totalReadingTimeRef = useRef<number>(initialTotalReadingTime || 0);
+  const unloggedWordsRef = useRef<number>(0);
 
   // Keep a ref updated so we can persist the latest value on exit/unmount without stale closures.
   useEffect(() => {
@@ -201,19 +202,45 @@ export function KineticPlayer({
       if (current <= 0) return;
 
       // Only persist if enough time has elapsed, unless forced.
-      if (!force && current - lastSaveTimeRef.current < 10) return;
+      const elapsed = current - lastSaveTimeRef.current;
+      if (!force && elapsed < 15) return; // Reduced to 15s for better feedback during testing
 
       // Save locally (offline) and to the database (when logged in).
       updateLocalReadingTime(documentId, current);
       try {
         await updateDbReadingTime(documentId, current);
-      } catch {
-        // ignore; local storage still keeps the time
+        
+        // Log the session for streak calculation & analytics
+        if (elapsed > 0) {
+          console.log(`[KineticPlayer] Logging session: ${elapsed}s, ${unloggedWordsRef.current} words`);
+          const result = await logReadingSession(
+            documentId, 
+            elapsed, 
+            isEbook ? 'book' : 'document', 
+            unloggedWordsRef.current
+          );
+          
+          if (result?.status === 'success') {
+            toast.success(`Session Logged! Streak: ${result.current_streak} days`, {
+              description: `Recorded ${elapsed} seconds of reading.`,
+              duration: 2000,
+            });
+          } else if (result?.status === 'error') {
+            toast.error("Cloud Sync Error", {
+              description: result.message || "Failed to update streak.",
+              duration: 5000,
+            });
+          }
+          
+          unloggedWordsRef.current = 0;
+        }
+      } catch (err) {
+        console.error('[KineticPlayer] Failed to persist stats:', err);
       }
 
       lastSaveTimeRef.current = current;
     },
-    [documentId]
+    [documentId, isEbook]
   );
   const progressBarRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -660,11 +687,12 @@ export function KineticPlayer({
   useEffect(() => {
     if (isComplete && documentId) {
       console.log('[KineticPlayer] Document completed, marking as finished:', documentId);
+      void persistReadingTime(true);
       markDocumentCompleted(documentId, true).catch(err => {
         console.error('[KineticPlayer] Failed to mark document as completed:', err);
       });
     }
-  }, [isComplete, documentId]);
+  }, [isComplete, documentId, persistReadingTime]);
 
   const handleProgressBarInteraction = useCallback((e: React.MouseEvent | React.TouchEvent) => {
     if (!progressBarRef.current) return;
@@ -764,8 +792,9 @@ export function KineticPlayer({
       setPosition(newPos);
       positionRef.current = newPos;
       
-      // Track words for adaptive speed
+      // Track words for adaptive speed and session logging
       setWordsReadInSession(prev => prev + 1);
+      unloggedWordsRef.current += 1;
     } else if (currentPara < parsedText.paragraphs.length - 1) {
       // Move to next paragraph
       const nextPara = currentPara + 1;
@@ -1020,6 +1049,8 @@ export function KineticPlayer({
       if (controlsTimeoutRef.current) {
         clearTimeout(controlsTimeoutRef.current);
       }
+      // Log session immediately upon pause
+      void persistReadingTime(true);
     }
 
     // Enter fullscreen when starting to play

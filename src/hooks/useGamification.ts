@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { syncLifetimeReadingTime } from '@/lib/documentDatabase';
 
 export interface GamificationStats {
     currentStreak: number;
@@ -27,6 +28,17 @@ export function useGamification(userId?: string) {
         totalReadingTimeSeconds: 0,
         isLoading: true,
     });
+    const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+    useEffect(() => {
+        const handleUpdate = () => {
+            console.log('[useGamification] Stats update detected, refreshing...');
+            setRefreshTrigger(prev => prev + 1);
+        };
+
+        window.addEventListener('kin_stats_updated', handleUpdate);
+        return () => window.removeEventListener('kin_stats_updated', handleUpdate);
+    }, []);
 
     useEffect(() => {
         let mounted = true;
@@ -41,7 +53,7 @@ export function useGamification(userId?: string) {
                 // 1. Fetch exact streak stats from user_reading_stats (preserves correct streaks)
                 const { data: userStats } = await supabase
                     .from('user_reading_stats')
-                    .select('current_streak, longest_streak')
+                    .select('current_streak, longest_streak, lifetime_reading_seconds')
                     .eq('user_id', userId)
                     .maybeSingle();
 
@@ -113,6 +125,17 @@ export function useGamification(userId?: string) {
 
                 let finalCurrentStreak = (userStats as any)?.current_streak || 0;
                 let finalLongestStreak = (userStats as any)?.longest_streak || 0;
+                let lifetimeFromStats = (userStats as any)?.lifetime_reading_seconds || 0;
+
+                // High-water mark: Total reading time should never go down.
+                // We use the maximum of the stored lifetime value or the current sum of documents.
+                let finalTotalSecs = Math.max(totalSecs, lifetimeFromStats);
+
+                // If the sum of currently existing documents is higher than our stored lifetime 
+                // (e.g. adding large new files or completing a session), sync the new high-water mark.
+                if (totalSecs > lifetimeFromStats) {
+                    void syncLifetimeReadingTime(userId, totalSecs);
+                }
 
                 if (mounted) {
                     setStats({
@@ -124,7 +147,7 @@ export function useGamification(userId?: string) {
                         timeReadThisWeekSeconds: readWeek,
                         timeReadThisMonthSeconds: readMonth,
                         timeReadThisYearSeconds: readYear,
-                        totalReadingTimeSeconds: totalSecs,
+                        totalReadingTimeSeconds: finalTotalSecs,
                         isLoading: false,
                     });
                 }
@@ -140,7 +163,7 @@ export function useGamification(userId?: string) {
         return () => {
             mounted = false;
         };
-    }, [userId]);
+    }, [userId, refreshTrigger]);
 
     return stats;
 }

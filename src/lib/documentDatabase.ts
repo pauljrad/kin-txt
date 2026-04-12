@@ -240,15 +240,33 @@ export async function updateDocumentReadingTime(id: string, totalSeconds: number
 
   if (error) {
     console.error('Error updating reading time:', error);
+  } else {
+    // Synchronize global lifetime reading time (monotonically increasing)
+    void syncLifetimeReadingTime(user.id, totalSeconds);
   }
 }
 
-export async function logReadingSession(documentId: string, durationSeconds: number, category: string = 'document', wordsRead: number = 0): Promise<void> {
+export async function syncLifetimeReadingTime(userId: string, totalSeconds: number): Promise<void> {
+  if (!userId || totalSeconds <= 0) return;
+
+  const { error } = await supabase.rpc('sync_lifetime_reading_time', {
+    p_user_id: userId,
+    p_total_seconds: Math.floor(totalSeconds),
+  });
+
+  if (error) {
+    console.error('[documentDatabase] Error syncing lifetime reading time:', error);
+  }
+}
+
+export async function logReadingSession(documentId: string, durationSeconds: number, category: string = 'document', wordsRead: number = 0): Promise<any> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user || durationSeconds <= 0) return;
 
+  console.log('[documentDatabase] Logging session:', { documentId, durationSeconds, category, userId: user.id });
+
   // @ts-ignore - RPC not yet in generated types
-  const { error } = await supabase.rpc('log_reading_session', {
+  const { data, error } = await supabase.rpc('log_reading_session', {
     p_document_id: documentId,
     p_duration_seconds: Math.floor(durationSeconds),
     p_category: category,
@@ -256,8 +274,19 @@ export async function logReadingSession(documentId: string, durationSeconds: num
   });
 
   if (error) {
-    console.error('[documentDatabase] Error logging reading session:', error);
+    console.error('[documentDatabase] RPC Error:', error);
+    return { status: 'error', message: error.message };
   }
+
+  if (!data || (data as any).status === 'error') {
+    console.error('[documentDatabase] RPC returned error:', data);
+    return data || { status: 'error', message: 'No data returned from RPC' };
+  }
+
+  console.log('[documentDatabase] Sync successful:', data);
+  window.dispatchEvent(new CustomEvent('kin_stats_updated', { detail: data }));
+
+  return data;
 }
 
 export async function updateDocumentEmphasis(id: string, emphasisWords: string[], whisperedWords: string[]): Promise<void> {
