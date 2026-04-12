@@ -2037,7 +2037,7 @@ export function KineticPlayer({
             style={{ top: 'calc(3.75rem + env(safe-area-inset-top, 0px))' }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="glass-panel p-2 flex flex-col justify-between" style={{ maxWidth: '140px', height: '4.25rem' }}>
+            <div className="glass-panel p-2 flex flex-col justify-between" style={{ maxWidth: '80px', height: '4.25rem' }}>
               <div>
                 <h2 className="text-xs font-display tracking-wide leading-tight">Finished</h2>
                 <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">{totalWords} words</p>
