@@ -3,7 +3,7 @@ import * as pdfjsLib from 'pdfjs-dist';
 import ePub from 'epubjs';
 
 // Configure PDF.js worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+pdfjsLib.GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url).toString();
 
 export interface ParsedText {
   paragraphs: string[][];
@@ -88,6 +88,13 @@ export function parseTextContent(text: string): ParsedText {
     .split(/\n\s*\n/)
     .map(p => p.trim())
     .filter(p => p.length > 0)
+    // Filter out common browser parsing error messages from malformed EPUBs
+    .filter(p => {
+      const lower = p.toLowerCase();
+      return !lower.startsWith('this page contains the following errors') &&
+             !lower.startsWith('error on line') &&
+             !lower.includes('below is a rendering of the page up to the first error');
+    })
     .map(paragraph => {
       // Split paragraph into words by whitespace first
       const rawWords = paragraph.split(/\s+/).filter(word => word.length > 0);
