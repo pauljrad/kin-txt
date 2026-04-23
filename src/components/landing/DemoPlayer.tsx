@@ -148,12 +148,15 @@ export function DemoPlayer({ onClose }: DemoPlayerProps) {
   // So speed = TargetWPM / 240.
 
   const currentPaceWpm = useMemo(() => {
-    if (mode === 'rhythm') return wpm;
+    if (mode === 'rhythm') {
+      const pm = rhythmPreset === 'slower' ? 0.667 : rhythmPreset === 'faster' ? 1.5 : 1.0;
+      return Math.round(wpm * pm);
+    }
     const progress = totalWords > 1 ? wordIndex / (totalWords - 1) : 0;
     const startWpm = wpm * 0.5;
     const endWpm = wpm;
     return Math.round(startWpm + (endWpm - startWpm) * progress);
-  }, [mode, wordIndex, totalWords, wpm]);
+  }, [mode, wordIndex, totalWords, wpm, rhythmPreset]);
 
   const getCurrentDelay = useCallback((idx: number): number => {
     const word = allWords[idx] ?? '';
@@ -315,7 +318,7 @@ export function DemoPlayer({ onClose }: DemoPlayerProps) {
             style={{ top: 'calc(env(safe-area-inset-top, 0px) + 4.5rem)' }}
           >
             <span>Tap to pause</span><span className="text-white/15">·</span>
-            <span>Adjust below</span>
+            <span>Adjust speeds and modes below</span>
           </motion.div>
         )}
       </AnimatePresence>
@@ -431,7 +434,7 @@ export function DemoPlayer({ onClose }: DemoPlayerProps) {
               </div>
 
               <button
-                onClick={() => navigate('/login')}
+                onClick={() => navigate('/pricing')}
                 className="w-full py-4 rounded-full bg-white text-black text-sm font-semibold tracking-wide hover:bg-white/90 transition-all flex flex-col items-center gap-1"
               >
                 <span>Start free 7-day trial</span>
