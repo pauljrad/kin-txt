@@ -3,11 +3,13 @@ import { useNavigate } from "react-router-dom";
 import { createPortal } from "react-dom";
 import {
     motion,
+    AnimatePresence,
     useMotionValue,
     useTransform,
     useAnimation,
 } from "framer-motion";
 import { PongGame } from "./PongGame";
+import { DemoPlayer } from "./DemoPlayer";
 
 type AnimatedTitleProps = React.HTMLAttributes<HTMLDivElement> & {
     onGameStateChange?: (isPlaying: boolean) => void;
@@ -20,6 +22,7 @@ export const InteractiveSplashScreen = forwardRef<HTMLDivElement, AnimatedTitleP
         const navigate = useNavigate();
         // Phase control: 'intro' -> 'interactive'
         const [isIntro, setIsIntro] = useState(true);
+        const [demoOpen, setDemoOpen] = useState(false);
 
         const dragY = useMotionValue(0);
         const stemControls = useAnimation();
@@ -374,6 +377,12 @@ export const InteractiveSplashScreen = forwardRef<HTMLDivElement, AnimatedTitleP
 
         return (
             <>
+                {/* Demo Player Overlay */}
+                <AnimatePresence>
+                    {demoOpen && (
+                        <DemoPlayer onClose={() => setDemoOpen(false)} />
+                    )}
+                </AnimatePresence>
                 {/* Pong Game Overlay */}
                 {showPongGame && typeof document !== "undefined"
                     ? createPortal(
@@ -425,15 +434,32 @@ export const InteractiveSplashScreen = forwardRef<HTMLDivElement, AnimatedTitleP
                         <motion.span animate={lettersControls}>TXT</motion.span>
                     </h1>
 
-                    <div className="absolute top-[60%] left-0 w-full flex flex-col items-center justify-center pointer-events-auto">
+                    <div className="absolute top-[60%] left-0 w-full flex flex-col items-center justify-center gap-12 pointer-events-auto">
                         <motion.button
                             initial={{ opacity: 0, y: 20 }}
                             animate={!isIntro ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
                             transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
                             onClick={() => navigate('/login')}
-                            className="mb-12 px-6 py-2 border border-white/30 text-white text-xs tracking-[0.2em] hover:bg-white hover:text-black transition-colors uppercase font-medium"
+                            className="px-6 py-2 border border-white/30 text-white text-xs tracking-[0.2em] hover:bg-white hover:text-black transition-colors uppercase font-medium"
                         >
                             Login / Sign-Up
+                        </motion.button>
+
+                        {/* Try 30s Demo — subtle, premium entry point */}
+                        <motion.button
+                            id="try-demo-btn"
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={!isIntro ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+                            transition={{ duration: 0.8, delay: 0.5, ease: "easeOut" }}
+                            whileHover={{ boxShadow: '0 0 28px rgba(255,255,255,0.18), 0 0 10px rgba(255,255,255,0.08)' }}
+                            onClick={() => setDemoOpen(true)}
+                            className="mb-8 px-7 py-2.5 rounded-full text-white text-xs tracking-[0.2em] font-medium transition-colors duration-300 hover:bg-white/10"
+                            style={{
+                                border: '1px solid rgba(255,255,255,0.18)',
+                                boxShadow: '0 0 14px rgba(255,255,255,0.06)',
+                            }}
+                        >
+                            Try 30s Demo
                         </motion.button>
                     </div>
 
