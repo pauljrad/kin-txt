@@ -150,7 +150,7 @@ export function DemoPlayer({ onClose }: DemoPlayerProps) {
   const currentPaceWpm = useMemo(() => {
     if (mode === 'rhythm') {
       const pm = rhythmPreset === 'slower' ? 0.667 : rhythmPreset === 'faster' ? 1.5 : 1.0;
-      return Math.round(wpm * pm);
+      return Math.round(240 * pm);
     }
     const progress = totalWords > 1 ? wordIndex / (totalWords - 1) : 0;
     const startWpm = wpm * 0.5;
@@ -165,7 +165,7 @@ export function DemoPlayer({ onClose }: DemoPlayerProps) {
       const rs = rhythmSpeeds[idx];
       const pm = rhythmPreset === 'slower' ? 0.667 : rhythmPreset === 'faster' ? 1.5 : 1.0;
       // Scale based on target wpm (240 is baseline where speed=1.0)
-      speed = (rs?.speed ?? 1.0) * pm * (wpm / 240);
+      speed = (rs?.speed ?? 1.0) * pm;
     } else {
       const progress = totalWords > 1 ? idx / (totalWords - 1) : 0;
       const startWpm = wpm * 0.5;
