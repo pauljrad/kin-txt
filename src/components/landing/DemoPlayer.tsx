@@ -442,14 +442,29 @@ export function DemoPlayer({ onClose }: DemoPlayerProps) {
               </button>
 
               <button
-                onClick={() => {
-                  const text = encodeURIComponent("I just tried KiN-TXT, a kinetic reading engine that completely removed my 'page fright' and let me focus. Try the 30s demo here: https://kin-txt.com");
-                  window.open(`https://twitter.com/intent/tweet?text=${text}`, '_blank');
-                  setTimeout(() => navigate('/register?plan=trial_30'), 500);
+                onClick={async () => {
+                  const shareData = {
+                    title: 'KiN-TXT',
+                    text: "I just tried KiN-TXT, a kinetic reading engine that completely removed my 'page fright' and let me focus.",
+                    url: 'https://kin-txt.com'
+                  };
+                  
+                  try {
+                    if (navigator.share) {
+                      await navigator.share(shareData);
+                      setTimeout(() => navigate('/register?plan=trial_30'), 500);
+                    } else {
+                      await navigator.clipboard.writeText(`${shareData.text} Try the 30s demo here: ${shareData.url}`);
+                      alert("Link copied to clipboard! Share it with your friends.");
+                      setTimeout(() => navigate('/register?plan=trial_30'), 500);
+                    }
+                  } catch (err) {
+                    console.log('Error sharing:', err);
+                  }
                 }}
                 className="w-full py-3 rounded-full border border-white/20 text-white text-sm font-semibold tracking-wide hover:bg-white/10 hover:border-white/40 transition-all flex items-center justify-center gap-2"
               >
-                <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path><polyline points="16 6 12 2 8 6"></polyline><line x1="12" y1="2" x2="12" y2="15"></line></svg>
                 <span>Share for 30-Day Trial</span>
               </button>
 
