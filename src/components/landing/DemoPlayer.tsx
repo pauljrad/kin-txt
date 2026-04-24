@@ -442,33 +442,6 @@ export function DemoPlayer({ onClose }: DemoPlayerProps) {
               </button>
 
               <button
-                onClick={async () => {
-                  const shareData = {
-                    title: 'KiN-TXT',
-                    text: "I just tried KiN-TXT, a kinetic reading engine that completely removed my 'page fright' and let me focus.",
-                    url: 'https://kin-txt.com'
-                  };
-                  
-                  try {
-                    if (navigator.share) {
-                      await navigator.share(shareData);
-                      setTimeout(() => navigate('/register?plan=trial_30'), 500);
-                    } else {
-                      await navigator.clipboard.writeText(`${shareData.text} Try the 30s demo here: ${shareData.url}`);
-                      alert("Link copied to clipboard! Share it with your friends.");
-                      setTimeout(() => navigate('/register?plan=trial_30'), 500);
-                    }
-                  } catch (err) {
-                    console.log('Error sharing:', err);
-                  }
-                }}
-                className="w-full py-3 rounded-full border border-white/20 text-white text-sm font-semibold tracking-wide hover:bg-white/10 hover:border-white/40 transition-all flex items-center justify-center gap-2"
-              >
-                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path><polyline points="16 6 12 2 8 6"></polyline><line x1="12" y1="2" x2="12" y2="15"></line></svg>
-                <span>Share for 30-Day Trial</span>
-              </button>
-
-              <button
                 onClick={handleRetry}
                 className="flex items-center gap-2 text-white/40 text-xs tracking-widest uppercase hover:text-white/70 transition-colors"
               >
