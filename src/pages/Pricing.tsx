@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { Check, ArrowLeft } from 'lucide-react';
+import { Check, ArrowLeft, LogOut } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { useAuth } from '@/hooks/useAuth';
 
 // Animated KiN logo — same as splash screen, scaled down
 const KinLogo = ({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) => {
@@ -74,7 +75,13 @@ const PLANS = [
 
 export default function Pricing() {
   const navigate = useNavigate();
+  const { user, signOut } = useAuth();
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/login');
+  };
 
   const handleStartTrial = (plan: typeof PLANS[0]) => {
     navigate(`/register?plan=${plan.id}`);
@@ -84,18 +91,32 @@ export default function Pricing() {
     <div className="min-h-[100svh] relative bg-background overflow-hidden flex flex-col">
       <ThemeToggle />
 
-      {/* Back button */}
-      <motion.button
-        initial={{ opacity: 0, x: -10 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ duration: 0.4, delay: 0.2 }}
-        onClick={() => navigate('/login')}
-        className="absolute top-4 left-4 z-50 flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
-        style={{ top: 'calc(1rem + env(safe-area-inset-top, 0px))' }}
-      >
-        <ArrowLeft className="w-4 h-4" />
-        Back
-      </motion.button>
+      {/* Back / Sign Out button */}
+      {user ? (
+        <motion.button
+          initial={{ opacity: 0, x: -10 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.4, delay: 0.2 }}
+          onClick={handleSignOut}
+          className="absolute top-4 left-4 z-50 flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          style={{ top: 'calc(1rem + env(safe-area-inset-top, 0px))' }}
+        >
+          <LogOut className="w-4 h-4" />
+          Sign Out
+        </motion.button>
+      ) : (
+        <motion.button
+          initial={{ opacity: 0, x: -10 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.4, delay: 0.2 }}
+          onClick={() => navigate('/login')}
+          className="absolute top-4 left-4 z-50 flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          style={{ top: 'calc(1rem + env(safe-area-inset-top, 0px))' }}
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back
+        </motion.button>
+      )}
 
       <div className="flex-1 flex flex-col items-center justify-start px-4 pt-16 pb-12">
 

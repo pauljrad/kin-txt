@@ -88,14 +88,12 @@ const Index = () => {
     }
   }, [activeDocument]);
 
-  // Subscription Enforcement:
-  // If the user is logged in but NOT subscribed, redirect them to pricing.
-  // Note: Existing users are grandfathered as 'lifetime' in the database.
-  useEffect(() => {
-    if (!subLoading && user && !isSubscribed) {
-      navigate('/pricing');
-    }
-  }, [user, isSubscribed, subLoading, navigate]);
+  // Subscription Enforcement temporarily disabled to allow registered users access.
+  // useEffect(() => {
+  //   if (!subLoading && user && !isSubscribed) {
+  //     navigate('/pricing');
+  //   }
+  // }, [user, isSubscribed, subLoading, navigate]);
 
 
 
