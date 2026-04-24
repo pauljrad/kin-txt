@@ -1,6 +1,7 @@
 import { useState, useEffect, forwardRef } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate, Link } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
 import { AnimatedTitle } from '@/components/AnimatedTitle';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Input } from '@/components/ui/input';
@@ -201,6 +202,18 @@ const Login = forwardRef<HTMLDivElement>((_, ref) => {
   return (
     <div className="min-h-[100svh] relative bg-background overflow-hidden flex flex-col">
       <ThemeToggle />
+
+      <motion.button
+        initial={{ opacity: 0, x: -10 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.4 }}
+        onClick={() => navigate('/')}
+        className="absolute left-4 z-50 flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+        style={{ top: 'calc(1rem + env(safe-area-inset-top, 0px))' }}
+      >
+        <ArrowLeft className="w-4 h-4" />
+        Back
+      </motion.button>
 
       <div className="flex-1 flex flex-col items-center justify-start sm:justify-center px-4 pt-44 sm:pt-12">
         {/* Animated Title */}
