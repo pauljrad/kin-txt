@@ -885,7 +885,7 @@ const Index = () => {
             onClick={handleLoginClick}
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            className="absolute left-4 z-50 px-2.5 py-2 bg-foreground text-background rounded-full text-[10px] font-bold tracking-[0.1em] uppercase hover:scale-105 transition-all shadow-lg active:scale-95"
+            className="absolute left-4 z-50 toolbar-button px-4 py-0 h-9 sm:h-11 text-[10px] font-bold tracking-[0.1em] uppercase hover:scale-105 transition-all shadow-lg active:scale-95 flex items-center justify-center"
             style={{ top: 'calc(1rem + env(safe-area-inset-top, 0px))' }}
           >
             Login / Signup

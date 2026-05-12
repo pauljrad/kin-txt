@@ -109,7 +109,7 @@ export default function Pricing() {
           initial={{ opacity: 0, x: -10 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.4, delay: 0.2 }}
-          onClick={() => navigate('/login')}
+          onClick={() => navigate('/home')}
           className="absolute top-4 left-4 z-50 flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
           style={{ top: 'calc(1rem + env(safe-area-inset-top, 0px))' }}
         >

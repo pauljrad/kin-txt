@@ -119,7 +119,7 @@ export default function Register() {
         initial={{ opacity: 0, x: -10 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.4 }}
-        onClick={() => navigate('/pricing')}
+        onClick={() => navigate('/home')}
         className="absolute left-4 z-50 flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
         style={{ top: 'calc(1rem + env(safe-area-inset-top, 0px))' }}
       >
