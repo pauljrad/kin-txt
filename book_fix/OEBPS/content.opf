@@ -1,0 +1,57 @@
+<?xml version='1.0' encoding='utf-8'?>
+<package xmlns:opf="http://www.idpf.org/2007/opf" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="id" xml:lang="en">
+  <metadata>
+    <dc:title id="id-1">Heart of Darkness</dc:title>
+    <dc:creator id="id-2">Joseph Conrad</dc:creator>
+    <dc:rights>Public domain in the USA.</dc:rights>
+    <dc:identifier>calibre:29</dc:identifier>
+    <dc:identifier>uuid:4e594639-8091-46b1-a4e4-ed6d6f6a5ce3</dc:identifier>
+    <dc:identifier id="id">http://www.gutenberg.org/219</dc:identifier>
+    <dc:source>https://www.gutenberg.org/files/219/219-h/219-h.htm</dc:source>
+    <dc:language>en</dc:language>
+    <dc:date>2006-01-09T00:00:00+00:00</dc:date>
+    <dc:subject>Africa -- Fiction</dc:subject>
+    <dc:subject>Europeans -- Africa -- Fiction</dc:subject>
+    <dc:subject>Trading posts -- Fiction</dc:subject>
+    <dc:subject>Degeneration -- Fiction</dc:subject>
+    <dc:subject>Imperialism -- Fiction</dc:subject>
+    <dc:subject>Psychological fiction</dc:subject>
+    <meta refines="#id-1" property="title-type">main</meta>
+    <meta refines="#id-1" property="file-as">Heart of Darkness</meta>
+    <meta property="dcterms:modified">2026-04-11T09:30:28Z</meta>
+    <meta property="schema:accessMode">textual</meta>
+    <meta property="schema:accessibilityFeature">readingOrder</meta>
+    <meta property="schema:accessibilityHazard">none</meta>
+    <meta property="schema:accessModeSufficient">textual,visual</meta>
+    <meta property="schema:accessibilitySummary">This publication may not have complete alternative text descriptions.</meta>
+    <meta name="cover" content="item1"/>
+    <meta refines="#id-2" property="role" scheme="marc:relators">aut</meta>
+    <meta refines="#id-2" property="file-as">Conrad, Joseph</meta>
+  </metadata>
+  <manifest>
+    <!--Image: 1600 x 2400 size=61284 -->
+    <item href="9096453346302668672_219-cover.png" id="item1" media-type="image/png" properties="cover-image"/>
+    <item href="pgepub.css" id="item2" media-type="text/css"/>
+    <item href="0.css" id="item3" media-type="text/css"/>
+    <item href="1.css" id="item4" media-type="text/css"/>
+    <!--Chunk: size=2352 Split on div.chapter-->
+    <item href="6929899502079748892_219-h-0.htm.xhtml" id="pg-header" media-type="application/xhtml+xml"/>
+    <!--Chunk: size=80479 Split on div.chapter-->
+    <item href="6929899502079748892_219-h-1.htm.xhtml" id="item5" media-type="application/xhtml+xml"/>
+    <!--Chunk: size=68423 Split on div.chapter-->
+    <item href="6929899502079748892_219-h-2.htm.xhtml" id="item6" media-type="application/xhtml+xml"/>
+    <!--Chunk: size=67020 Split on section-->
+    <item href="6929899502079748892_219-h-3.htm.xhtml" id="item7" media-type="application/xhtml+xml"/>
+    <!--Chunk: size=19569-->
+    <item href="toc.xhtml" id="ncx" media-type="application/xhtml+xml" properties="nav"/>
+    <item href="toc.ncx" id="ncx2" media-type="application/x-dtbncx+xml"/>
+    <item href="wrap0000.xhtml" id="coverpage-wrapper" media-type="application/xhtml+xml" properties="svg"/>
+  </manifest>
+  <spine toc="ncx2">
+    <itemref idref="coverpage-wrapper"/>
+    <itemref idref="pg-header"/>
+    <itemref idref="item5"/>
+    <itemref idref="item6"/>
+    <itemref idref="item7"/>
+  </spine>
+</package>

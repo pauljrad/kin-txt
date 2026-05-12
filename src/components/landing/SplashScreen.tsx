@@ -439,28 +439,13 @@ export const InteractiveSplashScreen = forwardRef<HTMLDivElement, AnimatedTitleP
                             initial={{ opacity: 0, y: 20 }}
                             animate={!isIntro ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
                             transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
-                            onClick={() => navigate('/login')}
-                            className="px-6 py-2 border border-white/30 text-white text-xs tracking-[0.2em] hover:bg-white hover:text-black transition-colors uppercase font-medium"
+                            onClick={() => navigate('/home')}
+                            className="px-8 py-3 border border-white/30 text-white text-sm tracking-[0.3em] hover:bg-white hover:text-black transition-all duration-500 uppercase font-bold"
                         >
-                            Login / Sign-Up
+                            Enter
                         </motion.button>
 
-                        {/* Try 30s Demo — subtle, premium entry point */}
-                        <motion.button
-                            id="try-demo-btn"
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={!isIntro ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-                            transition={{ duration: 0.8, delay: 0.5, ease: "easeOut" }}
-                            whileHover={{ boxShadow: '0 0 28px rgba(255,255,255,0.18), 0 0 10px rgba(255,255,255,0.08)' }}
-                            onClick={() => setDemoOpen(true)}
-                            className="mb-8 px-7 py-2.5 rounded-full text-white text-xs tracking-[0.2em] font-medium transition-colors duration-300 hover:bg-white/10"
-                            style={{
-                                border: '1px solid rgba(255,255,255,0.18)',
-                                boxShadow: '0 0 14px rgba(255,255,255,0.06)',
-                            }}
-                        >
-                            Try 30s Demo
-                        </motion.button>
+
                     </div>
 
                     <div className="absolute top-[85%] left-0 w-full flex flex-col items-center justify-center pointer-events-none">

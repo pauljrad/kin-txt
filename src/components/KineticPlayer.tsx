@@ -2029,38 +2029,41 @@ export function KineticPlayer({
       <AnimatePresence>
         {isComplete && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.9, y: -8 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: -8 }}
-            transition={{ duration: 0.25, ease: [0.34, 1.56, 0.64, 1] }}
-            className="absolute z-30 left-4"
-            style={{ top: 'calc(3.75rem + env(safe-area-inset-top, 0px))' }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="absolute inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-md"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="glass-panel p-2 flex flex-col justify-between" style={{ maxWidth: '80px', height: '4.25rem' }}>
-              <div>
-                <h2 className="text-xs font-display tracking-wide leading-tight">Finished</h2>
-                <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">{totalWords} words</p>
-              </div>
-              <div className="flex gap-1">
-                <button
-                  onClick={handleRestart}
-                  className="control-button-secondary text-[10px] px-1.5 py-1 flex items-center gap-0.5 leading-tight"
-                >
-                  <RotateCcw className="w-2.5 h-2.5 shrink-0" />
-                  Replay
-                </button>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              transition={{ delay: 0.1, duration: 0.3, ease: [0.34, 1.56, 0.64, 1] }}
+              className="glass-panel p-8 flex flex-col items-center max-w-[280px] w-full"
+            >
+              <h2 className="text-2xl font-display tracking-widest uppercase mb-1 text-foreground">Finished</h2>
+              <p className="text-sm text-muted-foreground mb-6 font-medium tracking-wide">{totalWords} words</p>
+              
+              <div className="flex flex-col gap-3 w-full">
                 <button
                   onClick={() => {
                     void persistReadingTime(true);
                     onBack();
                   }}
-                  className="control-button text-[10px] px-1.5 py-1 leading-tight"
+                  className="control-button w-full py-3.5 text-sm font-semibold tracking-wide"
                 >
-                  New Text
+                  Return to Library
+                </button>
+                <button
+                  onClick={handleRestart}
+                  className="control-button-secondary w-full py-3 text-sm flex items-center justify-center gap-2"
+                >
+                  <RotateCcw className="w-4 h-4 shrink-0" />
+                  Replay
                 </button>
               </div>
-            </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>

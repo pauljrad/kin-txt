@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useLayoutEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LogOut, Library, FileText, Newspaper } from 'lucide-react';
+import { LogOut, Library, FileText, Newspaper, HardDrive } from 'lucide-react';
 import { TextInput } from '@/components/TextInput';
 import { KineticPlayer } from '@/components/KineticPlayer';
 import { DocumentHistory } from '@/components/DocumentHistory';
@@ -57,6 +57,7 @@ const Index = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const { isSubscribed, loading: subLoading } = useSubscription();
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [activeTab, setActiveTab] = useState<TabMode>('my-texts');
   const [activeDocument, setActiveDocument] = useState<ActiveDocument | null>(null);
   const [sharingDoc, setSharingDoc] = useState<SavedDocument | null>(null);
@@ -96,6 +97,25 @@ const Index = () => {
   // }, [user, isSubscribed, subLoading, navigate]);
 
 
+
+  useEffect(() => {
+    const handleOnline = () => {
+      setIsOnline(true);
+      toast.success("Back online!");
+    };
+    const handleOffline = () => {
+      setIsOnline(false);
+      toast.error("You are now offline. Only downloaded texts are available.");
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   // Listen for Pong Challenges and Global Events
   useEffect(() => {
@@ -186,6 +206,15 @@ const Index = () => {
     setIsAnalyzing(true);
 
     // Save the document to database
+    if (!user) {
+      const existing = sessionStorage.getItem('kinxt_guest_doc');
+      if (existing) {
+        toast.info("Register to save more than one TXT!");
+        navigate('/register');
+        return;
+      }
+    }
+
     const saved = await saveDocument({
       title,
       source,
@@ -249,6 +278,15 @@ const Index = () => {
     const { cleanedText, detectedWhispered, detectedEmphasis } = processTextStyles(parsed);
 
     // Save the document to database with ebook file type and CLEANED text
+    if (!user) {
+      const existing = sessionStorage.getItem('kinxt_guest_doc');
+      if (existing) {
+        toast.info("Register to save more than one TXT!");
+        navigate('/register');
+        return;
+      }
+    }
+
     const saved = await saveDocument({
       title,
       source: 'ebook',
@@ -312,6 +350,15 @@ const Index = () => {
     const { cleanedText, detectedWhispered, detectedEmphasis } = processTextStyles(parsed);
 
     // Save the document to database as an article with CLEANED text
+    if (!user) {
+      const existing = sessionStorage.getItem('kinxt_guest_doc');
+      if (existing) {
+        toast.info("Register to save more than one TXT!");
+        navigate('/register');
+        return;
+      }
+    }
+
     const saved = await saveDocument({
       title,
       source: 'article',
@@ -381,6 +428,10 @@ const Index = () => {
   }, []);
 
   const analyzeEmphasis = async (text: string): Promise<EmphasisAnalysis> => {
+    if (!isOnline) {
+      console.log("Offline: Skipping AI emphasis analysis");
+      return { emphasisWords: [], whisperedWords: [] };
+    }
     try {
       const { data, error } = await supabase.functions.invoke('analyze-emphasis', {
         body: { text },
@@ -413,7 +464,9 @@ const Index = () => {
     } else {
       // No saved data? We need to run analysis.
       setIsAnalyzing(true);
-      toast.info('Analyzing text for emphasis...');
+      if (isOnline) {
+        toast.info('Analyzing text for emphasis...');
+      }
 
       const fullText = cleanedText.paragraphs.map(p => p.join(' ')).join(' ');
       const { emphasisWords: aiEmphasis, whisperedWords: aiWhispered } = await analyzeEmphasis(fullText);
@@ -458,6 +511,10 @@ const Index = () => {
   const handleSignOut = async () => {
     await signOut();
     navigate('/');
+  };
+
+  const handleLoginClick = () => {
+    navigate('/login');
   };
 
   const handleEndPong = () => {
@@ -678,6 +735,16 @@ const Index = () => {
             exit={{ opacity: 0 }}
             className="w-full flex flex-col items-center px-4 pt-24 sm:pt-28"
           >
+            {!isOnline && (
+              <motion.div 
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="w-full max-w-2xl bg-blue-500/10 border border-blue-500/20 rounded-xl p-3 mb-6 flex items-center gap-3 text-blue-500 text-sm"
+              >
+                <HardDrive className="w-4 h-4" />
+                <span>Offline Mode: Only your downloaded TXTs are available.</span>
+              </motion.div>
+            )}
             {/* Main Content Area */}
             <div className="w-full max-w-2xl mx-auto flex flex-col items-center">
               <AnimatedTitle />
@@ -733,6 +800,7 @@ const Index = () => {
                           onSelectDocument={handleSelectDocument}
                           onShare={handleShareClick}
                           refreshTrigger={refreshTrigger}
+                          isGuest={!user}
                         />
                       </div>
                     ) : activeTab === 'library' ? (
@@ -795,21 +863,34 @@ const Index = () => {
       {/* FIXED TOOLBAR (Always On Top) */}
       <ThemeToggle />
 
-      {/* Sign out button - Top Left */}
+      {/* Top Left Button: Sign Out (User) or Login (Guest) */}
       {!activeDocument && (
-        <motion.button
-          onClick={handleSignOut}
-          animate={{
-            opacity: isPongGameActive ? 0 : 1,
-            filter: isPongGameActive ? 'blur(6px)' : 'blur(0px)',
-          }}
-          transition={{ duration: 0.4 }}
-          className="absolute left-4 z-50 toolbar-button"
-          style={{ top: 'calc(1rem + env(safe-area-inset-top, 0px))', pointerEvents: isPongGameActive ? 'none' : 'auto' }}
-          title="Sign out"
-        >
-          <LogOut className="w-4 h-4 sm:w-5 sm:h-5" />
-        </motion.button>
+        user ? (
+          <motion.button
+            onClick={handleSignOut}
+            animate={{
+              opacity: isPongGameActive ? 0 : 1,
+              filter: isPongGameActive ? 'blur(6px)' : 'blur(0px)',
+            }}
+            transition={{ duration: 0.4 }}
+            className="absolute left-4 z-50 toolbar-button group flex items-center gap-2"
+            style={{ top: 'calc(1rem + env(safe-area-inset-top, 0px))', pointerEvents: isPongGameActive ? 'none' : 'auto' }}
+            title="Sign out"
+          >
+            <LogOut className="w-4 h-4 sm:w-5 sm:h-5" />
+            <span className="hidden sm:inline text-[10px] font-mono tracking-widest uppercase opacity-0 group-hover:opacity-100 transition-opacity">Logout</span>
+          </motion.button>
+        ) : (
+          <motion.button
+            onClick={handleLoginClick}
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="absolute left-4 z-50 px-4 py-2 bg-foreground text-background rounded-full text-[10px] font-bold tracking-[0.2em] uppercase hover:scale-105 transition-all shadow-lg active:scale-95"
+            style={{ top: 'calc(1rem + env(safe-area-inset-top, 0px))' }}
+          >
+            Login / Signup
+          </motion.button>
+        )
       )}
 
       {/* Notifications - Top Right (right-28) */}
@@ -817,6 +898,7 @@ const Index = () => {
         <div
           className="absolute right-28 z-50 flex items-center justify-center p-0"
           style={{ top: 'calc(1rem + env(safe-area-inset-top, 0px))' }}
+          onClick={() => !user && navigate('/register')}
         >
           <Notifications
             onOpenDocument={handleOpenDocumentById}
@@ -830,12 +912,16 @@ const Index = () => {
 
       {/* KiN-Profile - Top Right (right-52) */}
       {!activeDocument && (
-        <KinProfileLayout />
+        <div onClick={() => !user && navigate('/register')} className="cursor-pointer">
+          <KinProfileLayout />
+        </div>
       )}
 
       {/* KiN - Unified Menu - Top Right (right-40) */}
       {!activeDocument && !isPongGameActive && (
-        <KinUnifiedLayout onViewProfile={setActiveProfile} />
+        <div onClick={() => !user && navigate('/register')} className="cursor-pointer">
+          <KinUnifiedLayout onViewProfile={setActiveProfile} />
+        </div>
       )}
 
       {/* Info Button - Top Right (right-16) */}

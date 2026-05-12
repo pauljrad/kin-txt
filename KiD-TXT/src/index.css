@@ -1,0 +1,249 @@
+/* ============================================
+   KiD-TXT — Global Styles & 4-Theme System
+   ============================================ */
+
+@import "tailwindcss";
+
+/* Import is in index.html for Google Fonts */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ─── Theme: Cream (default) ─── */
+:root,
+[data-theme="cream"] {
+  --bg: #FFF2CC;
+  --bg-card: #FFEBB3;
+  --bg-elevated: #FFE599;
+  --text: #222222;
+  --text-muted: #6B5E3A;
+  --accent: #F5C400;
+  --accent-text: #222222;
+  --border: #E8D48A;
+  --correct: #4CAF50;
+  --wrong: #FF6B6B;
+  --shadow: rgba(100, 80, 0, 0.12);
+  --reader-bg: #FFF8E1;
+  --theme-name: "Cream";
+}
+
+/* ─── Theme: Blue ─── */
+[data-theme="blue"] {
+  --bg: #D9EAF7;
+  --bg-card: #C5DFF1;
+  --bg-elevated: #B0D4EC;
+  --text: #1A1A1A;
+  --text-muted: #2C5F8A;
+  --accent: #2E86C1;
+  --accent-text: #ffffff;
+  --border: #93C6E8;
+  --correct: #27AE60;
+  --wrong: #E74C3C;
+  --shadow: rgba(0, 60, 120, 0.12);
+  --reader-bg: #E8F4FB;
+  --theme-name: "Blue";
+}
+
+/* ─── Theme: Green ─── */
+[data-theme="green"] {
+  --bg: #E2F0D9;
+  --bg-card: #D0E8C2;
+  --bg-elevated: #BDDFA9;
+  --text: #1A1A1A;
+  --text-muted: #2D6A2D;
+  --accent: #3DAA3D;
+  --accent-text: #ffffff;
+  --border: #9DD47F;
+  --correct: #27AE60;
+  --wrong: #E74C3C;
+  --shadow: rgba(0, 80, 20, 0.12);
+  --reader-bg: #EDF7E6;
+  --theme-name: "Green";
+}
+
+/* ─── Theme: Pink ─── */
+[data-theme="pink"] {
+  --bg: #FCE4EC;
+  --bg-card: #F8BBD9;
+  --bg-elevated: #F48FB1;
+  --text: #2A2A2A;
+  --text-muted: #7B2D5C;
+  --accent: #E91E8C;
+  --accent-text: #ffffff;
+  --border: #F06292;
+  --correct: #27AE60;
+  --wrong: #E74C3C;
+  --shadow: rgba(120, 0, 60, 0.12);
+  --reader-bg: #FFF0F6;
+  --theme-name: "Pink";
+}
+
+/* ─── Base ─── */
+html, body, #root {
+  min-height: 100dvh;
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: 'Nunito', 'Baloo 2', sans-serif;
+  transition: background-color 0.3s ease, color 0.3s ease;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ─── Utility ─── */
+.kid-card {
+  background: var(--bg-card);
+  border: 2px solid var(--border);
+  border-radius: 20px;
+  box-shadow: 0 4px 16px var(--shadow);
+}
+
+.kid-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-family: 'Nunito', sans-serif;
+  font-weight: 800;
+  font-size: 1.1rem;
+  padding: 14px 28px;
+  border-radius: 50px;
+  border: 3px solid transparent;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.kid-btn-primary {
+  background: var(--accent);
+  color: var(--accent-text);
+  border-color: var(--accent);
+}
+
+.kid-btn-primary:hover {
+  filter: brightness(1.08);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px var(--shadow);
+}
+
+.kid-btn-primary:active {
+  transform: translateY(0px);
+}
+
+.kid-btn-ghost {
+  background: transparent;
+  color: var(--text-muted);
+  border-color: var(--border);
+}
+
+.kid-btn-ghost:hover {
+  background: var(--bg-card);
+}
+
+.kid-input {
+  width: 100%;
+  background: var(--bg-elevated);
+  color: var(--text);
+  border: 2px solid var(--border);
+  border-radius: 16px;
+  padding: 14px 20px;
+  font-family: 'Nunito', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 600;
+  outline: none;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.kid-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent);
+}
+
+.kid-input::placeholder {
+  color: var(--text-muted);
+  opacity: 0.7;
+}
+
+/* ─── Reader word display ─── */
+.kid-word {
+  font-family: 'Nunito', sans-serif;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.1;
+  user-select: none;
+}
+
+/* ─── Quiz overlay ─── */
+.quiz-overlay {
+  position: fixed;
+  inset: 0;
+  background: color-mix(in srgb, var(--bg) 95%, transparent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 24px;
+}
+
+.quiz-card {
+  background: var(--bg-card);
+  border: 3px solid var(--border);
+  border-radius: 28px;
+  padding: 36px 32px;
+  max-width: 560px;
+  width: 100%;
+  box-shadow: 0 8px 40px var(--shadow);
+  text-align: center;
+}
+
+.quiz-option {
+  width: 100%;
+  background: var(--bg);
+  color: var(--text);
+  border: 2.5px solid var(--border);
+  border-radius: 16px;
+  padding: 16px 20px;
+  font-family: 'Nunito', sans-serif;
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: left;
+  margin-bottom: 10px;
+}
+
+.quiz-option:hover {
+  border-color: var(--accent);
+  background: var(--bg-elevated);
+}
+
+.quiz-option.correct {
+  border-color: var(--correct);
+  background: color-mix(in srgb, var(--correct) 15%, var(--bg));
+  color: var(--correct);
+}
+
+.quiz-option.wrong {
+  border-color: var(--wrong);
+  background: color-mix(in srgb, var(--wrong) 15%, var(--bg));
+  color: var(--wrong);
+}
+
+/* ─── Scrollbars ─── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+
+/* ─── Animations ─── */
+@keyframes bounce-in {
+  0% { transform: scale(0.7); opacity: 0; }
+  70% { transform: scale(1.05); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.bounce-in { animation: bounce-in 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+
+@keyframes star-pop {
+  0% { transform: scale(0) rotate(-15deg); opacity: 0; }
+  60% { transform: scale(1.2) rotate(5deg); }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+
+.star-pop { animation: star-pop 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }

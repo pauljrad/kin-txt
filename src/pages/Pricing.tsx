@@ -47,11 +47,11 @@ const PLANS = [
     priceId: 'price_1TIXZ1RuFCnPyOr9FehrdF7L',
     features: [
       '1-week free trial',
-      'Unlimited Kinetic Reading',
-      'Free Access to KiN-TXT Ebook Library and Live News',
-      'Access to KiN-Clubs and Social Reading',
-      'Unlimited use of all reading modes',
-      'Cancel anytime',
+      'Save exactly where you left off',
+      'Unlimited TXT library (No more 1-TXT limit)',
+      'Access to KiN-Clubs & Social Reading',
+      'Reading Streaks & Daily Rewards',
+      'Unlimited Kinetic Reading modes',
     ],
   },
   {
@@ -64,11 +64,11 @@ const PLANS = [
     priceId: 'price_1TIXbZRuFCnPyOr91szBn2Aq',
     features: [
       '1-week free trial',
-      'Unlimited Kinetic Reading',
-      'Free Access to KiN-TXT Ebook Library and Live News',
-      'Access to KiN-Clubs and Social Reading',
-      'Unlimited use of all reading modes',
-      'Cancel anytime',
+      'Save exactly where you left off',
+      'Unlimited TXT library (No more 1-TXT limit)',
+      'Access to KiN-Clubs & Social Reading',
+      'Reading Streaks & Daily Rewards',
+      'Unlimited Kinetic Reading modes',
     ],
   },
 ];

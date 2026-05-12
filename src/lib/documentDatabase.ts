@@ -38,9 +38,8 @@ export interface SavedDocument {
   completedAt?: number;
   createdAt: number;
   updatedAt: number;
-  emphasisWords?: string[];
-  whisperedWords?: string[];
   fileType?: string;
+  isOffline?: boolean;
 }
 
 // Detect category based on source, file type, and content characteristics
@@ -136,7 +135,28 @@ function calculateWordIndex(parsedText: ParsedText, paragraph: number, word: num
 
 export async function getDocuments(): Promise<SavedDocument[]> {
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return [];
+  
+  // Try to get offline documents first
+  const { getAllOffline } = await import('./offlineDatabase');
+  const offlineDocs = await getAllOffline();
+  const offlineIds = new Set(offlineDocs.map(d => d.id));
+
+  if (!user) {
+    const guestDoc = sessionStorage.getItem('kinxt_guest_doc');
+    if (guestDoc) {
+      try {
+        const doc = JSON.parse(guestDoc) as SavedDocument;
+        return [doc];
+      } catch (e) {
+        console.error('Error parsing guest doc', e);
+      }
+    }
+    return [];
+  }
+
+  if (!navigator.onLine) {
+    return offlineDocs.map(doc => ({ ...doc, isOffline: true }));
+  }
 
   const { data, error } = await supabase
     .from('documents')
@@ -147,10 +167,16 @@ export async function getDocuments(): Promise<SavedDocument[]> {
 
   if (error) {
     console.error('Error fetching documents:', error);
-    return [];
+    return offlineDocs.map(doc => ({ ...doc, isOffline: true }));
   }
 
-  return (data || []).map(doc => dbToSavedDocument(doc as DatabaseDocument & { source?: string; file_type?: string }));
+  const onlineDocs = (data || []).map(doc => dbToSavedDocument(doc as DatabaseDocument & { source?: string; file_type?: string }));
+  
+  // Merge: Use online doc as source of truth but flag if it's available offline
+  return onlineDocs.map(doc => ({
+    ...doc,
+    isOffline: offlineIds.has(doc.id)
+  }));
 }
 
 export async function saveDocument(doc: {
@@ -161,7 +187,30 @@ export async function saveDocument(doc: {
   fileType?: string;
 }): Promise<SavedDocument | null> {
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
+  
+  if (!user) {
+    // Guest logic: Only 1 doc allowed
+    const wordCount = doc.parsedText.paragraphs?.flat()?.length || 0;
+    const preview = doc.parsedText.paragraphs?.[0]?.slice(0, 20).join(' ') || '';
+    
+    const guestDoc: SavedDocument = {
+      id: 'guest-' + Date.now(),
+      title: doc.title,
+      source: doc.source,
+      category: detectCategory(doc.source, doc.title, wordCount, doc.fileType),
+      parsedText: doc.parsedText,
+      progress: { paragraph: 0, word: 0 },
+      totalReadingTime: 0,
+      completed: false,
+      startedAt: Date.now(),
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+      fileType: doc.fileType,
+    };
+
+    sessionStorage.setItem('kinxt_guest_doc', JSON.stringify(guestDoc));
+    return guestDoc;
+  }
 
   const wordCount = doc.parsedText.paragraphs?.flat()?.length || 0;
   const preview = doc.parsedText.paragraphs?.[0]?.slice(0, 20).join(' ') || '';
@@ -197,7 +246,12 @@ export async function saveDocument(doc: {
 
 export async function updateDocumentProgress(id: string, paragraph: number, word: number, parsedText?: ParsedText): Promise<void> {
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return;
+  if (!user) {
+    // For guest users, we don't save progress to storage, 
+    // but the user requested: "won’t be able to save where they’re upto when reading txts"
+    // So we just skip saving.
+    return;
+  }
 
   let wordIndex = 0;
   let progress = 0;
@@ -248,6 +302,7 @@ export async function updateDocumentReadingTime(id: string, totalSeconds: number
 
 export async function syncLifetimeReadingTime(userId: string, totalSeconds: number): Promise<void> {
   if (!userId || totalSeconds <= 0) return;
+  if (!navigator.onLine) return;
 
   const { error } = await supabase.rpc('sync_lifetime_reading_time', {
     p_user_id: userId,
@@ -260,6 +315,7 @@ export async function syncLifetimeReadingTime(userId: string, totalSeconds: numb
 }
 
 export async function logReadingSession(documentId: string, durationSeconds: number, category: string = 'document', wordsRead: number = 0): Promise<any> {
+  if (!navigator.onLine) return;
   const { data: { user } } = await supabase.auth.getUser();
   if (!user || durationSeconds <= 0) return;
 
@@ -309,7 +365,12 @@ export async function updateDocumentEmphasis(id: string, emphasisWords: string[]
 
 export async function deleteDocument(id: string): Promise<void> {
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return;
+  if (!user) {
+    if (id.startsWith('guest-')) {
+      sessionStorage.removeItem('kinxt_guest_doc');
+    }
+    return;
+  }
 
   const { error } = await supabase
     .from('documents')
@@ -356,8 +417,16 @@ export async function markDocumentCompleted(id: string, completed: boolean = tru
 }
 
 export async function getDocument(id: string): Promise<SavedDocument | null> {
+  // Check offline first
+  const { getFromOffline } = await import('./offlineDatabase');
+  const offlineDoc = await getFromOffline(id);
+  
+  if (!navigator.onLine && offlineDoc) {
+    return { ...offlineDoc, isOffline: true };
+  }
+
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
+  if (!user) return offlineDoc ? { ...offlineDoc, isOffline: true } : null;
 
   const { data, error } = await supabase
     .from('documents')
@@ -368,8 +437,12 @@ export async function getDocument(id: string): Promise<SavedDocument | null> {
 
   if (error || !data) {
     console.error('Error fetching document:', error);
-    return null;
+    return offlineDoc ? { ...offlineDoc, isOffline: true } : null;
   }
 
-  return dbToSavedDocument(data as DatabaseDocument & { source?: string; file_type?: string });
+  const doc = dbToSavedDocument(data as DatabaseDocument & { source?: string; file_type?: string });
+  return {
+    ...doc,
+    isOffline: !!offlineDoc
+  };
 }

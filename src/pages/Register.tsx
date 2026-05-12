@@ -149,7 +149,7 @@ export default function Register() {
           <h1 className="font-display text-3xl text-center mb-8 tracking-wide">Create Account</h1>
 
           <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-            {/* Display Name */}
+            {/* ... form fields ... */}
             <div className="space-y-1">
               <Input
                 id="register-display-name"
@@ -164,7 +164,6 @@ export default function Register() {
               {errors.displayName && <p className="text-xs text-destructive text-center">{errors.displayName}</p>}
             </div>
 
-            {/* Email */}
             <div className="space-y-1">
               <Input
                 id="register-email"
@@ -179,7 +178,6 @@ export default function Register() {
               {errors.email && <p className="text-xs text-destructive text-center">{errors.email}</p>}
             </div>
 
-            {/* Password */}
             <div className="space-y-1">
               <Input
                 id="register-password"
@@ -194,7 +192,6 @@ export default function Register() {
               {errors.password && <p className="text-xs text-destructive text-center">{errors.password}</p>}
             </div>
 
-            {/* Confirm Password */}
             <div className="space-y-1">
               <Input
                 id="register-confirm-password"
@@ -209,7 +206,6 @@ export default function Register() {
               {errors.confirmPassword && <p className="text-xs text-destructive text-center">{errors.confirmPassword}</p>}
             </div>
 
-            {/* Terms checkbox */}
             <div className="space-y-1">
               <label className={`flex items-start gap-3 cursor-pointer rounded-xl p-3 border transition-colors ${errors.agreed ? 'border-destructive bg-destructive/5' : 'border-border/50 bg-card/30 hover:bg-card/50'}`}>
                 <input
@@ -234,7 +230,6 @@ export default function Register() {
               {errors.agreed && <p className="text-xs text-destructive text-center">{errors.agreed}</p>}
             </div>
 
-            {/* Server error */}
             {serverError && (
               <p className="text-sm text-destructive text-center bg-destructive/10 rounded-lg px-3 py-2">
                 {serverError}
@@ -250,7 +245,32 @@ export default function Register() {
               {isLoading ? 'Creating account...' : 'Continue to Payment →'}
             </Button>
 
-            <p className="text-center text-xs text-muted-foreground/60 leading-snug px-2">
+            <div className="mt-12 space-y-6">
+              <h2 className="text-center font-display text-sm tracking-[0.2em] uppercase text-foreground/60">Registration Benefits</h2>
+              <ul className="grid grid-cols-1 gap-3">
+                {[
+                  'Save exactly where you left off',
+                  'Unlimited TXT library',
+                  'Access to KiN-Clubs',
+                  'Reading Streaks & Rewards',
+                  'Collect exclusive badges',
+                  'Personal reading statistics'
+                ].map((benefit, i) => (
+                  <motion.li
+                    key={benefit}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.5 + i * 0.1 }}
+                    className="flex items-center gap-3 text-sm text-muted-foreground"
+                  >
+                    <div className="w-1.5 h-1.5 rounded-full bg-primary" />
+                    {benefit}
+                  </motion.li>
+                ))}
+              </ul>
+            </div>
+
+            <p className="text-center text-xs text-muted-foreground/60 leading-snug px-2 mt-8">
               By continuing, you agree to recurring billing after your 7-day free trial. Cancel anytime before the trial ends and you will not be charged.
             </p>
 

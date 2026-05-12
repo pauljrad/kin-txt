@@ -67,7 +67,8 @@ function extractContent(xml: string, tag: string): string {
   // Check for CDATA
   const cdataMatch = content.match(/<!\[CDATA\[([\s\S]*?)\]\]>/i);
   if (cdataMatch) {
-    content = cdataMatch[1];
+    // CDATA may still contain HTML entities (e.g. &nbsp; &#039;) — decode them
+    content = parseEntity(cdataMatch[1]);
   } else {
     content = parseEntity(content);
   }
@@ -87,7 +88,31 @@ function extractLink(xml: string): string {
 }
 
 function parseEntity(str: string): string {
-  return str.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'");
+  if (!str) return '';
+  return str
+    // Common named entities
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&hellip;/gi, '\u2026')
+    .replace(/&mdash;/gi, '\u2014')
+    .replace(/&ndash;/gi, '\u2013')
+    .replace(/&laquo;/gi, '\u00AB')
+    .replace(/&raquo;/gi, '\u00BB')
+    .replace(/&ldquo;/gi, '\u201C')
+    .replace(/&rdquo;/gi, '\u201D')
+    .replace(/&lsquo;/gi, '\u2018')
+    .replace(/&rsquo;/gi, '\u2019')
+    .replace(/&trade;/gi, '\u2122')
+    .replace(/&copy;/gi, '\u00A9')
+    .replace(/&reg;/gi, '\u00AE')
+    // Numeric decimal entities e.g. &#039; &#8211;
+    .replace(/&#0*(\d+);/g, (_, num) => String.fromCharCode(parseInt(num, 10)))
+    // Numeric hex entities e.g. &#x27;
+    .replace(/&#x([0-9a-f]+);/gi, (_, hex) => String.fromCharCode(parseInt(hex, 16)));
 }
 
 function extractAuthor(xml: string, source: string, content?: string): string {

@@ -7,6 +7,36 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, GET, OPTIONS, PUT, DELETE',
 };
 
+// Decode all common HTML entities to plain text
+function decodeHtmlEntities(str: string): string {
+  if (!str) return '';
+  return str
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&hellip;/gi, '\u2026')
+    .replace(/&mdash;/gi, '\u2014')
+    .replace(/&ndash;/gi, '\u2013')
+    .replace(/&laquo;/gi, '\u00AB')
+    .replace(/&raquo;/gi, '\u00BB')
+    .replace(/&ldquo;/gi, '\u201C')
+    .replace(/&rdquo;/gi, '\u201D')
+    .replace(/&lsquo;/gi, '\u2018')
+    .replace(/&rsquo;/gi, '\u2019')
+    .replace(/&trade;/gi, '\u2122')
+    .replace(/&copy;/gi, '\u00A9')
+    .replace(/&reg;/gi, '\u00AE')
+    // Numeric decimal entities e.g. &#039; &#8211;
+    .replace(/&#0*(\d+);/g, (_, num) => String.fromCharCode(parseInt(num, 10)))
+    // Numeric hex entities e.g. &#x27;
+    .replace(/&#x([0-9a-f]+);/gi, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
+    // Any remaining unknown named entities — drop silently
+    .replace(/&[a-zA-Z][a-zA-Z0-9]*;/g, '');
+}
+
 // Validate URL to prevent SSRF attacks
 function validateUrl(urlString: string): void {
   const url = new URL(urlString);
@@ -56,7 +86,7 @@ function extractReadableContent(textInput: string, allowLowScore: boolean = fals
 
   const paragraphs = text.split(/\n\s*\n/);
   const scoredParagraphs = paragraphs.map(para => {
-    const trimmed = para.trim();
+    const trimmed = decodeHtmlEntities(para.trim());
     if (trimmed.length === 0) return { text: '', score: 0, keep: false };
 
     // Basic scoring logic...
@@ -148,15 +178,10 @@ function extractFromHtml(html: string): { title: string; body: string } {
     .replace(/<\/li>/gi, '\n')
     .replace(/<\/div>/gi, '\n')
     .replace(/<br\s*\/?>/gi, '\n')
-    .replace(/<[^>]+>/g, ' ')
-    // Decode HTML entities
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/&[a-zA-Z0-9#]+;/g, ' ')
+    .replace(/<[^>]+>/g, ' ');
+
+  // Decode all HTML entities in one pass
+  text = decodeHtmlEntities(text)
     .replace(/[ \t]+/g, ' ')
     .replace(/\n{3,}/g, '\n\n')
     .trim();

@@ -1,18 +1,20 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { FileText, Clock, Trash2, Play, Pencil, Check, X, CheckCircle2, BookCheck, Calendar, BookOpen, Newspaper, File, ChevronDown, Undo2, Share2 } from 'lucide-react';
+import { FileText, Clock, Trash2, Play, Pencil, Check, X, CheckCircle2, BookCheck, Calendar, BookOpen, Newspaper, File, ChevronDown, Undo2, Share2, CloudDownload, CloudOff, HardDrive } from 'lucide-react';
 import { SavedDocument, DocumentCategory, getDocuments, deleteDocument, renameDocument, markDocumentCompleted } from '@/lib/documentDatabase';
 import { useState, useEffect, useMemo, useCallback, forwardRef, useRef } from 'react';
 import { toast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
+import { saveToOffline, deleteFromOffline } from '@/lib/offlineDatabase';
 
 interface DocumentHistoryProps {
   onSelectDocument: (doc: SavedDocument) => void;
   onShare?: (doc: SavedDocument) => void;
   refreshTrigger?: number;
+  isGuest?: boolean;
 }
 
 export const DocumentHistory = forwardRef<HTMLDivElement, DocumentHistoryProps>(function DocumentHistory(
-  { onSelectDocument, onShare, refreshTrigger }: DocumentHistoryProps,
+  { onSelectDocument, onShare, refreshTrigger, isGuest }: DocumentHistoryProps,
   ref
 ) {
   const [documents, setDocuments] = useState<SavedDocument[]>([]);
@@ -148,6 +150,33 @@ export const DocumentHistory = forwardRef<HTMLDivElement, DocumentHistoryProps>(
     e.stopPropagation();
     await markDocumentCompleted(id, completed);
     await loadDocuments();
+  };
+
+  const handleToggleOffline = async (e: React.MouseEvent, doc: SavedDocument) => {
+    e.stopPropagation();
+    try {
+      if (doc.isOffline) {
+        await deleteFromOffline(doc.id);
+        toast({
+          title: "Removed from offline",
+          description: `"${doc.title}" is no longer available offline.`,
+        });
+      } else {
+        await saveToOffline(doc);
+        toast({
+          title: "Available offline",
+          description: `"${doc.title}" has been downloaded for offline use.`,
+        });
+      }
+      await loadDocuments();
+    } catch (err) {
+      console.error('Offline toggle error:', err);
+      toast({
+        title: "Error",
+        description: "Failed to update offline status.",
+        variant: "destructive",
+      });
+    }
   };
 
   const formatDate = (timestamp: number) => {
@@ -370,25 +399,29 @@ export const DocumentHistory = forwardRef<HTMLDivElement, DocumentHistoryProps>(
           {/* Action buttons - Always visible on touch devices, hover on desktop */}
           <div className="flex items-center gap-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
             {/* Mark as completed/uncompleted */}
-            <button
-              onClick={(e) => handleMarkCompleted(e, doc.id, !doc.completed)}
-              className={`p-1.5 sm:p-2 rounded-lg transition-colors ${doc.completed
-                ? 'bg-primary/20 text-primary hover:bg-primary/30'
-                : 'hover:bg-muted text-muted-foreground hover:text-foreground'
-                }`}
-              title={doc.completed ? "Mark as unread" : "Mark as read"}
-            >
-              <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-            </button>
+            {!isGuest && (
+              <button
+                onClick={(e) => handleMarkCompleted(e, doc.id, !doc.completed)}
+                className={`p-1.5 sm:p-2 rounded-lg transition-colors ${doc.completed
+                  ? 'bg-primary/20 text-primary hover:bg-primary/30'
+                  : 'hover:bg-muted text-muted-foreground hover:text-foreground'
+                  }`}
+                title={doc.completed ? "Mark as unread" : "Mark as read"}
+              >
+                <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              </button>
+            )}
 
             {/* Rename button */}
-            <button
-              onClick={(e) => handleStartRename(e, doc)}
-              className="p-1.5 sm:p-2 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-              title="Rename"
-            >
-              <Pencil className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-            </button>
+            {!isGuest && (
+              <button
+                onClick={(e) => handleStartRename(e, doc)}
+                className="p-1.5 sm:p-2 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                title="Rename"
+              >
+                <Pencil className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              </button>
+            )}
 
             {/* Share button */}
             <button
@@ -398,6 +431,23 @@ export const DocumentHistory = forwardRef<HTMLDivElement, DocumentHistoryProps>(
             >
               <Share2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </button>
+
+            {/* Offline toggle button */}
+            {!isGuest && (
+              <button
+                onClick={(e) => handleToggleOffline(e, doc)}
+                className={`p-1.5 sm:p-2 rounded-lg transition-colors ${doc.isOffline 
+                  ? 'bg-blue-500/20 text-blue-500 hover:bg-blue-500/30' 
+                  : 'hover:bg-muted text-muted-foreground hover:text-foreground'}`}
+                title={doc.isOffline ? "Remove from offline" : "Download for offline"}
+              >
+                {doc.isOffline ? (
+                  <HardDrive className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                ) : (
+                  <CloudDownload className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                )}
+              </button>
+            )}
 
             {/* Play button */}
             <button

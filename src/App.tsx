@@ -72,11 +72,7 @@ const AppContent = () => {
 
         <Route
           path="/home"
-          element={
-            <ProtectedRoute>
-              <Index />
-            </ProtectedRoute>
-          }
+          element={<Index />}
         />
         <Route path="*" element={<NotFound />} />
       </Routes>

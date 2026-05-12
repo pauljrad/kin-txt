@@ -1,0 +1,9 @@
+{
+  "name": "kid-txt-demo-site",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
