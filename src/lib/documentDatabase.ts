@@ -247,9 +247,23 @@ export async function saveDocument(doc: {
 export async function updateDocumentProgress(id: string, paragraph: number, word: number, parsedText?: ParsedText): Promise<void> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
-    // For guest users, we don't save progress to storage, 
-    // but the user requested: "won’t be able to save where they’re upto when reading txts"
-    // So we just skip saving.
+    // For guest users, we save progress to sessionStorage so it persists 
+    // while they are in the app, but vanishes if they "leave" (clear session).
+    if (id.startsWith('guest-')) {
+      const guestDocStr = sessionStorage.getItem('kinxt_guest_doc');
+      if (guestDocStr) {
+        try {
+          const doc = JSON.parse(guestDocStr) as SavedDocument;
+          if (doc.id === id && parsedText) {
+            doc.progress = { paragraph, word };
+            doc.updatedAt = Date.now();
+            sessionStorage.setItem('kinxt_guest_doc', JSON.stringify(doc));
+          }
+        } catch (e) {
+          console.error('Error updating guest progress', e);
+        }
+      }
+    }
     return;
   }
 

@@ -210,7 +210,7 @@ const Index = () => {
       const existing = sessionStorage.getItem('kinxt_guest_doc');
       if (existing) {
         toast.info("Register to save more than one TXT!");
-        navigate('/register');
+        navigate('/pricing');
         return;
       }
     }
@@ -282,7 +282,7 @@ const Index = () => {
       const existing = sessionStorage.getItem('kinxt_guest_doc');
       if (existing) {
         toast.info("Register to save more than one TXT!");
-        navigate('/register');
+        navigate('/pricing');
         return;
       }
     }
@@ -354,7 +354,7 @@ const Index = () => {
       const existing = sessionStorage.getItem('kinxt_guest_doc');
       if (existing) {
         toast.info("Register to save more than one TXT!");
-        navigate('/register');
+        navigate('/pricing');
         return;
       }
     }
@@ -885,7 +885,7 @@ const Index = () => {
             onClick={handleLoginClick}
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            className="absolute left-4 z-50 px-4 py-2 bg-foreground text-background rounded-full text-[10px] font-bold tracking-[0.2em] uppercase hover:scale-105 transition-all shadow-lg active:scale-95"
+            className="absolute left-4 z-50 px-2.5 py-2 bg-foreground text-background rounded-full text-[10px] font-bold tracking-[0.1em] uppercase hover:scale-105 transition-all shadow-lg active:scale-95"
             style={{ top: 'calc(1rem + env(safe-area-inset-top, 0px))' }}
           >
             Login / Signup
@@ -898,7 +898,7 @@ const Index = () => {
         <div
           className="absolute right-28 z-50 flex items-center justify-center p-0"
           style={{ top: 'calc(1rem + env(safe-area-inset-top, 0px))' }}
-          onClick={() => !user && navigate('/register')}
+          onClick={() => !user && navigate('/pricing')}
         >
           <Notifications
             onOpenDocument={handleOpenDocumentById}
@@ -912,14 +912,14 @@ const Index = () => {
 
       {/* KiN-Profile - Top Right (right-52) */}
       {!activeDocument && (
-        <div onClick={() => !user && navigate('/register')} className="cursor-pointer">
+        <div onClick={() => !user && navigate('/pricing')} className="cursor-pointer">
           <KinProfileLayout />
         </div>
       )}
 
       {/* KiN - Unified Menu - Top Right (right-40) */}
       {!activeDocument && !isPongGameActive && (
-        <div onClick={() => !user && navigate('/register')} className="cursor-pointer">
+        <div onClick={() => !user && navigate('/pricing')} className="cursor-pointer">
           <KinUnifiedLayout onViewProfile={setActiveProfile} />
         </div>
       )}
