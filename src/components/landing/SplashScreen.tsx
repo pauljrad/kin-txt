@@ -440,7 +440,7 @@ export const InteractiveSplashScreen = forwardRef<HTMLDivElement, AnimatedTitleP
                             animate={!isIntro ? { opacity: 1 } : { opacity: 0 }}
                             transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
                             onClick={() => navigate('/home')}
-                            className="px-6 py-2 border border-white/20 text-white text-[11px] tracking-[0.25em] hover:bg-white hover:text-black transition-all duration-500 uppercase font-bold"
+                            className="px-6 py-2 border border-white/20 text-white text-[11px] tracking-[0.25em] hover:bg-white hover:text-black transition-colors duration-500 uppercase font-bold"
                         >
                             Enter
                         </motion.button>
