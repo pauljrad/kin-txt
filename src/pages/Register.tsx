@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { Capacitor } from '@capacitor/core';
 
 const schema = z.object({
   displayName: z.string().min(2, 'Display name must be at least 2 characters'),
@@ -32,6 +33,7 @@ export default function Register() {
   const [searchParams] = useSearchParams();
   const plan = searchParams.get('plan') ?? 'monthly';
   const planInfo = PLAN_LABELS[plan] ?? PLAN_LABELS.monthly;
+  const isNative = Capacitor.isNativePlatform();
 
   const { signUp } = useAuth();
 
@@ -89,6 +91,12 @@ export default function Register() {
           }
         })
       ]);
+
+      // 3. On native iOS, skip Stripe — user subscribes via kin-txt.com in their browser
+      if (isNative) {
+        navigate('/login?registered=true');
+        return;
+      }
 
       // 3. Create Stripe Checkout session with their email pre-filled
       const { data, error: stripeError } = await supabase.functions.invoke('create-checkout-session', {

@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { Check, ArrowLeft, LogOut } from 'lucide-react';
+import { Check, ArrowLeft, LogOut, ExternalLink } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { useAuth } from '@/hooks/useAuth';
+import { Capacitor } from '@capacitor/core';
 
 // Animated KiN logo — same as splash screen, scaled down
 const KinLogo = ({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) => {
@@ -77,6 +78,7 @@ export default function Pricing() {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+  const isNative = Capacitor.isNativePlatform();
 
   const handleSignOut = async () => {
     await signOut();
@@ -188,18 +190,29 @@ export default function Pricing() {
                 ))}
               </ul>
 
-              <button
-                id={`start-trial-${plan.id}`}
-                onClick={() => handleStartTrial(plan)}
-                disabled={loadingPlan !== null}
-                className={`w-full h-12 rounded-xl font-display tracking-widest uppercase text-sm transition-all ${
-                  plan.id === 'annual'
-                    ? 'bg-foreground text-background hover:bg-foreground/90'
-                    : 'border border-foreground/40 text-foreground hover:bg-foreground/10'
-                } disabled:opacity-50 disabled:cursor-not-allowed`}
-              >
-                {loadingPlan === plan.id ? 'Redirecting...' : 'Start Free Trial'}
-              </button>
+              {isNative ? (
+                /* iOS App Store compliance — payments via web only */
+                <div className="w-full rounded-xl border border-border/40 bg-muted/30 px-4 py-3 text-center">
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    To subscribe, visit{' '}
+                    <span className="font-semibold text-foreground">kin-txt.com</span>{' '}
+                    in your browser.
+                  </p>
+                </div>
+              ) : (
+                <button
+                  id={`start-trial-${plan.id}`}
+                  onClick={() => handleStartTrial(plan)}
+                  disabled={loadingPlan !== null}
+                  className={`w-full h-12 rounded-xl font-display tracking-widest uppercase text-sm transition-all ${
+                    plan.id === 'annual'
+                      ? 'bg-foreground text-background hover:bg-foreground/90'
+                      : 'border border-foreground/40 text-foreground hover:bg-foreground/10'
+                  } disabled:opacity-50 disabled:cursor-not-allowed`}
+                >
+                  {loadingPlan === plan.id ? 'Redirecting...' : 'Start Free Trial'}
+                </button>
+              )}
             </motion.div>
           ))}
         </div>

@@ -42,3 +42,8 @@ pnpm-lock.yaml
 bun.lockb
 .vercel
 .env*.local
+
+# Capacitor native projects (large generated folders — recreate with `npx cap add ios`)
+# The config lives in capacitor.config.ts which IS committed
+ios/
+android/
