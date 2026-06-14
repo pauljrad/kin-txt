@@ -24,6 +24,7 @@ import ResetPassword from "./pages/ResetPassword";
 import { useState, useEffect } from "react";
 import { SplashScreen } from "@/components/SplashScreen";
 import { AnimatePresence } from "framer-motion";
+import { SpeedInsights } from "@vercel/speed-insights/react";
 
 const queryClient = new QueryClient();
 
@@ -91,6 +92,7 @@ const App = () => (
               <Toaster />
               <Sonner />
               <AppContent />
+              <SpeedInsights />
             </AuthProvider>
           </BrowserRouter>
         </TooltipProvider>
