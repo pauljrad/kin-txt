@@ -38,12 +38,8 @@ export default function Support() {
           <Section number="1" title="Contact Us">
             <p>The fastest way to reach us is by email — we read every message and aim to reply within 2 business days.</p>
             <p>
-              General help and questions:{' '}
+              For anything at all — help, questions, billing, or reporting abuse or a safety concern:{' '}
               <a href="mailto:hello@kin-txt.com" className="text-foreground underline underline-offset-2">hello@kin-txt.com</a>
-            </p>
-            <p>
-              Report abuse, objectionable content, or a safety concern:{' '}
-              <a href="mailto:support@kin-txt.com" className="text-foreground underline underline-offset-2">support@kin-txt.com</a>
             </p>
           </Section>
 
@@ -76,7 +72,7 @@ export default function Support() {
           </Section>
 
           <Section number="6" title="Community Safety">
-            <p>KiN's social features have zero tolerance for objectionable content or abusive behaviour. You can report or block any user directly from their profile in the app. Reports are reviewed and acted on within 24 hours. You can also email <a href="mailto:support@kin-txt.com" className="text-foreground underline underline-offset-2">support@kin-txt.com</a>.</p>
+            <p>KiN's social features have zero tolerance for objectionable content or abusive behaviour. You can report or block any user directly from their profile in the app. Reports are reviewed and acted on within 24 hours. You can also email <a href="mailto:hello@kin-txt.com" className="text-foreground underline underline-offset-2">hello@kin-txt.com</a>.</p>
           </Section>
 
           <Section number="7" title="Policies">

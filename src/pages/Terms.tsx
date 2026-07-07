@@ -107,7 +107,7 @@ export default function Terms() {
             </Sub>
             <Sub title="6.5 No Tolerance for Objectionable Content or Abuse">
               <p>There is zero tolerance for objectionable, abusive, harassing, hateful, or otherwise inappropriate content or behaviour. By using the social features ("KiNs", clubs, profiles and sharing) you agree not to post or send such content and to treat other users with respect.</p>
-              <p>You can report objectionable content or users, and block any user, directly from their profile within the app. Reports are reviewed and acted on (including removing content and ejecting offending users) within 24 hours. To report abuse you may also contact us at <a href="mailto:support@kin-txt.com" className="underline">support@kin-txt.com</a>.</p>
+              <p>You can report objectionable content or users, and block any user, directly from their profile within the app. Reports are reviewed and acted on (including removing content and ejecting offending users) within 24 hours. To report abuse you may also contact us at <a href="mailto:hello@kin-txt.com" className="underline">hello@kin-txt.com</a>.</p>
             </Sub>
           </Section>
 
