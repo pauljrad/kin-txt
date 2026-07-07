@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/hooks/useAuth";
 import { TextSizeProvider } from "@/hooks/useTextSize";
@@ -20,17 +20,30 @@ import Privacy from "./pages/Privacy";
 import DataPolicy from "./pages/DataPolicy";
 import CopyrightPolicy from "./pages/CopyrightPolicy";
 import PaymentPolicy from "./pages/PaymentPolicy";
+import Support from "./pages/Support";
 import ResetPassword from "./pages/ResetPassword";
 import { useState, useEffect } from "react";
 import { SplashScreen } from "@/components/SplashScreen";
 import { AnimatePresence } from "framer-motion";
+import { Capacitor } from "@capacitor/core";
+import { SplashScreen as CapSplashScreen } from "@capacitor/splash-screen";
 
 const queryClient = new QueryClient();
 
 const AppContent = () => {
   const [showSplash, setShowSplash] = useState(true);
+  // On the native iOS app, boot straight into the app (/home) instead of the
+  // marketing landing page. The web app (kin-txt.com) is unaffected.
+  const isNative = Capacitor.isNativePlatform();
 
   useEffect(() => {
+    // Hide native splash screen immediately when the web app mounts
+    if (Capacitor.isNativePlatform()) {
+      CapSplashScreen.hide().catch(err => {
+        console.warn("Could not hide native splash: ", err);
+      });
+    }
+
     const timer = setTimeout(() => {
       setShowSplash(false);
     }, 3000);
@@ -57,7 +70,7 @@ const AppContent = () => {
         {showSplash && <SplashScreen />}
       </AnimatePresence>
       <Routes>
-        <Route path="/" element={<Landing />} />
+        <Route path="/" element={isNative ? <Navigate to="/home" replace /> : <Landing />} />
         <Route path="/login" element={<Login />} />
         <Route path="/pricing" element={<Pricing />} />
         <Route path="/register" element={<Register />} />
@@ -66,6 +79,7 @@ const AppContent = () => {
         <Route path="/data" element={<DataPolicy />} />
         <Route path="/copyright" element={<CopyrightPolicy />} />
         <Route path="/payment-policy" element={<PaymentPolicy />} />
+        <Route path="/support" element={<Support />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/tiktok" element={<CinematicPromo />} />
         <Route path="/target" element={<CinematicTargetPromo />} />

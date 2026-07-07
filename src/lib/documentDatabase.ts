@@ -4,6 +4,25 @@ import { updateClubProgress } from './clubDatabase';
 
 export type DocumentCategory = 'book' | 'article' | 'document';
 
+/**
+ * "Free mode" — used by the native iOS app for users without a Pro subscription.
+ *
+ * When enabled, all document storage uses the same ephemeral, single-document
+ * path as a guest (sessionStorage, lost when the app closes) and reading-time /
+ * gamification persistence is skipped. This is how the free tier is enforced:
+ * full reading functionality, but nothing is saved.
+ *
+ * It is only ever turned on inside the native app (see Index.tsx). The web app
+ * never enables it, so kin-txt.com behaviour is unchanged.
+ */
+let freeMode = false;
+export function setFreeMode(value: boolean): void {
+  freeMode = value;
+}
+export function isFreeMode(): boolean {
+  return freeMode;
+}
+
 export interface DatabaseDocument {
   id: string;
   user_id: string;
@@ -141,7 +160,7 @@ export async function getDocuments(): Promise<SavedDocument[]> {
   const offlineDocs = await getAllOffline();
   const offlineIds = new Set(offlineDocs.map(d => d.id));
 
-  if (!user) {
+  if (!user || freeMode) {
     const guestDoc = sessionStorage.getItem('kinxt_guest_doc');
     if (guestDoc) {
       try {
@@ -187,9 +206,9 @@ export async function saveDocument(doc: {
   fileType?: string;
 }): Promise<SavedDocument | null> {
   const { data: { user } } = await supabase.auth.getUser();
-  
-  if (!user) {
-    // Guest logic: Only 1 doc allowed
+
+  if (!user || freeMode) {
+    // Guest / free-tier logic: Only 1 doc allowed, stored ephemerally.
     const wordCount = doc.parsedText.paragraphs?.flat()?.length || 0;
     const preview = doc.parsedText.paragraphs?.[0]?.slice(0, 20).join(' ') || '';
     
@@ -246,8 +265,8 @@ export async function saveDocument(doc: {
 
 export async function updateDocumentProgress(id: string, paragraph: number, word: number, parsedText?: ParsedText): Promise<void> {
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    // For guest users, we save progress to sessionStorage so it persists 
+  if (!user || freeMode) {
+    // For guest / free-tier users, we save progress to sessionStorage so it persists
     // while they are in the app, but vanishes if they "leave" (clear session).
     if (id.startsWith('guest-')) {
       const guestDocStr = sessionStorage.getItem('kinxt_guest_doc');
@@ -297,6 +316,8 @@ export async function updateDocumentProgress(id: string, paragraph: number, word
 }
 
 export async function updateDocumentReadingTime(id: string, totalSeconds: number): Promise<void> {
+  // Free tier: reading time is not saved (no streaks / labels).
+  if (freeMode) return;
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return;
 
@@ -329,6 +350,8 @@ export async function syncLifetimeReadingTime(userId: string, totalSeconds: numb
 }
 
 export async function logReadingSession(documentId: string, durationSeconds: number, category: string = 'document', wordsRead: number = 0): Promise<any> {
+  // Free tier: reading sessions are not logged (no streaks / labels).
+  if (freeMode) return;
   if (!navigator.onLine) return;
   const { data: { user } } = await supabase.auth.getUser();
   if (!user || durationSeconds <= 0) return;

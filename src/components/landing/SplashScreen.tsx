@@ -15,10 +15,13 @@ type AnimatedTitleProps = React.HTMLAttributes<HTMLDivElement> & {
     onGameStateChange?: (isPlaying: boolean) => void;
     onChallenge?: () => void;
     onComplete?: () => void;
+    /** When provided, the Enter button calls this instead of navigating to /home.
+     *  Also hides the landing-only "scroll" hint. Used by onboarding. */
+    onEnter?: () => void;
 };
 
 export const InteractiveSplashScreen = forwardRef<HTMLDivElement, AnimatedTitleProps>(
-    ({ className, onGameStateChange, onChallenge, onComplete, ...props }, ref) => {
+    ({ className, onGameStateChange, onChallenge, onComplete, onEnter, ...props }, ref) => {
         const navigate = useNavigate();
         // Phase control: 'intro' -> 'interactive'
         const [isIntro, setIsIntro] = useState(true);
@@ -439,7 +442,7 @@ export const InteractiveSplashScreen = forwardRef<HTMLDivElement, AnimatedTitleP
                             initial={{ opacity: 0 }}
                             animate={!isIntro ? { opacity: 1 } : { opacity: 0 }}
                             transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
-                            onClick={() => navigate('/home')}
+                            onClick={() => (onEnter ? onEnter() : navigate('/home'))}
                             className="px-6 py-2 border border-white/20 text-white text-[11px] tracking-[0.25em] hover:bg-white hover:text-black transition-colors duration-500 uppercase font-bold"
                         >
                             Enter
@@ -448,7 +451,7 @@ export const InteractiveSplashScreen = forwardRef<HTMLDivElement, AnimatedTitleP
 
                     </div>
 
-                    <div className="absolute top-[85%] left-0 w-full flex flex-col items-center justify-center pointer-events-none">
+                    <div className={`absolute top-[85%] left-0 w-full flex flex-col items-center justify-center pointer-events-none ${onEnter ? 'hidden' : ''}`}>
                         <motion.div
                             initial={{ opacity: 0, y: 20 }}
                             animate={!isIntro ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}

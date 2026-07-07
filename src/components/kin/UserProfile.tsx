@@ -8,6 +8,8 @@ import { useToast } from "@/components/ui/use-toast";
 import { Flame, Clock } from "lucide-react";
 import { useGamification } from "@/hooks/useGamification";
 import { ReadingTimeBadge, AvatarLapel } from "./ReadingTimeBadge";
+import { useAuth } from "@/hooks/useAuth";
+import { ModerationActions } from "./ModerationActions";
 
 interface UserProfileProps {
     userId: string;
@@ -32,6 +34,8 @@ export const UserProfile = ({ userId }: UserProfileProps) => {
     const [profile, setProfile] = useState<Profile | null>(null);
     const [history, setHistory] = useState<ReadingHistory[]>([]);
     const { toast } = useToast();
+    const { user } = useAuth();
+    const isOwnProfile = user?.id === userId;
     const gamification = useGamification(userId);
 
     const [stats, setStats] = useState({ total: 0, byType: { article: 0, ebook: 0, document: 0, link: 0 } });
@@ -137,6 +141,13 @@ export const UserProfile = ({ userId }: UserProfileProps) => {
                     <span className="text-[8px] font-bold uppercase tracking-wider text-muted-foreground">Read</span>
                 </div>
             </div>
+
+            {/* Report / Block — required for user-generated content (App Store 1.2) */}
+            {!isOwnProfile && (
+                <div className="flex justify-end shrink-0 -mt-2">
+                    <ModerationActions userId={userId} displayName={profile.display_name} />
+                </div>
+            )}
 
             {/* Stats Bar & Gamification */}
             <div className="flex flex-col gap-2 shrink-0 w-full mb-1">

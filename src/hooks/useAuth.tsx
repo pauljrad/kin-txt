@@ -1,6 +1,7 @@
 import { useState, useEffect, createContext, useContext } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { configureRevenueCat, logoutRevenueCatUser } from '@/lib/revenuecat';
 
 interface AuthContextType {
   user: User | null;
@@ -11,6 +12,7 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: Error | null }>;
   updatePassword: (password: string) => Promise<{ error: Error | null }>;
+  deleteAccount: () => Promise<{ error: Error | null }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -27,6 +29,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setSession(session);
         setUser(session?.user ?? null);
         setIsLoading(false);
+
+        // Keep RevenueCat (native IAP) identity in sync with the signed-in user.
+        if (event === 'SIGNED_OUT') {
+          logoutRevenueCatUser();
+        } else if (session?.user) {
+          configureRevenueCat(session.user.id);
+        }
       }
     );
 
@@ -35,6 +44,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSession(session);
       setUser(session?.user ?? null);
       setIsLoading(false);
+      // Configure RevenueCat with the existing user (or anonymously if none).
+      configureRevenueCat(session?.user?.id ?? null);
     });
 
     return () => subscription.unsubscribe();
@@ -65,7 +76,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signOut = async () => {
+    await logoutRevenueCatUser();
     await supabase.auth.signOut();
+  };
+
+  // Permanently delete the user's account (Apple Guideline 5.1.1(v)).
+  // Calls a service-role edge function; related rows cascade via FK constraints.
+  const deleteAccount = async () => {
+    try {
+      const { error } = await supabase.functions.invoke('delete-account');
+      if (error) return { error: error as Error };
+      await logoutRevenueCatUser();
+      await supabase.auth.signOut();
+      return { error: null };
+    } catch (err) {
+      return { error: err as Error };
+    }
   };
 
   const resetPassword = async (email: string) => {
@@ -83,7 +109,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, isLoading, signIn, signUp, signOut, resetPassword, updatePassword }}>
+    <AuthContext.Provider value={{ user, session, isLoading, signIn, signUp, signOut, resetPassword, updatePassword, deleteAccount }}>
       {children}
     </AuthContext.Provider>
   );

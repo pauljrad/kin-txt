@@ -33,7 +33,7 @@ export default function DataPolicy() {
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
           <p className="text-xs uppercase tracking-widest text-muted-foreground font-display mb-2">KiN-TXT</p>
           <h1 className="font-display text-4xl tracking-wide text-foreground mb-2">Data Policy</h1>
-          <p className="text-xs text-muted-foreground mb-10">Last updated: April 2026</p>
+          <p className="text-xs text-muted-foreground mb-10">Last updated: June 2026</p>
 
           <Section number="1" title="Role of this Policy">
             <p>This Data Policy explains how KiN-TXT handles, stores, and protects data at a system level. It complements the Privacy Policy, which explains what data we collect and your rights as a user.</p>
@@ -88,7 +88,11 @@ export default function DataPolicy() {
             <p>In the event of a data breach, KiN-TXT will investigate the incident, take steps to contain and mitigate its impact, take appropriate corrective action, and notify affected users and relevant authorities where required by law.</p>
           </Section>
 
-          <Section number="12" title="Contact">
+          <Section number="12" title="Deletion and Erasure">
+            <p>You can permanently delete your account and associated data at any time from within the app via <span className="text-foreground">Account &amp; Settings → Delete account</span>. On deletion, your profile, saved texts, reading progress, and connections are removed from our active systems, except where limited retention is required by law. Backups containing residual data are overwritten on their normal rotation cycle.</p>
+          </Section>
+
+          <Section number="13" title="Contact">
             <p><a href="mailto:hello@kin-txt.com" className="text-foreground underline underline-offset-2">hello@kin-txt.com</a></p>
           </Section>
         </motion.div>

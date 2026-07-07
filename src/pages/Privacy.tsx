@@ -33,7 +33,7 @@ export default function Privacy() {
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
           <p className="text-xs uppercase tracking-widest text-muted-foreground font-display mb-2">KiN-TXT</p>
           <h1 className="font-display text-4xl tracking-wide text-foreground mb-2">Privacy Policy</h1>
-          <p className="text-xs text-muted-foreground mb-10">Last updated: April 2026</p>
+          <p className="text-xs text-muted-foreground mb-10">Last updated: June 2026</p>
 
           <Section number="1" title="Data Controller">
             <p>KiN-TXT is the data controller responsible for your personal data.</p>
@@ -72,7 +72,9 @@ export default function Privacy() {
           <Section number="5" title="Data Sharing">
             <p>We do not sell or share your data for marketing purposes. Data may be processed by trusted service providers where necessary to operate the Service, including:</p>
             <ul className="list-disc list-inside space-y-1 mt-1">
-              <li>Stripe — payment processing</li>
+              <li>Stripe — payment processing (web)</li>
+              <li>Apple — in-app purchases and subscription billing (iOS app)</li>
+              <li>RevenueCat — subscription management and receipt validation (iOS app)</li>
               <li>Supabase — hosting and infrastructure</li>
             </ul>
             <p>These providers are required to process data securely and in accordance with applicable law.</p>
@@ -106,7 +108,13 @@ export default function Privacy() {
             <p>You also have the right to lodge a complaint with the UK Information Commissioner's Office (ICO).</p>
           </Section>
 
-          <Section number="11" title="Contact">
+          <Section number="11" title="Deleting Your Account">
+            <p>You can permanently delete your account at any time from within the app — open <span className="text-foreground">Account &amp; Settings</span> and choose <span className="text-foreground">Delete account</span>.</p>
+            <p>Deleting your account permanently removes your profile, saved texts, reading progress, and connections from our systems, except where limited retention is required by law. This action cannot be undone.</p>
+            <p>You may also request deletion by contacting us at the address below.</p>
+          </Section>
+
+          <Section number="12" title="Contact">
             <p><a href="mailto:hello@kin-txt.com" className="text-foreground underline underline-offset-2">hello@kin-txt.com</a></p>
           </Section>
         </motion.div>

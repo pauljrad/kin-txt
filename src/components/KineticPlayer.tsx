@@ -11,6 +11,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useTextSize } from '@/hooks/useTextSize';
+import { Capacitor } from '@capacitor/core';
+import { StatusBar } from '@capacitor/status-bar';
 
 interface WordSpeed {
   word: string;
@@ -126,6 +128,11 @@ export function KineticPlayer({
   const [lastChapterIndex, setLastChapterIndex] = useState(-1);
   const [activeAtmosphere, setActiveAtmosphere] = useState<'none' | 'noir' | 'fret' | 'fret2'>(initialSettings.activeAtmosphere ?? 'none');
   const [musicMenuOpen, setMusicMenuOpen] = useState(false);
+
+  // Chapter Summary state
+  const [showChapterSummary, setShowChapterSummary] = useState(false);
+  const [chapterSummary, setChapterSummary] = useState<string | null>(null);
+  const [summaryChapterTitle, setSummaryChapterTitle] = useState<string | null>(null);
 
 
   const atmosphereAudioRef = useRef<HTMLAudioElement>(null);
@@ -813,44 +820,127 @@ export function KineticPlayer({
 
       if (enteringChapterIndex >= 0) {
         const enteringChapter = chapters[enteringChapterIndex];
+        const completedChapterIndex = enteringChapterIndex - 1;
         setIsPlaying(false);
         setShowingChapterTitle(enteringChapter.title);
         setLastChapterIndex(enteringChapterIndex);
 
-        if (chapterTimeoutRef.current) clearTimeout(chapterTimeoutRef.current);
-
-        chapterTimeoutRef.current = setTimeout(() => {
-          setShowingChapterTitle(null);
-          
-          if (resetInterval !== 'end') {
-            sentenceCountRef.current = 0;
-            wordInChunkRef.current = 0;
+        // Prepare next position values for after the summary
+        const nextPos = { paragraph: nextPara, word: 0 };
+        const nextParagraph = parsedText.paragraphs[nextPara];
+        let resetCountVal = 1000;
+        if (resetInterval !== 'end' && resetInterval !== 'paragraph') {
+          resetCountVal = parseInt(resetInterval);
+        }
+        let count = 0;
+        let sentences = 0;
+        for (let i = 0; i < nextParagraph.length; i++) {
+          count++;
+          if (isSentenceEnd(nextParagraph[i])) {
+            sentences++;
+            if (sentences >= resetCountVal) break;
           }
-          
-          const nextPos = { paragraph: nextPara, word: 0 };
-          setPosition(nextPos);
-          positionRef.current = nextPos;
-          
-          setWordsReadInSession(prev => Math.floor(prev * 0.5));
+        }
 
-          const nextParagraph = parsedText.paragraphs[nextPara];
-          let resetCountVal = 1000; // default large if paragraph
-          if (resetInterval !== 'end' && resetInterval !== 'paragraph') {
-            resetCountVal = parseInt(resetInterval);
+        // Fetch AI summary of the completed chapter in background
+        const completedChapter = completedChapterIndex >= 0 ? chapters[completedChapterIndex] : null;
+        if (completedChapter) {
+          try {
+            const chapterStart = completedChapter.startParagraph;
+            const chapterEnd = enteringChapter.startParagraph;
+            const chapterWords = parsedText.paragraphs
+              .slice(chapterStart, chapterEnd)
+              .flat()
+              .join(' ');
+
+            // Fire AI call immediately so it's already in-flight during the 3s title display
+            // Use fetch directly — supabase.functions.invoke silently swallows HTTP errors
+            const SUPABASE_URL = 'https://pxvnylvkzdcuuauppull.supabase.co';
+            const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4dm55bHZremRjdXVhdXBwdWxsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg1MDc5OTQsImV4cCI6MjA4NDA4Mzk5NH0.TuPUGvfnoF8bruTl_TkCm4w0E78R4GAXjb92cIJXI-w';
+            const summaryPromise = fetch(`${SUPABASE_URL}/functions/v1/summarize-chapter`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'apikey': SUPABASE_ANON_KEY,
+                'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+              },
+              body: JSON.stringify({ text: chapterWords, chapterTitle: completedChapter.title }),
+            })
+              .then(async res => {
+                if (!res.ok) {
+                  console.error('[ChapterSummary] HTTP error:', res.status, await res.text());
+                  return null;
+                }
+                const json = await res.json();
+                console.log('[ChapterSummary] Response:', json);
+                return (json?.summary as string | null) ?? null;
+              })
+              .catch(err => {
+                console.error('[ChapterSummary] Network error:', err);
+                return null;
+              });
+
+            if (chapterTimeoutRef.current) clearTimeout(chapterTimeoutRef.current);
+
+            chapterTimeoutRef.current = setTimeout(() => {
+              setShowingChapterTitle(null);
+
+              if (resetInterval !== 'end') {
+                sentenceCountRef.current = 0;
+                wordInChunkRef.current = 0;
+              }
+
+              setPosition(nextPos);
+              positionRef.current = nextPos;
+              setWordsReadInSession(prev => Math.floor(prev * 0.5));
+              setChunkLength(count);
+
+              // Show modal with loading state immediately
+              setSummaryChapterTitle(completedChapter.title);
+              setChapterSummary(null);
+              setShowChapterSummary(true);
+
+              // Populate summary when AI responds
+              summaryPromise.then(summary => {
+                setChapterSummary(summary ?? 'Summary could not be generated.');
+              }).catch(() => {
+                // If promise itself errors, close modal and resume
+                setShowChapterSummary(false);
+                setIsPlaying(true);
+              });
+            }, 3000);
+          } catch {
+            // Any synchronous error — fall back to normal chapter transition
+            if (chapterTimeoutRef.current) clearTimeout(chapterTimeoutRef.current);
+            chapterTimeoutRef.current = setTimeout(() => {
+              setShowingChapterTitle(null);
+              if (resetInterval !== 'end') {
+                sentenceCountRef.current = 0;
+                wordInChunkRef.current = 0;
+              }
+              setPosition(nextPos);
+              positionRef.current = nextPos;
+              setWordsReadInSession(prev => Math.floor(prev * 0.5));
+              setChunkLength(count);
+              setIsPlaying(true);
+            }, 3000);
           }
-          
-          let count = 0;
-          let sentences = 0;
-          for (let i = 0; i < nextParagraph.length; i++) {
-            count++;
-            if (isSentenceEnd(nextParagraph[i])) {
-              sentences++;
-              if (sentences >= resetCountVal) break;
+        } else {
+          // No completed chapter — fall back to original behaviour
+          if (chapterTimeoutRef.current) clearTimeout(chapterTimeoutRef.current);
+          chapterTimeoutRef.current = setTimeout(() => {
+            setShowingChapterTitle(null);
+            if (resetInterval !== 'end') {
+              sentenceCountRef.current = 0;
+              wordInChunkRef.current = 0;
             }
-          }
-          setChunkLength(count);
-          setIsPlaying(true);
-        }, 3000);
+            setPosition(nextPos);
+            positionRef.current = nextPos;
+            setWordsReadInSession(prev => Math.floor(prev * 0.5));
+            setChunkLength(count);
+            setIsPlaying(true);
+          }, 3000);
+        }
       } else {
         // Normal paragraph transition
         const nextPos = { paragraph: nextPara, word: 0 };
@@ -894,7 +984,7 @@ export function KineticPlayer({
     }
 
     // Only play if playing, not complete, and no overlays are showing
-    if (!isPlaying || isComplete || showFullText || isNavOpen || showingChapterTitle) return;
+    if (!isPlaying || isComplete || showFullText || isNavOpen || showingChapterTitle || showChapterSummary) return;
 
     // FORCE SYNC ground truth whenever the loop runs/re-runs
     // This ensures that hitting PLAY after a seek always uses the correct state
@@ -962,6 +1052,9 @@ export function KineticPlayer({
 
   // Enter fullscreen
   const enterFullscreen = useCallback(async () => {
+    if (Capacitor.isNativePlatform()) {
+      return;
+    }
     try {
       if (containerRef.current && document.fullscreenEnabled) {
         await containerRef.current.requestFullscreen();
@@ -974,6 +1067,9 @@ export function KineticPlayer({
 
   // Exit fullscreen
   const exitFullscreen = useCallback(async () => {
+    if (Capacitor.isNativePlatform()) {
+      return;
+    }
     try {
       if (document.fullscreenElement) {
         await document.exitFullscreen();
@@ -1002,6 +1098,26 @@ export function KineticPlayer({
         atmosphereAudioRef.current.pause();
       }
 
+    };
+  }, []);
+
+  // Toggle native status bar based on playing state
+  useEffect(() => {
+    if (Capacitor.isNativePlatform()) {
+      if (isPlaying) {
+        void StatusBar.hide().catch(err => console.log('Could not hide status bar', err));
+      } else {
+        void StatusBar.show().catch(err => console.log('Could not show status bar', err));
+      }
+    }
+  }, [isPlaying]);
+
+  // Ensure status bar is shown on unmount
+  useEffect(() => {
+    return () => {
+      if (Capacitor.isNativePlatform()) {
+        void StatusBar.show().catch(err => console.log('Could not restore status bar', err));
+      }
     };
   }, []);
 
@@ -1280,13 +1396,78 @@ export function KineticPlayer({
               animate={{ y: 0, filter: 'blur(0px)' }}
               className="font-display text-center leading-tight max-w-5xl px-4 text-foreground"
               style={{
-                // Keep chapter/section titles readable but not gigantic.
-                // Match the reader's base word size (respects the user's text size multiplier) and scale it by 3x.
                 fontSize: `calc(3rem * 1.5 * var(--text-size-multiplier, 1))`,
               }}
             >
               {showingChapterTitle}
             </motion.h1>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Chapter Summary Modal */}
+      <AnimatePresence>
+        {showChapterSummary && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 z-[70] flex items-center justify-center p-6 bg-black/80 backdrop-blur-sm"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <motion.div
+              initial={{ opacity: 0, y: 24, scale: 0.97 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 12, scale: 0.97 }}
+              transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+              className="w-full max-w-sm bg-zinc-900 border border-white/10 rounded-2xl overflow-hidden shadow-2xl"
+            >
+              {/* Header */}
+              <div className="px-6 pt-7 pb-4">
+                {summaryChapterTitle && (
+                  <p className="text-[10px] font-mono tracking-[0.2em] uppercase text-white/30 mb-2">
+                    Chapter Summary
+                  </p>
+                )}
+                <h2 className="font-display text-lg uppercase tracking-wide leading-tight text-white">
+                  {summaryChapterTitle || 'Chapter Complete'}
+                </h2>
+              </div>
+
+              {/* Divider */}
+              <div className="h-px bg-white/8 mx-6" />
+
+              {/* Summary Body */}
+              <div className="px-6 py-5">
+                {chapterSummary ? (
+                  <p className="text-sm text-white/70 leading-relaxed">
+                    {chapterSummary}
+                  </p>
+                ) : (
+                  <div className="space-y-2 py-1">
+                    <div className="h-3 bg-white/10 rounded-full animate-pulse w-full" />
+                    <div className="h-3 bg-white/10 rounded-full animate-pulse w-5/6" />
+                    <div className="h-3 bg-white/10 rounded-full animate-pulse w-4/5" />
+                    <div className="h-3 bg-white/10 rounded-full animate-pulse w-3/4" />
+                  </div>
+                )}
+              </div>
+
+              {/* Actions */}
+              <div className="px-6 pb-7 pt-1">
+                <button
+                  onClick={() => {
+                    setShowChapterSummary(false);
+                    setChapterSummary(null);
+                    setSummaryChapterTitle(null);
+                    setIsPlaying(true);
+                  }}
+                  className="w-full h-12 rounded-xl bg-white text-black text-sm font-bold tracking-tight hover:bg-white/90 active:scale-[0.98] transition-all"
+                >
+                  Continue Reading
+                </button>
+              </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>

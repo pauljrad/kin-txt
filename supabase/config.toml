@@ -23,3 +23,12 @@ verify_jwt = false
 
 [functions.stripe-webhook]
 verify_jwt = false
+
+# RevenueCat sends a shared-secret Authorization header (verified in-function),
+# not a Supabase JWT.
+[functions.revenuecat-webhook]
+verify_jwt = false
+
+# delete-account requires an authenticated caller — keep JWT verification on.
+[functions.delete-account]
+verify_jwt = true

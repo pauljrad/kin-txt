@@ -1,6 +1,7 @@
 import { UserSearch } from "./UserSearch";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { getBlockedUserIds } from "@/lib/moderation";
 import { useAuth } from "@/hooks/useAuth";
 import { getInitials, getAvatarColor } from "@/lib/utils";
 
@@ -40,7 +41,8 @@ export const KinNetworkView = ({ onViewProfile }: KinNetworkViewProps) => {
                     .from('profiles')
                     .select('*')
                     .in('id', friendIds);
-                setKins(profiles || []);
+                const blocked = await getBlockedUserIds();
+                setKins((profiles || []).filter((p: any) => !blocked.includes(p.id)));
             } else {
                 setKins([]);
             }

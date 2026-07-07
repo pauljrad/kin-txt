@@ -5,6 +5,7 @@ import { Check, ArrowLeft, LogOut, ExternalLink } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { useAuth } from '@/hooks/useAuth';
 import { Capacitor } from '@capacitor/core';
+import { Paywall } from '@/components/Paywall';
 
 // Animated KiN logo — same as splash screen, scaled down
 const KinLogo = ({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) => {
@@ -79,6 +80,18 @@ export default function Pricing() {
   const { user, signOut } = useAuth();
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   const isNative = Capacitor.isNativePlatform();
+
+  // On the native iOS app, subscriptions are sold through Apple In-App Purchase.
+  // App Store rules forbid showing external prices / "subscribe on the web" CTAs,
+  // so the entire pricing page is replaced by the in-app IAP paywall.
+  if (isNative) {
+    return (
+      <Paywall
+        onClose={() => navigate('/home')}
+        onSuccess={() => navigate('/home')}
+      />
+    );
+  }
 
   const handleSignOut = async () => {
     await signOut();

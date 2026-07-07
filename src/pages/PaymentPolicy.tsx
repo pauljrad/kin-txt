@@ -28,7 +28,7 @@ export default function PaymentPolicy() {
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
           <p className="text-xs uppercase tracking-widest text-muted-foreground font-display mb-2">KiN-TXT</p>
           <h1 className="font-display text-4xl tracking-wide text-foreground mb-2">Payment Policy</h1>
-          <p className="text-xs text-muted-foreground mb-10">Last updated: April 2026</p>
+          <p className="text-xs text-muted-foreground mb-10">Last updated: June 2026</p>
 
           <Section number="1" title="Pricing">
             <p>KiN-TXT is offered on a subscription basis:</p>
@@ -75,6 +75,7 @@ export default function PaymentPolicy() {
 
           <Section number="11" title="Account vs Subscription">
             <p>Cancelling a subscription does not delete your account. Your account may remain active with limited or no access to paid features. Your reading history and saved documents are retained.</p>
+            <p>If you wish to permanently delete your account and associated data, you can do so at any time from within the app via <span className="text-foreground">Account &amp; Settings → Delete account</span>. Deleting your account does not automatically cancel an App Store subscription — cancel that separately in your device Settings.</p>
           </Section>
 
           <Section number="12" title="Chargebacks and Payment Disputes">

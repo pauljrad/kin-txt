@@ -11,10 +11,13 @@ import { PongGame } from "./PongGame";
 type AnimatedTitleProps = React.HTMLAttributes<HTMLDivElement> & {
   onGameStateChange?: (isPlaying: boolean) => void;
   onChallenge?: () => void;
+  /** When false, ignore pull-to-Pong events (e.g. while the onboarding splash —
+   *  which has its own title — is showing on top of this one). Defaults to true. */
+  enabled?: boolean;
 };
 
 export const AnimatedTitle = forwardRef<HTMLDivElement, AnimatedTitleProps>(
-  ({ className, onGameStateChange, onChallenge, ...props }, ref) => {
+  ({ className, onGameStateChange, onChallenge, enabled = true, ...props }, ref) => {
     const dragY = useMotionValue(0);
     const stemControls = useAnimation();
     const dotControls = useAnimation();
@@ -256,6 +259,7 @@ export const AnimatedTitle = forwardRef<HTMLDivElement, AnimatedTitleProps>(
 
     // Allow the page to drive the pull gesture (drag anywhere), via custom events.
     useEffect(() => {
+      if (!enabled) return; // another title (e.g. onboarding splash) owns the gesture
       const HOLD_DURATION = 2000; // 2 seconds
 
       const updateHoldProgress = () => {
@@ -327,6 +331,7 @@ export const AnimatedTitle = forwardRef<HTMLDivElement, AnimatedTitleProps>(
         clearHoldTimer();
       };
     }, [
+      enabled,
       dragY,
       runBounce,
       isBouncing,

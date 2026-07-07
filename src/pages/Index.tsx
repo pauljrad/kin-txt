@@ -6,7 +6,9 @@ import { KineticPlayer } from '@/components/KineticPlayer';
 import { DocumentHistory } from '@/components/DocumentHistory';
 import { EbookLibrary } from '@/components/EbookLibrary';
 import { NewsLibrary } from '@/components/NewsLibrary';
-import { InfoMenu } from '@/components/InfoMenu';
+import { Onboarding, OnboardingSplash } from '@/components/Onboarding';
+import { Paywall } from '@/components/Paywall';
+import { AccountSettings } from '@/components/AccountSettings';
 
 // KiN Components
 import { KinUnifiedLayout } from '@/components/kin/KinUnifiedLayout';
@@ -22,13 +24,18 @@ import { ThemeToggle } from '@/components/ThemeToggle';
 import { AnimatedTitle } from '@/components/AnimatedTitle';
 import { usePullGesture } from '@/hooks/usePullGesture';
 import { ParsedText, processTextStyles, filterEmphasis } from '@/lib/textParser';
-import { SavedDocument, saveDocument, updateDocumentProgress, updateDocumentEmphasis } from '@/lib/documentDatabase';
+import { SavedDocument, saveDocument, updateDocumentProgress, updateDocumentEmphasis, setFreeMode } from '@/lib/documentDatabase';
 import { migrateLocalDocumentsToAccount } from '@/lib/documentMigration';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { useSubscription } from '@/hooks/useSubscription';
+import { useOnboarding } from '@/hooks/useOnboarding';
+import { useHasAccess } from '@/hooks/useHasAccess';
+import { isRevenueCatConfigured } from '@/lib/revenuecat';
+import { Capacitor } from '@capacitor/core';
+import { Settings as SettingsIcon } from 'lucide-react';
 
 type TabMode = 'my-texts' | 'library' | 'news';
 
@@ -57,6 +64,31 @@ const Index = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const { isSubscribed, loading: subLoading } = useSubscription();
+  const isNative = Capacitor.isNativePlatform();
+  // First-launch onboarding (native app only). The hook persists completion in localStorage.
+  const {
+    hasCompletedOnboarding,
+    currentStep,
+    nextStep,
+    prevStep,
+    completeOnboarding,
+    resetOnboarding,
+  } = useOnboarding();
+  // Startup splash (native only): show the KiN-TXT splash + Pong on every cold launch
+  // for returning users. First-time users get it at the end of onboarding instead.
+  const [showStartupSplash, setShowStartupSplash] = useState(
+    () => isNative && localStorage.getItem('kinxt-onboarding-completed') === 'true'
+  );
+  // True when onboarding is re-opened via the "i" button (vs first launch).
+  const [onboardingReopened, setOnboardingReopened] = useState(false);
+  const openOnboarding = () => {
+    setOnboardingReopened(true);
+    resetOnboarding();
+  };
+  const closeOnboarding = () => {
+    completeOnboarding();
+    setOnboardingReopened(false);
+  };
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [activeTab, setActiveTab] = useState<TabMode>('my-texts');
   const [activeDocument, setActiveDocument] = useState<ActiveDocument | null>(null);
@@ -64,7 +96,34 @@ const Index = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [isPongGameActive, setIsPongGameActive] = useState(false);
-  const [showInfoMenu, setShowInfoMenu] = useState(false);
+  const [showExitGuestModal, setShowExitGuestModal] = useState(false);
+  const [showPaywall, setShowPaywall] = useState(false);
+  const [showAccount, setShowAccount] = useState(false);
+
+  // Full-access gate. On web this mirrors the existing subscription state (no
+  // change in behaviour). On native, "Pro" features require the IAP entitlement.
+  const { hasAccess, loading: accessLoading, refresh: refreshAccess } = useHasAccess();
+
+  // The free tier (native, not Pro). Free users can read anything but nothing is
+  // saved: ephemeral progress, a single document, no KiN social, no streaks.
+  // We wait until the entitlement check resolves so we never downgrade a real
+  // Pro user during the brief load. Gating also stays OFF until RevenueCat has a
+  // real API key — otherwise an unconfigured IAP layer would lock everyone out.
+  const proGate = isNative && isRevenueCatConfigured() && !accessLoading && !hasAccess;
+
+  // Keep the storage layer in sync with the user's tier (native only).
+  useEffect(() => {
+    setFreeMode(proGate);
+  }, [proGate]);
+
+  // Run a Pro-only action, or open the paywall if the user is on the free tier.
+  const requirePro = useCallback((action: () => void) => {
+    if (proGate) {
+      setShowPaywall(true);
+      return;
+    }
+    action();
+  }, [proGate]);
 
   // KiN State
   const [kinSession, setKinSession] = useState<{ id: string; isHost: boolean; opponentId: string } | null>(null);
@@ -76,8 +135,10 @@ const Index = () => {
     if (activeDocument) setIsPongGameActive(false);
   }, [activeDocument]);
 
-  // Use shared pull-down gesture hook (only when no document is active)
-  usePullGesture(!activeDocument);
+  // Use shared pull-down gesture hook (only when no document is active). Disable it
+  // while first-launch onboarding/splash is showing — the splash runs its own
+  // instance, and two competing instances cancel each other's hold-to-Pong timer.
+  usePullGesture(!activeDocument && hasCompletedOnboarding !== false && !showStartupSplash);
 
   const headerRef = useRef<HTMLDivElement | null>(null);
   const [headerHeight, setHeaderHeight] = useState(0); // Start at 0, will be measured
@@ -206,11 +267,18 @@ const Index = () => {
     setIsAnalyzing(true);
 
     // Save the document to database
-    if (!user) {
+    // Free tier (guest on web, or non-Pro in the native app): a single, ephemeral
+    // document. A second one prompts the paywall (native) or registration (web).
+    if (!user || proGate) {
       const existing = sessionStorage.getItem('kinxt_guest_doc');
       if (existing) {
-        toast.info("Register to save more than one TXT!");
-        navigate('/pricing');
+        if (proGate) {
+          toast.info('Unlock Pro to keep more than one TXT.');
+          setShowPaywall(true);
+        } else {
+          toast.info("Register to save more than one TXT!");
+          navigate('/pricing');
+        }
         return;
       }
     }
@@ -278,11 +346,18 @@ const Index = () => {
     const { cleanedText, detectedWhispered, detectedEmphasis } = processTextStyles(parsed);
 
     // Save the document to database with ebook file type and CLEANED text
-    if (!user) {
+    // Free tier (guest on web, or non-Pro in the native app): a single, ephemeral
+    // document. A second one prompts the paywall (native) or registration (web).
+    if (!user || proGate) {
       const existing = sessionStorage.getItem('kinxt_guest_doc');
       if (existing) {
-        toast.info("Register to save more than one TXT!");
-        navigate('/pricing');
+        if (proGate) {
+          toast.info('Unlock Pro to keep more than one TXT.');
+          setShowPaywall(true);
+        } else {
+          toast.info("Register to save more than one TXT!");
+          navigate('/pricing');
+        }
         return;
       }
     }
@@ -350,11 +425,18 @@ const Index = () => {
     const { cleanedText, detectedWhispered, detectedEmphasis } = processTextStyles(parsed);
 
     // Save the document to database as an article with CLEANED text
-    if (!user) {
+    // Free tier (guest on web, or non-Pro in the native app): a single, ephemeral
+    // document. A second one prompts the paywall (native) or registration (web).
+    if (!user || proGate) {
       const existing = sessionStorage.getItem('kinxt_guest_doc');
       if (existing) {
-        toast.info("Register to save more than one TXT!");
-        navigate('/pricing');
+        if (proGate) {
+          toast.info('Unlock Pro to keep more than one TXT.');
+          setShowPaywall(true);
+        } else {
+          toast.info("Register to save more than one TXT!");
+          navigate('/pricing');
+        }
         return;
       }
     }
@@ -504,6 +586,16 @@ const Index = () => {
   }, [activeDocument?.id, activeDocument?.parsedText]);
 
   const handleBack = useCallback(() => {
+    if (!user) {
+      setShowExitGuestModal(true);
+    } else {
+      setActiveDocument(null);
+      setRefreshTrigger(prev => prev + 1);
+    }
+  }, [user]);
+
+  const confirmGuestExit = useCallback(() => {
+    setShowExitGuestModal(false);
     setActiveDocument(null);
     setRefreshTrigger(prev => prev + 1);
   }, []);
@@ -718,6 +810,45 @@ const Index = () => {
       }}
     >
 
+      {/* First-launch onboarding — native app only. Web (kin-txt.com) is unaffected. */}
+      {isNative && hasCompletedOnboarding === false && (
+        <Onboarding
+          currentStep={currentStep}
+          onNext={nextStep}
+          onPrev={prevStep}
+          onComplete={closeOnboarding}
+          onSkip={closeOnboarding}
+          reopened={onboardingReopened}
+        />
+      )}
+
+      {/* Startup splash — native, returning users: KiN-TXT title + Pong + Enter on every launch. */}
+      {isNative && showStartupSplash && (
+        <OnboardingSplash onEnter={() => setShowStartupSplash(false)} />
+      )}
+
+      {/* Apple IAP paywall — native only. Shown when a locked feature is tapped. */}
+      <AnimatePresence>
+        {isNative && showPaywall && (
+          <Paywall
+            onClose={() => setShowPaywall(false)}
+            onSuccess={() => {
+              setShowPaywall(false);
+              refreshAccess();
+            }}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Account & settings (deletion, restore purchases, legal, sign out) */}
+      <AnimatePresence>
+        {showAccount && (
+          <AccountSettings
+            onClose={() => setShowAccount(false)}
+            onUpgrade={isNative ? () => setShowPaywall(true) : undefined}
+          />
+        )}
+      </AnimatePresence>
 
       <ShareModal
         open={isShareOpen}
@@ -747,7 +878,7 @@ const Index = () => {
             )}
             {/* Main Content Area */}
             <div className="w-full max-w-2xl mx-auto flex flex-col items-center">
-              <AnimatedTitle />
+              <AnimatedTitle enabled={hasCompletedOnboarding !== false && !showStartupSplash} />
 
               <div className="w-full space-y-6 mt-8">
                 {/* Tabs */}
@@ -832,11 +963,6 @@ const Index = () => {
         )}
       </AnimatePresence>
 
-      <AnimatePresence>
-        {showInfoMenu && (
-          <InfoMenu onClose={() => setShowInfoMenu(false)} />
-        )}
-      </AnimatePresence>
 
       {/* Pong Game Overlay */}
       {isPongGameActive && kinSession && (
@@ -898,7 +1024,7 @@ const Index = () => {
         <div
           className="absolute right-28 z-50 flex items-center justify-center p-0"
           style={{ top: 'calc(1rem + env(safe-area-inset-top, 0px))' }}
-          onClick={() => !user && navigate('/pricing')}
+          onClick={() => requirePro(() => { if (!user) navigate('/pricing'); })}
         >
           <Notifications
             onOpenDocument={handleOpenDocumentById}
@@ -912,14 +1038,14 @@ const Index = () => {
 
       {/* KiN-Profile - Top Right (right-52) */}
       {!activeDocument && (
-        <div onClick={() => !user && navigate('/pricing')} className="cursor-pointer">
+        <div onClick={() => requirePro(() => { if (!user) navigate('/pricing'); })} className="cursor-pointer">
           <KinProfileLayout />
         </div>
       )}
 
       {/* KiN - Unified Menu - Top Right (right-40) */}
       {!activeDocument && !isPongGameActive && (
-        <div onClick={() => !user && navigate('/pricing')} className="cursor-pointer">
+        <div onClick={() => requirePro(() => { if (!user) navigate('/pricing'); })} className="cursor-pointer">
           <KinUnifiedLayout onViewProfile={setActiveProfile} />
         </div>
       )}
@@ -927,7 +1053,7 @@ const Index = () => {
       {/* Info Button - Top Right (right-16) */}
       {!activeDocument && (
         <motion.button
-          onClick={() => setShowInfoMenu(true)}
+          onClick={openOnboarding}
           animate={{
             opacity: isPongGameActive ? 0 : 1,
             filter: isPongGameActive ? 'blur(6px)' : 'blur(0px)',
@@ -935,7 +1061,7 @@ const Index = () => {
           transition={{ duration: 0.4 }}
           className="absolute right-16 z-50 toolbar-button"
           style={{ top: 'calc(1rem + env(safe-area-inset-top, 0px))', pointerEvents: isPongGameActive ? 'none' : 'auto' }}
-          title="Information & Instructions"
+          title="How it works"
         >
           <div className="flex flex-col items-center justify-center w-4 h-4 sm:w-5 sm:h-5 text-foreground">
             <span className="w-[2px] sm:w-[3px] h-[2px] sm:h-[3px] rounded-full bg-current mb-[2px]" />
@@ -943,6 +1069,52 @@ const Index = () => {
           </div>
         </motion.button>
       )}
+
+      {/* Account & Settings Button - Top Right (right-64) — native app only */}
+      {!activeDocument && isNative && (
+        <motion.button
+          onClick={() => setShowAccount(true)}
+          animate={{
+            opacity: isPongGameActive ? 0 : 1,
+            filter: isPongGameActive ? 'blur(6px)' : 'blur(0px)',
+          }}
+          transition={{ duration: 0.4 }}
+          className="absolute right-64 z-50 toolbar-button"
+          style={{ top: 'calc(1rem + env(safe-area-inset-top, 0px))', pointerEvents: isPongGameActive ? 'none' : 'auto' }}
+          title="Account & Settings"
+        >
+          <SettingsIcon className="w-4 h-4 sm:w-5 sm:h-5 text-foreground" />
+        </motion.button>
+      )}
+
+      {/* Guest Exit Intent Modal */}
+      <Dialog open={showExitGuestModal} onOpenChange={setShowExitGuestModal}>
+        <DialogContent className="sm:max-w-[425px] bg-black/90 border-white/10 backdrop-blur-xl text-white">
+          <DialogTitle className="text-xl font-display tracking-tight text-center pt-4">
+            Momentum is a terrible thing to waste.
+          </DialogTitle>
+          <div className="space-y-6 py-4">
+            <p className="text-sm text-white/60 text-center leading-relaxed px-4">
+              Sign up now to save your progress, sync your TXTs across all devices, and unlock the full KiN-TXT experience. Don't lose your rhythm.
+            </p>
+            <div className="flex flex-col gap-3 px-4 pb-4">
+              <Button 
+                onClick={() => navigate('/pricing')}
+                className="w-full h-12 bg-white text-black hover:bg-white/90 font-bold tracking-tight rounded-xl"
+              >
+                Create Account
+              </Button>
+              <Button 
+                variant="ghost" 
+                onClick={confirmGuestExit}
+                className="w-full h-12 text-white/40 hover:text-white hover:bg-white/5 font-medium rounded-xl"
+              >
+                Continue as Guest
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

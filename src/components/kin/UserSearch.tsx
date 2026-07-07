@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { getBlockedUserIds } from "@/lib/moderation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -46,7 +47,8 @@ export const UserSearch = () => {
                 .limit(10);
 
             if (error) throw error;
-            setResults((data as any) || []);
+            const blocked = await getBlockedUserIds();
+            setResults(((data as any) || []).filter((p: any) => !blocked.includes(p.id)));
         } catch (error) {
             console.error('Error searching users:', error);
             toast({

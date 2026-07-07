@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Capacitor } from "@capacitor/core";
 import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
@@ -43,6 +44,7 @@ export const MyProfile = () => {
     const { status: subscriptionStatus, plan, stripeCustomerId } = useSubscription();
     const gamification = useGamification(user?.id);
     const [isRedirectingPortal, setIsRedirectingPortal] = useState(false);
+    const isNative = Capacitor.isNativePlatform();
 
     useEffect(() => {
         if (!user) return;
@@ -348,11 +350,20 @@ export const MyProfile = () => {
                                 </div>
                             )}
 
-                            {stripeCustomerId && subscriptionStatus !== 'lifetime' && subscriptionStatus !== 'none' && (
+                            {/* On iOS, subscriptions are managed through Apple — never link out to
+                                an external billing portal (App Store Guideline 3.1.1). */}
+                            {isNative && subscriptionStatus !== 'lifetime' && subscriptionStatus !== 'none' && (
+                                <div className="pt-2 border-t border-border/20 mt-2 text-[11px] text-muted-foreground leading-relaxed">
+                                    Manage or cancel your subscription anytime in the iOS Settings app under
+                                    your Apple ID → Subscriptions.
+                                </div>
+                            )}
+
+                            {!isNative && stripeCustomerId && subscriptionStatus !== 'lifetime' && subscriptionStatus !== 'none' && (
                                 <div className="pt-2 border-t border-border/20 mt-2">
-                                    <Button 
-                                        variant="outline" 
-                                        size="sm" 
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
                                         className="w-full text-xs h-8 border-border hover:bg-secondary/50 font-display tracking-widest uppercase transition-colors"
                                         onClick={handleManageSubscription}
                                         disabled={isRedirectingPortal}

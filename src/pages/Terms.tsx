@@ -35,7 +35,7 @@ export default function Terms() {
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
           <p className="text-xs uppercase tracking-widest text-muted-foreground font-display mb-2">KiN-TXT</p>
           <h1 className="font-display text-4xl tracking-wide text-foreground mb-2">Terms of Use</h1>
-          <p className="text-xs text-muted-foreground mb-4">Last updated: April 2026</p>
+          <p className="text-xs text-muted-foreground mb-4">Last updated: June 2026</p>
           <p className="text-sm text-muted-foreground mb-10">These Terms govern your use of KiN-TXT ("the Service"). By creating an account or using the Service, you agree to be bound by them. If you do not agree, you must not use KiN-TXT.</p>
 
           <Section number="1" title="About KiN-TXT">
@@ -105,6 +105,10 @@ export default function Terms() {
               <List items={['remove or restrict content','suspend or terminate accounts']} />
               <p>…where infringement or risk is identified.</p>
             </Sub>
+            <Sub title="6.5 No Tolerance for Objectionable Content or Abuse">
+              <p>There is zero tolerance for objectionable, abusive, harassing, hateful, or otherwise inappropriate content or behaviour. By using the social features ("KiNs", clubs, profiles and sharing) you agree not to post or send such content and to treat other users with respect.</p>
+              <p>You can report objectionable content or users, and block any user, directly from their profile within the app. Reports are reviewed and acted on (including removing content and ejecting offending users) within 24 hours. To report abuse you may also contact us at <a href="mailto:support@kin-txt.com" className="underline">support@kin-txt.com</a>.</p>
+            </Sub>
           </Section>
 
           <Section number="7" title="Intellectual Property">
@@ -173,20 +177,42 @@ export default function Terms() {
             <p>Apple and its subsidiaries are third-party beneficiaries of these Terms.</p>
           </Section>
 
-          <Section number="17" title="Governing Law">
+          <Section number="17" title="Subscriptions & In-App Purchases">
+            <p>KiN-TXT offers an optional paid subscription that unlocks additional features.</p>
+            <Sub title="17.1 Apple In-App Purchase (iOS)">
+              <p>If you subscribe within the iOS app, payment is charged to your Apple ID at confirmation of purchase. The applicable price is shown in the app before you confirm.</p>
+              <List items={[
+                'Subscriptions renew automatically unless auto-renew is turned off at least 24 hours before the end of the current period',
+                'Your Apple ID account is charged for renewal within 24 hours prior to the end of the current period',
+                'You can manage or cancel your subscription, and turn off auto-renew, in your device Settings under your Apple ID',
+                'Any unused portion of a free trial is forfeited when you purchase a subscription',
+              ]} />
+              <p>Purchases made through Apple are subject to Apple&apos;s terms; refunds for App Store purchases are handled by Apple.</p>
+            </Sub>
+            <Sub title="17.2 Web (Stripe)">
+              <p>If you subscribe via our website, billing is handled by Stripe and is governed by our Payment Policy.</p>
+            </Sub>
+          </Section>
+
+          <Section number="18" title="Account Deletion">
+            <p>You may permanently delete your account at any time from within the app via <span className="text-foreground">Account &amp; Settings → Delete account</span>, or by contacting us.</p>
+            <p>Deleting your account removes your profile, saved texts, reading progress, and connections, except where retention is required by law. Deleting your account does not automatically cancel an active App Store subscription — you must cancel that separately in your device Settings.</p>
+          </Section>
+
+          <Section number="19" title="Governing Law">
             <p>These Terms are governed by the laws of England and Wales. You agree to the exclusive jurisdiction of its courts.</p>
           </Section>
 
-          <Section number="18" title="Consumer Rights">
+          <Section number="20" title="Consumer Rights">
             <p>If you are a consumer, you have certain rights under UK law in relation to digital services. Nothing in these Terms affects those rights. Where the Service is found not to meet legal standards, remedies may be available in accordance with applicable law.</p>
           </Section>
 
-          <Section number="19" title="Events Outside Our Control">
+          <Section number="21" title="Events Outside Our Control">
             <p>KiN-TXT is not liable for failure or delay in performance caused by events outside our reasonable control, including:</p>
             <List items={['infrastructure failure','network outages','third-party service disruption','natural events or emergencies']} />
           </Section>
 
-          <Section number="20" title="Contact">
+          <Section number="22" title="Contact">
             <p><a href="mailto:hello@kin-txt.com" className="text-foreground underline underline-offset-2">hello@kin-txt.com</a></p>
           </Section>
         </motion.div>
