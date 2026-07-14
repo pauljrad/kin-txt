@@ -257,6 +257,70 @@ export const AVAILABLE_EBOOKS: Ebook[] = [
     wordCount: 66000,
     synopsis: "Katherine Mansfield's landmark 1920 collection, led by the celebrated title story 'Bliss,' captures fleeting moments of joy, disillusion and quiet revelation with a delicate modernist eye that reshaped the short story form."
   },
+  {
+    id: 'the-awakening',
+    title: 'The Awakening and Selected Short Stories',
+    author: 'Kate Chopin',
+    filePath: '/ebooks/the-awakening.epub',
+    wordCount: 64000,
+    synopsis: "Kate Chopin's daring 1899 novel follows Edna Pontellier as she awakens to her own desires and independence in Creole Louisiana — a landmark of early feminist literature, paired here with a selection of her finest short stories."
+  },
+  {
+    id: 'the-garden-party',
+    title: 'The Garden Party',
+    author: 'Katherine Mansfield',
+    filePath: '/ebooks/the-garden-party.epub',
+    wordCount: 57500,
+    synopsis: "Katherine Mansfield's exquisite collection, led by the title story, moves between a family's lavish garden party and a nearby tragedy, capturing class, mortality and fleeting perception with luminous modernist precision."
+  },
+  {
+    id: 'gift-of-the-magi',
+    title: 'The Gift of the Magi',
+    author: 'O. Henry',
+    filePath: '/ebooks/gift-of-the-magi.epub',
+    wordCount: 2100,
+    synopsis: "O. Henry's beloved Christmas tale of a young couple, Jim and Della, who each secretly sacrifice their most prized possession to buy the other a gift — a perfectly turned story of love and irony."
+  },
+  {
+    id: 'the-great-god-pan',
+    title: 'The Great God Pan',
+    author: 'Arthur Machen',
+    filePath: '/ebooks/the-great-god-pan.epub',
+    wordCount: 22000,
+    synopsis: "Arthur Machen's notorious tale of occult horror follows a doctor's forbidden experiment that tears the veil between worlds, unleashing an ancient terror across Victorian London — a foundational work of weird fiction."
+  },
+  {
+    id: 'the-invisible-man',
+    title: 'The Invisible Man',
+    author: 'H. G. Wells',
+    filePath: '/ebooks/the-invisible-man.epub',
+    wordCount: 49000,
+    synopsis: "H.G. Wells's chilling science fiction classic follows Griffin, a brilliant scientist who renders himself invisible, only to descend into paranoia, isolation and violence as he seeks to reverse — and exploit — his condition."
+  },
+  {
+    id: 'the-monkeys-paw',
+    title: "The Monkey's Paw",
+    author: 'W. W. Jacobs',
+    filePath: '/ebooks/the-monkeys-paw.epub',
+    wordCount: 4000,
+    synopsis: "W.W. Jacobs's masterpiece of supernatural dread: a family comes into possession of a mummified monkey's paw that grants three wishes — and learns the terrible price of tempting fate."
+  },
+  {
+    id: 'the-willows',
+    title: 'The Willows',
+    author: 'Algernon Blackwood',
+    filePath: '/ebooks/the-willows.epub',
+    wordCount: 19500,
+    synopsis: "Algernon Blackwood's landmark tale of cosmic horror follows two travellers stranded on a remote Danube island, where the whispering willows conceal a presence beyond human comprehension — hailed by H.P. Lovecraft as the finest weird tale ever written."
+  },
+  {
+    id: 'works-of-poe',
+    title: 'The Works of Edgar Allan Poe',
+    author: 'Edgar Allan Poe',
+    filePath: '/ebooks/works-of-poe.epub',
+    wordCount: 90000,
+    synopsis: "The first volume of Edgar Allan Poe's collected works, gathering the master of the macabre's tales of mystery and the grotesque — including 'The Murders in the Rue Morgue,' 'The Gold-Bug' and 'MS. Found in a Bottle.'"
+  },
 ];
 
 const BookCover = ({ title, index }: { title: string; index: number }) => {
