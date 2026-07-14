@@ -233,6 +233,30 @@ export const AVAILABLE_EBOOKS: Ebook[] = [
     wordCount: 40000,
     synopsis: "John Buchan's classic adventure thriller following Richard Hannay as he becomes entangled in a high-stakes conspiracy, leading to a desperate chase across the Scottish moors to stop a secret society from stealing British naval secrets."
   },
+  {
+    id: 'owl-creek-bridge',
+    title: 'An Occurrence at Owl Creek Bridge',
+    author: 'Ambrose Bierce',
+    filePath: '/ebooks/owl-creek-bridge.epub',
+    wordCount: 3800,
+    synopsis: "Ambrose Bierce's masterful Civil War tale follows Peyton Farquhar, a Southern planter about to be hanged from a railroad bridge, in a haunting meditation on time, perception and one of literature's most famous twist endings."
+  },
+  {
+    id: 'beasts-and-super-beasts',
+    title: 'Beasts and Super-Beasts',
+    author: 'Saki',
+    filePath: '/ebooks/beasts-and-super-beasts.epub',
+    wordCount: 30500,
+    synopsis: "Saki's sharp, wickedly funny collection skewers Edwardian high society with mischievous children, scheming animals and unforgettable characters like the incomparable Clovis, delivered with biting wit and sudden, delicious cruelty."
+  },
+  {
+    id: 'bliss',
+    title: 'Bliss and Other Stories',
+    author: 'Katherine Mansfield',
+    filePath: '/ebooks/bliss.epub',
+    wordCount: 66000,
+    synopsis: "Katherine Mansfield's landmark 1920 collection, led by the celebrated title story 'Bliss,' captures fleeting moments of joy, disillusion and quiet revelation with a delicate modernist eye that reshaped the short story form."
+  },
 ];
 
 const BookCover = ({ title, index }: { title: string; index: number }) => {
