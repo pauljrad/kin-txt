@@ -198,6 +198,9 @@ export function KineticPlayer({
   const unloggedWordsRef = useRef<number>(0);
   // Track when a menu just closed so handleScreenTap doesn't also toggle play
   const justClosedMenuRef = useRef(false);
+  // Track whether an overlay/menu was open on the previous render so the auto-hide
+  // effect can re-arm the hide timer the moment a menu closes (even while paused).
+  const prevMenuOpenRef = useRef(false);
   // Cache the progress bar rect at drag-start so moves never need progressBarRef (avoids null during HUD transitions)
   const dragRectRef = useRef<DOMRect | null>(null);
 
@@ -300,7 +303,18 @@ export function KineticPlayer({
     return 4;
   };
 
-  const progress = totalWords > 0 ? (getCurrentWordIndex() / totalWords) * 100 : 0;
+  // Progress must be able to reach a true 100% when the reader finishes.
+  // The final word sits at index (totalWords - 1), so dividing by totalWords
+  // previously topped out below 100% — noticeably so on short texts, which made
+  // finished texts look unfinished / "not counted". Divide by (totalWords - 1) to
+  // match the seek bar (which maps 100% -> the last word), and force 100% once complete.
+  const progress = isComplete
+    ? 100
+    : totalWords > 1
+      ? Math.min(100, (getCurrentWordIndex() / (totalWords - 1)) * 100)
+      : totalWords === 1
+        ? 100
+        : 0;
 
   // Safely get current word with fallback
   const currentDisplayWord = parsedText.paragraphs[currentParagraph]?.[currentWord] ?? '';
@@ -1013,10 +1027,25 @@ export function KineticPlayer({
       delay = delay * 2.5;
     }
 
-    // Extra pause for emphasis words (only if not rhythm mode)
-    const wordClean = word.toLowerCase().replace(/[.,!?;:]/g, '');
-    if (!rhythmMode && emphasisSet.has(wordClean)) {
-      delay = delay * 1.5;
+    // Extra pause for emphasis words (only if not rhythm mode).
+    // Use the SAME rule as the visual (big) word so emphasized words both look
+    // bigger AND linger longer — previously ALL-CAPS / "!" words were rendered
+    // large but got no extra time, and quoted/bracketed emphasis words were missed
+    // because the strip was weaker than the one used for display.
+    if (!rhythmMode) {
+      const wordNoPunct = word.replace(/[.,!?;:'"()[\]]/g, '');
+      const cleanKey = wordNoPunct.toLowerCase();
+      const AUTO_WHISPER = ['whisper', 'whispers', 'mouse', 'mice', 'tiny', 'quiet', 'quietly', 'silence', 'silent', 'soft', 'softly'];
+      const isAllCapsWord =
+        wordNoPunct.length >= 3 &&
+        wordNoPunct === wordNoPunct.toUpperCase() &&
+        /[A-Z]/.test(wordNoPunct);
+      const hasExclamationWord = word.includes('!');
+      const isWhisperWord = whisperedSet.has(cleanKey) || AUTO_WHISPER.includes(cleanKey);
+      const isEmphasized = !isWhisperWord && (emphasisSet.has(cleanKey) || isAllCapsWord || hasExclamationWord);
+      if (isEmphasized) {
+        delay = delay * 1.5;
+      }
     }
 
     // Cap maximum delay to prevent freezing / stalling
@@ -1034,7 +1063,7 @@ export function KineticPlayer({
         timeoutRef.current = null;
       }
     };
-  }, [isPlaying, currentParagraph, currentWord, getCurrentSpeed, advanceWord, parsedText.paragraphs, isComplete, emphasisSet, showFullText, isNavOpen, rhythmMode, showingChapterTitle]);
+  }, [isPlaying, currentParagraph, currentWord, getCurrentSpeed, advanceWord, parsedText.paragraphs, isComplete, emphasisSet, whisperedSet, showFullText, isNavOpen, rhythmMode, showingChapterTitle]);
 
   const handleMouseMove = useCallback(() => {
     setShowControls(true);
@@ -1121,18 +1150,32 @@ export function KineticPlayer({
     };
   }, []);
 
-  // Hide controls after 3 seconds when playing
+  // Auto-hide the controls/HUD.
+  // Re-runs on play-state AND on every menu open/close so the timer always re-arms.
+  // Previously it only depended on `isPlaying`; the settings popover doesn't pause
+  // the reader, so closing it never restarted the hide timer and the controls stuck
+  // visible until the next pause/play cycle. Now: while a menu is open we keep the
+  // controls up; when it closes we re-arm the 3s hide — while playing, and also just
+  // after a menu closes even if paused — so menus no longer "stick".
   useEffect(() => {
-    if (isPlaying) {
+    const anyMenuOpen =
+      showSettingsPopover || showFullText || isNavOpen || musicMenuOpen || !!showingChapterTitle;
+    const menuJustClosed = prevMenuOpenRef.current && !anyMenuOpen;
+    prevMenuOpenRef.current = anyMenuOpen;
+
+    if (controlsTimeoutRef.current) {
+      clearTimeout(controlsTimeoutRef.current);
+      controlsTimeoutRef.current = null;
+    }
+
+    // Always keep the controls visible while a menu is open, and reveal them on any
+    // of these transitions so the user can see what they're doing.
+    setShowControls(true);
+
+    if (!anyMenuOpen && (isPlaying || menuJustClosed)) {
       controlsTimeoutRef.current = setTimeout(() => {
         setShowControls(false);
       }, 3000);
-    } else {
-      // Show controls when paused
-      setShowControls(true);
-      if (controlsTimeoutRef.current) {
-        clearTimeout(controlsTimeoutRef.current);
-      }
     }
 
     return () => {
@@ -1140,7 +1183,7 @@ export function KineticPlayer({
         clearTimeout(controlsTimeoutRef.current);
       }
     };
-  }, [isPlaying]);
+  }, [isPlaying, showSettingsPopover, showFullText, isNavOpen, musicMenuOpen, showingChapterTitle]);
 
   // Tap to toggle play/pause
   const handleScreenTap = useCallback(async (e: React.MouseEvent) => {
