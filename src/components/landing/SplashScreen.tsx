@@ -23,6 +23,10 @@ type AnimatedTitleProps = React.HTMLAttributes<HTMLDivElement> & {
 export const InteractiveSplashScreen = forwardRef<HTMLDivElement, AnimatedTitleProps>(
     ({ className, onGameStateChange, onChallenge, onComplete, onEnter, ...props }, ref) => {
         const navigate = useNavigate();
+        // Native (onboarding) use passes `onEnter`; the web landing does not.
+        // On the landing the wordmark stays white with mix-blend-difference (so it
+        // reads over the scrolling sections); in-app it follows the theme instead.
+        const themed = !!onEnter;
         // Phase control: 'intro' -> 'interactive'
         const [isIntro, setIsIntro] = useState(true);
         const [demoOpen, setDemoOpen] = useState(false);
@@ -391,6 +395,7 @@ export const InteractiveSplashScreen = forwardRef<HTMLDivElement, AnimatedTitleP
                     ? createPortal(
                         <PongGame
                             key="pong-game"
+                            themed={themed}
                             onGameEnd={handleGameEnd}
                             initialBallPos={gameInitialPos.ball}
                             initialPaddlePos={gameInitialPos.paddle}
@@ -409,13 +414,13 @@ export const InteractiveSplashScreen = forwardRef<HTMLDivElement, AnimatedTitleP
                     aria-label="Kin-TXT animated title"
                     {...props}
                 >
-                    <h1 className="select-none kinxt-pull-trigger pointer-events-auto cursor-grab touch-none text-7xl sm:text-8xl font-display text-white tracking-wide flex items-baseline justify-center leading-none mix-blend-difference">
+                    <h1 className={`select-none kinxt-pull-trigger pointer-events-auto cursor-grab touch-none text-7xl sm:text-8xl font-display tracking-wide flex items-baseline justify-center leading-none ${themed ? "text-foreground" : "text-white mix-blend-difference"}`}>
                         <motion.span animate={lettersControls}>K</motion.span>
                         <span className="relative inline-flex flex-col items-center mx-[0.05em]" style={{ width: "0.36em" }}>
                             <motion.span
                                 ref={dotRef}
                                 animate={dotControls}
-                                className="absolute block rounded-full bg-white transition-[filter] duration-150"
+                                className={`absolute block rounded-full ${themed ? "bg-foreground" : "bg-white"} transition-[filter] duration-150`}
                                 style={{
                                     width: "0.11em", height: "0.11em", top: "0.05em", willChange: "filter, transform", transform: "translateZ(0)",
                                     filter: holdProgress > 0
@@ -428,12 +433,12 @@ export const InteractiveSplashScreen = forwardRef<HTMLDivElement, AnimatedTitleP
                             />
                             <motion.span
                                 animate={stemControls}
-                                className="block bg-white rounded-sm"
+                                className={`block ${themed ? "bg-foreground" : "bg-white"} rounded-sm`}
                                 style={{ width: "0.11em", height: "0.55em", marginTop: "0.38em", scaleY: stemScaleY, transformOrigin: "bottom" }}
                             />
                         </span>
                         <motion.span animate={lettersControls}>n</motion.span>
-                        <motion.span ref={hyphenRef} animate={hyphenControls} className="inline-block text-white mx-[0.05em]" style={{ display: "inline-block" }}>-</motion.span>
+                        <motion.span ref={hyphenRef} animate={hyphenControls} className={`inline-block ${themed ? "text-foreground" : "text-white"} mx-[0.05em]`} style={{ display: "inline-block" }}>-</motion.span>
                         <motion.span animate={lettersControls}>TXT</motion.span>
                     </h1>
 
@@ -443,7 +448,7 @@ export const InteractiveSplashScreen = forwardRef<HTMLDivElement, AnimatedTitleP
                             animate={!isIntro ? { opacity: 1 } : { opacity: 0 }}
                             transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
                             onClick={() => (onEnter ? onEnter() : navigate('/home'))}
-                            className="px-6 py-2 border border-white/20 text-white text-[11px] tracking-[0.25em] hover:bg-white hover:text-black transition-colors duration-500 uppercase font-bold"
+                            className={`px-6 py-2 border text-[11px] tracking-[0.25em] transition-colors duration-500 uppercase font-bold ${themed ? "border-foreground/20 text-foreground hover:bg-foreground hover:text-background" : "border-white/20 text-white hover:bg-white hover:text-black"}`}
                         >
                             Enter
                         </motion.button>

@@ -24,7 +24,7 @@ import { ThemeToggle } from '@/components/ThemeToggle';
 import { AnimatedTitle } from '@/components/AnimatedTitle';
 import { usePullGesture } from '@/hooks/usePullGesture';
 import { ParsedText, processTextStyles, filterEmphasis } from '@/lib/textParser';
-import { SavedDocument, saveDocument, updateDocumentProgress, updateDocumentEmphasis, setFreeMode } from '@/lib/documentDatabase';
+import { SavedDocument, saveDocument, updateDocumentProgress, updateDocumentEmphasis, setFreeMode, saveLocalProgress } from '@/lib/documentDatabase';
 import { migrateLocalDocumentsToAccount } from '@/lib/documentMigration';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -579,20 +579,80 @@ const Index = () => {
     });
   }, []);
 
-  const handleProgressChange = useCallback(async (paragraph: number, word: number) => {
-    if (activeDocument?.id) {
-      await updateDocumentProgress(activeDocument.id, paragraph, word, activeDocument.parsedText);
+  // ── Reading-position persistence ──────────────────────────────────────────
+  // Mirror the position to localStorage instantly on every word (synchronous,
+  // survives force-quit), but throttle the Supabase write so we don't flood the
+  // auth lock — the per-word remote write was what hung the library on return.
+  const REMOTE_SAVE_INTERVAL = 4000;
+  const latestProgressRef = useRef<{ paragraph: number; word: number } | null>(null);
+  const remoteSaveTimerRef = useRef<number | null>(null);
+  const lastRemoteSaveRef = useRef(0);
+
+  const flushRemoteProgress = useCallback(() => {
+    if (remoteSaveTimerRef.current !== null) {
+      clearTimeout(remoteSaveTimerRef.current);
+      remoteSaveTimerRef.current = null;
     }
+    const doc = activeDocument;
+    const pos = latestProgressRef.current;
+    if (doc?.id && pos) {
+      lastRemoteSaveRef.current = Date.now();
+      // Fire-and-forget — never block returning to the library on the network.
+      updateDocumentProgress(doc.id, pos.paragraph, pos.word, doc.parsedText).catch(() => {});
+    }
+  }, [activeDocument]);
+
+  const handleProgressChange = useCallback((paragraph: number, word: number) => {
+    const doc = activeDocument;
+    if (!doc?.id) return;
+    // Instant, reliable local save.
+    saveLocalProgress(doc.id, paragraph, word);
+    latestProgressRef.current = { paragraph, word };
+    // Throttled remote save (trailing edge).
+    if (remoteSaveTimerRef.current === null) {
+      const delay = Math.max(0, REMOTE_SAVE_INTERVAL - (Date.now() - lastRemoteSaveRef.current));
+      remoteSaveTimerRef.current = window.setTimeout(() => {
+        remoteSaveTimerRef.current = null;
+        lastRemoteSaveRef.current = Date.now();
+        const p = latestProgressRef.current;
+        if (doc.id && p) {
+          updateDocumentProgress(doc.id, p.paragraph, p.word, doc.parsedText).catch(() => {});
+        }
+      }, delay);
+    }
+  }, [activeDocument]);
+
+  // Flush when the app is backgrounded / closed (iOS swipe-up, tab hidden,
+  // force-quit) so the place is kept even without pressing Back.
+  useEffect(() => {
+    if (!activeDocument?.id) return;
+    const flush = () => {
+      const doc = activeDocument;
+      const pos = latestProgressRef.current;
+      if (doc?.id && pos) {
+        saveLocalProgress(doc.id, pos.paragraph, pos.word);
+        updateDocumentProgress(doc.id, pos.paragraph, pos.word, doc.parsedText).catch(() => {});
+      }
+    };
+    const onVisibility = () => { if (document.visibilityState === 'hidden') flush(); };
+    document.addEventListener('visibilitychange', onVisibility);
+    window.addEventListener('pagehide', flush);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibility);
+      window.removeEventListener('pagehide', flush);
+    };
   }, [activeDocument?.id, activeDocument?.parsedText]);
 
   const handleBack = useCallback(() => {
     if (!user) {
       setShowExitGuestModal(true);
     } else {
+      // Persist the final position immediately before returning to the library.
+      flushRemoteProgress();
       setActiveDocument(null);
       setRefreshTrigger(prev => prev + 1);
     }
-  }, [user]);
+  }, [user, flushRemoteProgress]);
 
   const confirmGuestExit = useCallback(() => {
     setShowExitGuestModal(false);
@@ -1070,8 +1130,10 @@ const Index = () => {
         </motion.button>
       )}
 
-      {/* Account & Settings Button - Top Right (right-64) — native app only */}
-      {!activeDocument && isNative && (
+      {/* Account & Settings Button - Top Right (right-64) — native app, signed-in only.
+          Hidden for guests so it never overlaps the left-aligned Login/Signup button
+          (a guest has no account to manage; Restore Purchases + legal live on the paywall). */}
+      {!activeDocument && isNative && user && (
         <motion.button
           onClick={() => setShowAccount(true)}
           animate={{

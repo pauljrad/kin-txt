@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { X, Check, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { OFFERING_ID, ENTITLEMENT_ID } from '@/lib/revenuecat';
+import { BrandText } from '@/components/BrandText';
 
 /** A purchasable package surfaced from RevenueCat / StoreKit. */
 interface PaywallPackage {
@@ -134,9 +135,8 @@ export function Paywall({ onSuccess, onClose }: PaywallProps) {
       </button>
 
       <div className="flex-1 overflow-y-auto px-6 pt-16 pb-10 flex flex-col items-center">
-        <p className="font-display text-xs uppercase tracking-[0.3em] text-muted-foreground">KiN-TXT</p>
-        <h1 className="font-display text-3xl tracking-wide text-foreground mt-2 mb-1 text-center">
-          KiN-TXT Pro
+        <h1 className="font-display text-3xl tracking-wide text-foreground mb-1 text-center">
+          <BrandText>KiN-TXT Pro</BrandText>
         </h1>
         <p className="text-sm text-muted-foreground text-center max-w-xs mb-8">
           Unlock the full kinetic reading experience.
@@ -175,7 +175,7 @@ export function Paywall({ onSuccess, onClose }: PaywallProps) {
                     {pkg.badge}
                   </span>
                 )}
-                <span className="font-display tracking-wide text-foreground">{pkg.title}</span>
+                <BrandText className="font-display tracking-wide text-foreground">{pkg.title}</BrandText>
                 <span className="text-foreground font-medium">
                   {busyId === pkg.identifier ? <Loader2 className="w-4 h-4 animate-spin" /> : pkg.priceString}
                 </span>

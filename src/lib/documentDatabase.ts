@@ -125,13 +125,22 @@ function dbToSavedDocument(doc: DatabaseDocument & { source?: string; file_type?
     }
   }
 
+  // Prefer the instant local position when it's newer than the server copy —
+  // it captures the last words read before leaving, which the throttled remote
+  // write may not have persisted yet.
+  let progress = { paragraph, word };
+  const local = getLocalProgress(doc.id);
+  if (local && local.updatedAt > new Date(doc.updated_at).getTime()) {
+    progress = { paragraph: local.paragraph, word: local.word };
+  }
+
   return {
     id: doc.id,
     title: doc.title,
     source,
     category: detectCategory(source, doc.title, wordCount, fileType),
     parsedText,
-    progress: { paragraph, word },
+    progress,
     totalReadingTime: doc.total_reading_time || 0,
     completed: doc.is_completed || false,
     startedAt: new Date(doc.created_at).getTime(),
@@ -152,9 +161,48 @@ function calculateWordIndex(parsedText: ParsedText, paragraph: number, word: num
   return index + word;
 }
 
+// ── Instant local reading-position cache ────────────────────────────────────
+// The remote progress write goes through Supabase (network + auth lock), so it
+// is throttled and can lag or be killed when the app is force-quit. To make the
+// reading position *never* get lost, we also mirror it to localStorage on every
+// change — synchronous, no network, survives a force-quit. On load we prefer
+// this copy when it's newer than the server's (see dbToSavedDocument).
+const LOCAL_POS_PREFIX = 'kinxt_pos_';
+
+export function saveLocalProgress(id: string, paragraph: number, word: number): void {
+  try {
+    localStorage.setItem(
+      LOCAL_POS_PREFIX + id,
+      JSON.stringify({ paragraph, word, updatedAt: Date.now() }),
+    );
+  } catch {
+    // Storage unavailable / full — best effort only.
+  }
+}
+
+export function getLocalProgress(
+  id: string,
+): { paragraph: number; word: number; updatedAt: number } | null {
+  try {
+    const raw = localStorage.getItem(LOCAL_POS_PREFIX + id);
+    if (!raw) return null;
+    const p = JSON.parse(raw);
+    if (typeof p?.paragraph === 'number' && typeof p?.word === 'number' && typeof p?.updatedAt === 'number') {
+      return p;
+    }
+  } catch {
+    // Ignore malformed entries.
+  }
+  return null;
+}
+
 export async function getDocuments(): Promise<SavedDocument[]> {
-  const { data: { user } } = await supabase.auth.getUser();
-  
+  // getSession() reads the cached session (no network round-trip / auth-lock
+  // contention) so the library load stays fast and never hangs behind queued
+  // progress writes.
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user;
+
   // Try to get offline documents first
   const { getAllOffline } = await import('./offlineDatabase');
   const offlineDocs = await getAllOffline();
@@ -264,7 +312,9 @@ export async function saveDocument(doc: {
 }
 
 export async function updateDocumentProgress(id: string, paragraph: number, word: number, parsedText?: ParsedText): Promise<void> {
-  const { data: { user } } = await supabase.auth.getUser();
+  // getSession() avoids a per-write network call + auth-lock acquisition.
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user;
   if (!user || freeMode) {
     // For guest / free-tier users, we save progress to sessionStorage so it persists
     // while they are in the app, but vanishes if they "leave" (clear session).

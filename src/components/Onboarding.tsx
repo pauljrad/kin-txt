@@ -444,7 +444,7 @@ export const OnboardingSplash = ({ onEnter }: { onEnter: () => void }) => {
   // interactive splash so the intro + pull-the-"i" Pong behave exactly like the web.
   usePullGesture(true);
   return (
-    <div className="fixed inset-0 z-[100] bg-black">
+    <div className="fixed inset-0 z-[100] bg-background">
       <InteractiveSplashScreen onEnter={onEnter} />
     </div>
   );

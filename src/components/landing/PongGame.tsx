@@ -9,6 +9,8 @@ interface PongGameProps {
     paddleWidth: number;
     paddleFontSize: number;
     paddleFontFamily?: string;
+    /** In-app (themed) use follows the theme; the web landing stays white-on-black. */
+    themed?: boolean;
 }
 
 const PADDLE_SCALE = 2.5;
@@ -23,6 +25,7 @@ export const PongGame = forwardRef<HTMLDivElement, PongGameProps>(
             paddleWidth: initialPaddleWidth,
             paddleFontSize,
             paddleFontFamily,
+            themed = false,
         },
         ref
     ) => {
@@ -343,7 +346,7 @@ export const PongGame = forwardRef<HTMLDivElement, PongGameProps>(
             >
                 {/* Background */}
                 <motion.div
-                    className="absolute inset-0 bg-black"
+                    className={`absolute inset-0 ${themed ? "bg-background" : "bg-black"}`}
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ duration: 0.35 }}
@@ -352,7 +355,7 @@ export const PongGame = forwardRef<HTMLDivElement, PongGameProps>(
 
                 {/* Score */}
                 <motion.div
-                    className="absolute top-8 left-0 right-0 flex justify-center gap-8 text-white"
+                    className={`absolute top-8 left-0 right-0 flex justify-center gap-8 ${themed ? "text-foreground" : "text-white"}`}
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: gameState === 'ending' ? 0 : 1, y: 0 }}
                     transition={{ delay: 0.3, duration: 0.25 }}
@@ -370,7 +373,7 @@ export const PongGame = forwardRef<HTMLDivElement, PongGameProps>(
 
                 {/* Ball */}
                 <motion.div
-                    className="absolute rounded-full bg-white"
+                    className={`absolute rounded-full ${themed ? "bg-foreground" : "bg-white"}`}
                     style={{
                         width: ballSize,
                         height: ballSize,
@@ -386,7 +389,7 @@ export const PongGame = forwardRef<HTMLDivElement, PongGameProps>(
 
                 {/* Paddle (enlarged hyphen) */}
                 <motion.div
-                    className="absolute text-white flex items-center justify-center"
+                    className={`absolute ${themed ? "text-foreground" : "text-white"} flex items-center justify-center`}
                     initial={{
                         left: initialPaddlePos.x,
                         width: initialPaddleWidth,
@@ -435,13 +438,13 @@ export const PongGame = forwardRef<HTMLDivElement, PongGameProps>(
                                 {showNewHighScore ? (
                                     <>
                                         <div className="text-3xl md:text-4xl font-display text-blue-500 mb-4">New High Score!</div>
-                                        <div className="text-6xl md:text-8xl font-display text-white">{score}</div>
+                                        <div className={`text-6xl md:text-8xl font-display ${themed ? "text-foreground" : "text-white"}`}>{score}</div>
                                         <div className="mt-3 text-sm text-zinc-500">High: {Math.max(score, highScore)}</div>
                                     </>
                                 ) : (
                                     <>
                                         <div className="text-2xl md:text-3xl text-zinc-500 mb-4">Dropped.</div>
-                                        <div className="text-6xl md:text-8xl font-display text-white">{score}</div>
+                                        <div className={`text-6xl md:text-8xl font-display ${themed ? "text-foreground" : "text-white"}`}>{score}</div>
                                         <div className="mt-3 text-sm text-zinc-500">High: {Math.max(score, highScore)}</div>
                                     </>
                                 )}

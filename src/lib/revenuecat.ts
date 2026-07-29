@@ -17,8 +17,13 @@ import { Capacitor } from '@capacitor/core';
  */
 export const REVENUECAT_IOS_API_KEY = 'appl_UIjbCEoLAJJoYjqESXeKxbYhmvA';
 
-/** The entitlement that, when active, unlocks full access ("Pro"). */
-export const ENTITLEMENT_ID = 'pro';
+/**
+ * The entitlement that, when active, unlocks full access ("Pro").
+ * NOTE: must match the RevenueCat entitlement *identifier* exactly — it is
+ * case-sensitive. The RevenueCat entitlement was created as "Pro" (capital P)
+ * and RevenueCat locks the identifier after creation, so this stays "Pro".
+ */
+export const ENTITLEMENT_ID = 'Pro';
 
 /** Offering to present in the paywall. `null` uses the RevenueCat default offering. */
 export const OFFERING_ID: string | null = null;

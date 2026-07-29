@@ -333,7 +333,7 @@ const Login = forwardRef<HTMLDivElement>((_, ref) => {
                 className="text-sm text-muted-foreground hover:text-foreground transition-colors"
               >
                 New to KiN-TXT?{' '}
-                <span className="underline underline-offset-2 text-white">Register here →</span>
+                <span className="underline underline-offset-2 text-foreground">Register here →</span>
               </Link>
             )}
           </div>
