@@ -4,6 +4,7 @@ import KidLogin from '@/pages/KidLogin';
 import KidLibrary from '@/pages/KidLibrary';
 import KidsProfile from '@/pages/KidsProfile';
 import KidReader from '@/pages/KidReader';
+import Leaderboard from '@/pages/Leaderboard';
 import { ThemeSelector } from '@/components/ThemeSelector';
 import { Toaster } from 'sonner';
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -31,6 +32,12 @@ export default function App() {
           <Route path="/profile" element={
             <ProtectedRoute>
               <KidsProfile />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/leaderboard" element={
+            <ProtectedRoute>
+              <Leaderboard />
             </ProtectedRoute>
           } />
 

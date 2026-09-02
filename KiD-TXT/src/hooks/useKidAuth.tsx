@@ -1,11 +1,15 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import { getKidSession, saveKidSession, type KidUser } from '@/lib/kidAuth';
+import { READING_BANDS } from '@/lib/curriculum';
 
 interface KidAuthCtx {
   kid: KidUser | null;
   setKid: (u: KidUser | null) => void;
   updateTheme: (t: KidUser['theme']) => void;
   updateAvatar: (data: string) => void;
+  updateBand: (b: KidUser['band']) => void;
+  /** Clamped to the child's own band — they cannot race past it. */
+  updateWcpm: (wcpm: number) => void;
 }
 
 const Ctx = createContext<KidAuthCtx | undefined>(undefined);
@@ -15,7 +19,7 @@ export function KidAuthProvider({ children }: { children: ReactNode }) {
 
   const setKid = (u: KidUser | null) => {
     setKidState(u);
-    if (u) saveKidSession(u); 
+    if (u) saveKidSession(u);
   };
 
   const updateTheme = (theme: KidUser['theme']) => {
@@ -26,13 +30,23 @@ export function KidAuthProvider({ children }: { children: ReactNode }) {
     setKid(kid ? { ...kid, avatarData } : null);
   };
 
+  const updateBand = (band: KidUser['band']) => {
+    setKid(kid ? { ...kid, band, wcpm: READING_BANDS[band].targetWcpm } : null);
+  };
+
+  const updateWcpm = (wcpm: number) => {
+    if (!kid) return;
+    const b = READING_BANDS[kid.band];
+    setKid({ ...kid, wcpm: Math.min(b.maxWcpm, Math.max(b.minWcpm, wcpm)) });
+  };
+
   // Apply theme to document root
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', kid?.theme ?? 'cream');
   }, [kid?.theme]);
 
   return (
-    <Ctx.Provider value={{ kid, setKid, updateTheme, updateAvatar }}>
+    <Ctx.Provider value={{ kid, setKid, updateTheme, updateAvatar, updateBand, updateWcpm }}>
       {children}
     </Ctx.Provider>
   );

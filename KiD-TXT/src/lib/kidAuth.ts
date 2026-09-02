@@ -8,13 +8,20 @@ export interface KidUser {
   pupilId: string;
   avatarData?: string; // base64 drawing
   theme: 'cream' | 'blue' | 'green' | 'pink';
+  /** Reading band. Gemstone-named so the child cannot read off a year group. */
+  band: BandKey;
+  /** Words per minute the child currently reads at, within their band. */
+  wcpm: number;
 }
+
+import { READING_BANDS, type BandKey } from './curriculum';
 
 const SESSION_KEY = 'kid_txt_session';
 
-// Hardcoded school pupils (demo). Add more as needed.
-const REGISTERED_PUPILS: { name: string; pupilId: string }[] = [
-  { name: 'RUGRAT', pupilId: '12345' },
+// Hardcoded school pupils (demo). A real deployment reads the band
+// from the school's assessment data, not from the child.
+const REGISTERED_PUPILS: { name: string; pupilId: string; band: BandKey }[] = [
+  { name: 'RUGRAT', pupilId: '12345', band: 'topaz' },
 ];
 
 export function loginKid(name: string, pupilId: string): KidUser | null {
@@ -37,6 +44,8 @@ export function loginKid(name: string, pupilId: string): KidUser | null {
     name: match.name,
     pupilId: match.pupilId,
     theme: 'cream',
+    band: match.band,
+    wcpm: READING_BANDS[match.band].targetWcpm,
   };
 
   saveKidSession(user);
@@ -46,7 +55,12 @@ export function loginKid(name: string, pupilId: string): KidUser | null {
 export function getKidSession(): KidUser | null {
   try {
     const raw = localStorage.getItem(SESSION_KEY);
-    return raw ? JSON.parse(raw) : null;
+    if (!raw) return null;
+    const user = JSON.parse(raw) as KidUser;
+    // Profiles saved before bands existed need defaults.
+    if (!user.band || !READING_BANDS[user.band]) user.band = 'topaz';
+    if (typeof user.wcpm !== 'number') user.wcpm = READING_BANDS[user.band].targetWcpm;
+    return user;
   } catch {
     return null;
   }
@@ -71,5 +85,22 @@ export function updateKidAvatar(avatarData: string): void {
   const session = getKidSession();
   if (session) {
     saveKidSession({ ...session, avatarData });
+  }
+}
+
+export function updateKidBand(band: KidUser['band']): void {
+  const session = getKidSession();
+  if (session) {
+    // Moving band resets speed to that band's target.
+    saveKidSession({ ...session, band, wcpm: READING_BANDS[band].targetWcpm });
+  }
+}
+
+/** Clamp a requested speed to the child's own band. */
+export function updateKidWcpm(wcpm: number): void {
+  const session = getKidSession();
+  if (session) {
+    const b = READING_BANDS[session.band];
+    saveKidSession({ ...session, wcpm: Math.min(b.maxWcpm, Math.max(b.minWcpm, wcpm)) });
   }
 }
