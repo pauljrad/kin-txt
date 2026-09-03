@@ -1,361 +1,426 @@
-/* ============================================
-   KiD-TXT — Global Styles & 4-Theme System
-   ============================================ */
+/* ============================================================
+   KiD-TXT — ligne claire meets a tap-first kids interface
+
+   Two rules hold the whole thing together:
+   1. Every surface has a hard black contour and a solid offset
+      shadow. No blur, no gradient — the shadow is a flat slab of
+      colour, the way flat ink sits on flat paper.
+   2. Everything you can press moves. Press translates the object
+      down onto its own shadow, so the button physically bottoms out.
+   ============================================================ */
 
 @import "tailwindcss";
 
-/* Import is in index.html for Google Fonts */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-/* ─── Theme: Cream (default) ─── */
+/* ─── Album palette ─── */
+:root {
+  --ink:        #17171B;
+  --ink-soft:   #4A4A52;
+
+  --red:        #C8322B;
+  --red-dark:   #9A241F;
+  --blue:       #1D5C86;
+  --blue-dark:  #14425F;
+  --sun:        #EDB230;
+  --sun-dark:   #C48D18;
+  --leaf:       #3E8563;
+  --leaf-dark:  #2C6248;
+  --sand:       #DFC08A;
+  --bark:       #8A5A3B;
+
+  --correct:      #3E8563;
+  --correct-dark: #2C6248;
+  --wrong:        #C8322B;
+  --wrong-dark:   #9A241F;
+
+  /* Depth of the solid shadow under every raised object */
+  --lift: 5px;
+
+  /* iPhone notch / home indicator */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* ─── Theme: Sand (default) ─── */
 :root,
 [data-theme="cream"] {
-  --bg: #FFF2CC;
-  --bg-card: #FFEBB3;
-  --bg-elevated: #FFE599;
-  --text: #222222;
-  --text-muted: #6B5E3A;
-  --accent: #F5C400;
-  --accent-text: #222222;
-  --border: #E8D48A;
-  --correct: #4CAF50;
-  --wrong: #FF6B6B;
-  --shadow: rgba(100, 80, 0, 0.12);
-  --reader-bg: #FFF8E1;
-  --theme-name: "Cream";
+  --bg:          #F4E7D0;
+  --bg-card:     #FFF9EC;
+  --bg-elevated: #EFDFC2;
+  --text:        #17171B;
+  --text-muted:  #6E6152;
+  --border:      #17171B;
+  --shadow-col:  #D4BE97;
+  --accent:      #C8322B;
+  --accent-dark: #9A241F;
+  --accent-text: #FFF9EC;
+  --reader-bg:   #FBF2E0;
 }
 
-/* ─── Theme: Blue ─── */
+/* ─── Theme: Marine ─── */
 [data-theme="blue"] {
-  --bg: #D9EAF7;
-  --bg-card: #C5DFF1;
-  --bg-elevated: #B0D4EC;
-  --text: #1A1A1A;
-  --text-muted: #2C5F8A;
-  --accent: #2E86C1;
-  --accent-text: #ffffff;
-  --border: #93C6E8;
-  --correct: #27AE60;
-  --wrong: #E74C3C;
-  --shadow: rgba(0, 60, 120, 0.12);
-  --reader-bg: #E8F4FB;
-  --theme-name: "Blue";
+  --bg:          #CFE3EE;
+  --bg-card:     #F2FAFE;
+  --bg-elevated: #B9D6E6;
+  --text:        #12242F;
+  --text-muted:  #4A6675;
+  --border:      #12242F;
+  --shadow-col:  #9DBFD3;
+  --accent:      #1D5C86;
+  --accent-dark: #14425F;
+  --accent-text: #F2FAFE;
+  --reader-bg:   #E4F1F8;
 }
 
-/* ─── Theme: Green ─── */
+/* ─── Theme: Jungle ─── */
 [data-theme="green"] {
-  --bg: #E2F0D9;
-  --bg-card: #D0E8C2;
-  --bg-elevated: #BDDFA9;
-  --text: #1A1A1A;
-  --text-muted: #2D6A2D;
-  --accent: #3DAA3D;
-  --accent-text: #ffffff;
-  --border: #9DD47F;
-  --correct: #27AE60;
-  --wrong: #E74C3C;
-  --shadow: rgba(0, 80, 20, 0.12);
-  --reader-bg: #EDF7E6;
-  --theme-name: "Green";
+  --bg:          #D9E8D4;
+  --bg-card:     #F5FBF2;
+  --bg-elevated: #C4DBBC;
+  --text:        #16241A;
+  --text-muted:  #526B54;
+  --border:      #16241A;
+  --shadow-col:  #A9C7A0;
+  --accent:      #3E8563;
+  --accent-dark: #2C6248;
+  --accent-text: #F5FBF2;
+  --reader-bg:   #EAF4E6;
 }
 
-/* ─── Theme: Pink ─── */
+/* ─── Theme: Poppy ─── */
 [data-theme="pink"] {
-  --bg: #FCE4EC;
-  --bg-card: #F8BBD9;
-  --bg-elevated: #F48FB1;
-  --text: #2A2A2A;
-  --text-muted: #7B2D5C;
-  --accent: #E91E8C;
-  --accent-text: #ffffff;
-  --border: #F06292;
-  --correct: #27AE60;
-  --wrong: #E74C3C;
-  --shadow: rgba(120, 0, 60, 0.12);
-  --reader-bg: #FFF0F6;
-  --theme-name: "Pink";
+  --bg:          #F6DED9;
+  --bg-card:     #FFF5F2;
+  --bg-elevated: #EFC7BF;
+  --text:        #2A1614;
+  --text-muted:  #7A5148;
+  --border:      #2A1614;
+  --shadow-col:  #DCAEA4;
+  --accent:      #A6432F;
+  --accent-dark: #7D2F1F;
+  --accent-text: #FFF5F2;
+  --reader-bg:   #FCEDE8;
 }
 
 /* ─── Base ─── */
+html { -webkit-text-size-adjust: 100%; }
+
 html, body, #root {
   min-height: 100dvh;
   background-color: var(--bg);
   color: var(--text);
-  font-family: 'Nunito', 'Baloo 2', sans-serif;
-  transition: background-color 0.3s ease, color 0.3s ease;
+  font-family: 'Nunito', system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
+  overscroll-behavior-y: none;
 }
 
-/* ─── Utility ─── */
+body { transition: background-color 0.25s ease; }
+
+h1, h2, h3, .display {
+  font-family: 'Fredoka', 'Nunito', system-ui, sans-serif;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.1;
+}
+
+button { font-family: inherit; -webkit-tap-highlight-color: transparent; }
+
+/* Page shell — one measure, safe-area aware, roomier on iPad */
+.page {
+  min-height: 100dvh;
+  padding: calc(14px + var(--safe-top)) 16px calc(40px + var(--safe-bottom));
+}
+
+.wrap { max-width: 34rem; margin: 0 auto; }
+.wrap-wide { max-width: 48rem; margin: 0 auto; }
+
+@media (min-width: 768px) {
+  .page { padding-left: 32px; padding-right: 32px; }
+  .wrap { max-width: 38rem; }
+}
+
+/* ============================================================
+   Raised objects
+   ============================================================ */
+
 .kid-card {
   background: var(--bg-card);
-  border: 2px solid var(--border);
+  border: 2.5px solid var(--border);
   border-radius: 20px;
-  box-shadow: 0 4px 16px var(--shadow);
+  box-shadow: 0 var(--lift) 0 var(--shadow-col);
 }
 
+/* ─── Buttons ─── */
 .kid-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  font-family: 'Nunito', sans-serif;
-  font-weight: 800;
-  font-size: 1.1rem;
-  padding: 14px 28px;
-  border-radius: 50px;
-  border: 3px solid transparent;
+  gap: 9px;
+  font-family: 'Fredoka', 'Nunito', sans-serif;
+  font-weight: 600;
+  font-size: 1.02rem;
+  letter-spacing: 0.01em;
+  padding: 14px 26px;
+  min-height: 52px;
+  border-radius: 16px;
+  border: 2.5px solid var(--border);
   cursor: pointer;
-  transition: all 0.18s ease;
   user-select: none;
-  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.06s ease, box-shadow 0.06s ease, background 0.15s ease;
+  will-change: transform;
 }
 
 .kid-btn-primary {
   background: var(--accent);
   color: var(--accent-text);
-  border-color: var(--accent);
-}
-
-.kid-btn-primary:hover {
-  filter: brightness(1.08);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px var(--shadow);
-}
-
-.kid-btn-primary:active {
-  transform: translateY(0px);
+  box-shadow: 0 var(--lift) 0 var(--accent-dark);
 }
 
 .kid-btn-ghost {
-  background: transparent;
-  color: var(--text-muted);
-  border-color: var(--border);
-}
-
-.kid-btn-ghost:hover {
   background: var(--bg-card);
-}
-
-.kid-input {
-  width: 100%;
-  background: var(--bg-elevated);
   color: var(--text);
-  border: 2px solid var(--border);
-  border-radius: 16px;
-  padding: 14px 20px;
-  font-family: 'Nunito', sans-serif;
-  font-size: 1.1rem;
-  font-weight: 600;
-  outline: none;
-  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+  box-shadow: 0 var(--lift) 0 var(--shadow-col);
 }
 
-.kid-input:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent);
+/* The press: the object drops onto its own shadow */
+.kid-btn:active:not(:disabled) {
+  transform: translateY(var(--lift));
+  box-shadow: 0 0 0 var(--shadow-col);
+}
+.kid-btn-primary:active:not(:disabled) { box-shadow: 0 0 0 var(--accent-dark); }
+
+.kid-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+@media (hover: hover) {
+  .kid-btn-primary:hover:not(:disabled) { filter: brightness(1.06); }
+  .kid-btn-ghost:hover:not(:disabled) { background: var(--bg-elevated); }
 }
 
-.kid-input::placeholder {
-  color: var(--text-muted);
-  opacity: 0.7;
-}
-
-/* ─── Reader word display ─── */
-.kid-word {
-  font-family: 'Nunito', sans-serif;
-  font-weight: 700;
-  color: var(--text);
-  line-height: 1.1;
-  user-select: none;
-}
-
-/* ─── Quiz overlay ─── */
-.quiz-overlay {
-  position: fixed;
-  inset: 0;
-  background: color-mix(in srgb, var(--bg) 95%, transparent);
-  display: flex;
+/* Round icon button — back, rewind, restart */
+.icon-btn {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  z-index: 100;
-  padding: 24px;
-}
-
-.quiz-card {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 2.5px solid var(--border);
   background: var(--bg-card);
-  border: 3px solid var(--border);
-  border-radius: 28px;
-  padding: 36px 32px;
-  max-width: 560px;
-  width: 100%;
-  box-shadow: 0 8px 40px var(--shadow);
-  text-align: center;
+  color: var(--text);
+  box-shadow: 0 4px 0 var(--shadow-col);
+  cursor: pointer;
+  transition: transform 0.06s ease, box-shadow 0.06s ease;
+  flex-shrink: 0;
 }
+.icon-btn:active:not(:disabled) { transform: translateY(4px); box-shadow: 0 0 0 var(--shadow-col); }
+.icon-btn:disabled { opacity: 0.35; cursor: not-allowed; }
 
-.quiz-option {
+/* The one big control in the reader */
+.play-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  border: 3px solid var(--border);
+  background: var(--accent);
+  color: var(--accent-text);
+  box-shadow: 0 6px 0 var(--accent-dark);
+  cursor: pointer;
+  transition: transform 0.06s ease, box-shadow 0.06s ease;
+}
+.play-btn:active { transform: translateY(6px); box-shadow: 0 0 0 var(--accent-dark); }
+
+/* ─── Inputs ─── */
+.kid-input {
   width: 100%;
-  background: var(--bg);
+  background: var(--bg-card);
   color: var(--text);
   border: 2.5px solid var(--border);
   border-radius: 16px;
-  padding: 16px 20px;
+  padding: 15px 18px;
   font-family: 'Nunito', sans-serif;
+  font-size: 1.05rem;
   font-weight: 700;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  text-align: left;
-  margin-bottom: 10px;
+  outline: none;
+  box-shadow: 0 4px 0 var(--shadow-col);
+  transition: box-shadow 0.12s ease;
 }
+.kid-input:focus { box-shadow: 0 4px 0 var(--accent); }
+.kid-input::placeholder { color: var(--text-muted); opacity: 0.65; font-weight: 600; }
 
-.quiz-option:hover {
-  border-color: var(--accent);
-  background: var(--bg-elevated);
-}
+/* ============================================================
+   Pills, chips, badges
+   ============================================================ */
 
-.quiz-option.correct {
-  border-color: var(--correct);
-  background: color-mix(in srgb, var(--correct) 15%, var(--bg));
-  color: var(--correct);
-}
-
-.quiz-option.wrong {
-  border-color: var(--wrong);
-  background: color-mix(in srgb, var(--wrong) 15%, var(--bg));
-  color: var(--wrong);
-}
-
-/* ─── Scrollbars ─── */
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
-
-/* ─── Animations ─── */
-@keyframes bounce-in {
-  0% { transform: scale(0.7); opacity: 0; }
-  70% { transform: scale(1.05); }
-  100% { transform: scale(1); opacity: 1; }
-}
-
-.bounce-in { animation: bounce-in 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
-
-@keyframes star-pop {
-  0% { transform: scale(0) rotate(-15deg); opacity: 0; }
-  60% { transform: scale(1.2) rotate(5deg); }
-  100% { transform: scale(1) rotate(0deg); opacity: 1; }
-}
-
-.star-pop { animation: star-pop 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
-
-/* ============================================
-   Curriculum UI — bands, skills, coins,
-   statutory words, pronunciation
-   ============================================ */
-
-/* ─── Reading band pill (colour only, never a year group) ─── */
-.band-pill {
-  display: inline-flex;
-  align-items: center;
-  padding: 5px 14px;
-  border-radius: 50px;
-  font-family: 'Baloo 2', sans-serif;
-  font-weight: 800;
-  font-size: 0.82rem;
-  color: #fff;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
-  flex-shrink: 0;
-  white-space: nowrap;
-}
-
-/* ─── Coin counter ─── */
-.coin-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  background: var(--bg-elevated);
-  border: 2px solid var(--border);
-  border-radius: 50px;
-  padding: 5px 13px;
-  font-weight: 900;
-  font-size: 0.88rem;
-  color: var(--text);
-  flex-shrink: 0;
-  white-space: nowrap;
-}
-
-/* ─── Reading skill chip ─── */
-.skill-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: var(--bg);
-  border: 2.5px solid var(--border);
-  border-radius: 50px;
-  padding: 5px 14px;
-  font-family: 'Nunito', sans-serif;
-  font-weight: 800;
-  font-size: 0.8rem;
-  white-space: nowrap;
-  width: fit-content;
-}
-
-/* ─── Statutory spelling word flag ─── */
+.band-pill,
+.coin-pill,
+.skill-chip,
 .statutory-flag {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: color-mix(in srgb, var(--accent) 18%, var(--bg));
-  border: 2px solid var(--accent);
-  color: var(--text);
+  border: 2.5px solid var(--border);
   border-radius: 50px;
-  padding: 4px 14px;
-  font-weight: 800;
-  font-size: 0.78rem;
+  font-family: 'Fredoka', 'Nunito', sans-serif;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
-/* ─── Hear-this-word button ─── */
-.listen-btn {
+.band-pill {
+  padding: 4px 13px;
+  font-size: 0.82rem;
+  color: #FFF9EC;
+}
+
+.coin-pill {
+  padding: 5px 13px 5px 10px;
+  font-size: 0.92rem;
+  background: var(--sun);
+  color: var(--ink);
+  box-shadow: 0 3px 0 var(--sun-dark);
+}
+
+.skill-chip {
+  padding: 5px 13px 5px 10px;
+  font-size: 0.82rem;
+  background: var(--bg-card);
+  width: fit-content;
+}
+
+.statutory-flag {
+  padding: 5px 14px 5px 11px;
+  font-size: 0.8rem;
+  background: var(--sun);
+  color: var(--ink);
+}
+
+/* Small outline tag used on library cards */
+.mini-tag {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
+  gap: 4px;
+  padding: 2px 8px;
+  border: 2px solid currentColor;
+  border-radius: 50px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+/* ============================================================
+   Library
+   ============================================================ */
+
+.shelf-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 30px 0 12px;
+}
+
+.shelf-title {
+  font-family: 'Fredoka', sans-serif;
+  font-size: 1.24rem;
+  font-weight: 600;
+}
+
+.shelf-blurb {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  margin-top: 1px;
+}
+
+/* A book is a poster with a caption, not a row with a thumbnail.
+   The art gets the full card width so the drawing can actually be read. */
+.book-row {
+  display: block;
+  padding: 0;
+  overflow: hidden;
+  text-align: left;
+  width: 100%;
+  cursor: pointer;
+  border: 2.5px solid var(--border);
+  border-radius: 20px;
+  background: var(--bg-card);
+  box-shadow: 0 var(--lift) 0 var(--shadow-col);
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
+  margin-bottom: 14px;
+}
+.book-row:active { transform: translateY(var(--lift)); box-shadow: 0 0 0 var(--shadow-col); }
+
+.book-cover {
+  width: 100%;
+  aspect-ratio: 200 / 112;
+  border-bottom: 2.5px solid var(--border);
+  overflow: hidden;
+  background: var(--bg-elevated);
+  position: relative;
+}
+.book-cover svg { width: 100%; height: 100%; display: block; }
+
+/* Band sits on the art, as a poster's corner flash */
+.cover-band {
+  position: absolute;
+  top: 9px;
+  right: 9px;
+}
+
+.book-body { padding: 13px 15px 15px; }
+
+@media (min-width: 768px) {
+  .book-body { padding: 15px 18px 17px; }
+}
+
+/* ============================================================
+   Reader
+   ============================================================ */
+
+.kid-word {
+  font-family: 'Fredoka', 'Nunito', sans-serif;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.05;
+  user-select: none;
+}
+
+/* Progress: a fat rounded track, flat fill */
+.track {
+  height: 14px;
   background: var(--bg-elevated);
   border: 2.5px solid var(--border);
   border-radius: 50px;
-  padding: 9px 18px;
-  font-family: 'Nunito', sans-serif;
-  font-weight: 800;
-  font-size: 0.85rem;
-  color: var(--text-muted);
-  cursor: pointer;
-  transition: all 0.15s ease;
-  -webkit-tap-highlight-color: transparent;
+  overflow: hidden;
+}
+.track-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 50px;
+  transition: width 0.3s ease;
 }
 
-.listen-btn:hover {
-  border-color: var(--accent);
-  color: var(--text);
-  transform: translateY(-1px);
-}
-
-/* ─── Tappable context strip (shown while paused) ─── */
 .context-strip {
-  margin-top: 26px;
-  max-width: 620px;
+  margin-top: 22px;
   width: 100%;
+  max-width: 34rem;
   background: var(--bg-card);
-  border: 2px solid var(--border);
-  border-radius: 20px;
-  padding: 16px 18px;
+  border: 2.5px solid var(--border);
+  border-radius: 18px;
+  box-shadow: 0 var(--lift) 0 var(--shadow-col);
+  padding: 14px 15px;
 }
 
 .context-hint {
-  font-size: 0.74rem;
+  font-size: 0.7rem;
   font-weight: 800;
   color: var(--text-muted);
   text-align: center;
-  margin-bottom: 10px;
-  letter-spacing: 0.03em;
+  margin-bottom: 9px;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 
@@ -364,203 +429,277 @@ html, body, #root {
   border: none;
   color: var(--text);
   font-family: 'Nunito', sans-serif;
-  font-size: 1.02rem;
-  padding: 3px 5px;
-  border-radius: 7px;
+  font-size: 1.04rem;
+  font-weight: 700;
+  padding: 4px 7px;
+  border-radius: 9px;
   cursor: pointer;
-  transition: background 0.12s ease, opacity 0.12s ease;
-  -webkit-tap-highlight-color: transparent;
+  min-height: 34px;
+  transition: background 0.12s ease;
 }
+.context-word:active { background: var(--bg-elevated); }
 
-.context-word:hover {
-  background: var(--bg-elevated);
-  opacity: 1 !important;
-}
+/* Speed stepper */
+.speed-row { display: flex; align-items: center; gap: 18px; }
 
-/* ─── Speed control (real words per minute) ─── */
-.speed-row {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-}
-
-.speed-btn {
-  width: 46px;
-  height: 46px;
-  border-radius: 50%;
-  background: var(--bg);
-  border: 2.5px solid var(--border);
-  color: var(--text);
-  font-size: 1.5rem;
-  font-weight: 900;
-  line-height: 1;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.speed-btn:hover:not(:disabled) {
-  border-color: var(--accent);
-  background: var(--bg-elevated);
-}
-
-.speed-btn:disabled {
-  opacity: 0.3;
-  cursor: not-allowed;
-}
-
-/* Where the child sits inside their own band */
 .band-track {
   position: relative;
-  height: 5px;
-  background: var(--border);
-  border-radius: 99px;
+  height: 7px;
+  background: var(--bg-elevated);
+  border: 2px solid var(--border);
+  border-radius: 50px;
   margin-top: 8px;
 }
-
 .band-dot {
   position: absolute;
   top: 50%;
-  width: 13px;
-  height: 13px;
+  width: 15px;
+  height: 15px;
   border-radius: 50%;
-  border: 2.5px solid var(--bg-card);
+  border: 2.5px solid var(--border);
   transform: translate(-50%, -50%);
-  transition: left 0.25s ease;
+  transition: left 0.22s ease;
 }
 
-/* ─── Library shelves ─── */
-.shelf-header {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  margin: 30px 0 14px;
-}
+/* ============================================================
+   Quiz
+   ============================================================ */
 
-.shelf-title {
-  font-family: 'Baloo 2', sans-serif;
-  font-size: 1.22rem;
-  font-weight: 800;
-  color: var(--text);
-  line-height: 1.1;
-}
-
-.shelf-blurb {
-  font-size: 0.76rem;
-  font-weight: 700;
-  color: var(--text-muted);
-}
-
-.book-cover {
-  height: 96px;
-  width: 96px;
-  border-radius: 16px;
+.quiz-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--bg);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 2.7rem;
-  flex-shrink: 0;
-  box-shadow: inset 0 -14px 24px rgba(0, 0, 0, 0.16);
+  z-index: 100;
+  padding: calc(20px + var(--safe-top)) 18px calc(20px + var(--safe-bottom));
+  overflow-y: auto;
 }
 
-.book-row {
-  display: flex;
-  gap: 15px;
-  padding: 15px;
-  align-items: center;
-  cursor: pointer;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-  text-align: left;
-  width: 100%;
-  font-family: inherit;
-}
-
-.book-row:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px var(--shadow);
-}
-
-/* ─── Skill mastery bars ─── */
-.mastery-row {
-  display: grid;
-  grid-template-columns: 132px 1fr 46px;
-  align-items: center;
-  gap: 11px;
-  margin-bottom: 9px;
-}
-
-.mastery-track {
-  height: 11px;
-  background: var(--bg);
-  border: 1.5px solid var(--border);
-  border-radius: 99px;
-  overflow: hidden;
-}
-
-.mastery-fill {
-  height: 100%;
-  border-radius: 99px;
-  transition: width 0.5s ease;
-}
-
-/* ─── Leaderboard ─── */
-.lb-row {
-  display: grid;
-  grid-template-columns: 38px 1fr auto auto auto;
-  align-items: center;
-  gap: 11px;
-  padding: 12px 15px;
-  border-radius: 15px;
-  margin-bottom: 7px;
+.quiz-card {
   background: var(--bg-card);
-  border: 2px solid var(--border);
-  font-weight: 700;
-}
-
-.lb-row.me {
-  border-color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 12%, var(--bg-card));
-}
-
-.lb-rank {
-  font-family: 'Baloo 2', sans-serif;
-  font-size: 1.1rem;
-  font-weight: 900;
-  color: var(--text-muted);
+  border: 3px solid var(--border);
+  border-radius: 26px;
+  box-shadow: 0 6px 0 var(--shadow-col);
+  padding: 26px 22px;
+  max-width: 32rem;
+  width: 100%;
   text-align: center;
 }
 
-.lb-stat {
-  font-size: 0.86rem;
-  font-weight: 800;
-  color: var(--text-muted);
-  min-width: 54px;
-  text-align: right;
-  white-space: nowrap;
+@media (min-width: 768px) {
+  .quiz-card { padding: 34px 30px; max-width: 34rem; }
 }
 
-/* ─── Stat tiles ─── */
+.quiz-option {
+  width: 100%;
+  background: var(--bg);
+  color: var(--text);
+  border: 2.5px solid var(--border);
+  border-radius: 16px;
+  box-shadow: 0 4px 0 var(--shadow-col);
+  padding: 15px 17px;
+  font-family: 'Nunito', sans-serif;
+  font-weight: 700;
+  font-size: 1rem;
+  line-height: 1.35;
+  cursor: pointer;
+  text-align: left;
+  margin-bottom: 11px;
+  min-height: 56px;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  transition: transform 0.06s ease, box-shadow 0.06s ease, background 0.12s ease;
+}
+.quiz-option:active { transform: translateY(4px); box-shadow: 0 0 0 var(--shadow-col); }
+
+.quiz-option .letter {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  border: 2px solid var(--border);
+  background: var(--bg-elevated);
+  font-family: 'Fredoka', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.quiz-option.correct {
+  background: var(--correct);
+  color: #FFF9EC;
+  box-shadow: 0 4px 0 var(--correct-dark);
+}
+.quiz-option.correct .letter { background: var(--correct-dark); color: #FFF9EC; }
+
+.quiz-option.wrong {
+  background: var(--wrong);
+  color: #FFF9EC;
+  box-shadow: 0 4px 0 var(--wrong-dark);
+}
+.quiz-option.wrong .letter { background: var(--wrong-dark); color: #FFF9EC; }
+
+/* Result banner, bottom-anchored like a game */
+.verdict {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 2.5px solid var(--border);
+  border-radius: 18px;
+  padding: 13px 16px;
+  margin-bottom: 16px;
+  font-weight: 800;
+  text-align: left;
+  line-height: 1.35;
+}
+.verdict.good { background: var(--correct); color: #FFF9EC; }
+.verdict.bad  { background: var(--wrong); color: #FFF9EC; }
+
+/* ============================================================
+   Stats, mastery, leaderboard
+   ============================================================ */
+
 .stat-tile {
   background: var(--bg-card);
-  border: 2px solid var(--border);
+  border: 2.5px solid var(--border);
   border-radius: 18px;
-  padding: 15px 12px;
+  box-shadow: 0 4px 0 var(--shadow-col);
+  padding: 14px 10px;
   text-align: center;
 }
 
 .stat-value {
-  font-family: 'Baloo 2', sans-serif;
-  font-size: 1.75rem;
-  font-weight: 900;
-  color: var(--text);
+  font-family: 'Fredoka', sans-serif;
+  font-size: 1.7rem;
+  font-weight: 600;
   line-height: 1;
+  font-variant-numeric: tabular-nums;
 }
 
 .stat-label {
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   font-weight: 800;
   color: var(--text-muted);
   margin-top: 5px;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
+}
+
+.mastery-row {
+  display: grid;
+  grid-template-columns: 1fr 46px;
+  gap: 4px 10px;
+  margin-bottom: 13px;
+}
+
+.mastery-head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+.mastery-track {
+  grid-column: 1 / -1;
+  height: 13px;
+  background: var(--bg-elevated);
+  border: 2.5px solid var(--border);
+  border-radius: 50px;
+  overflow: hidden;
+}
+.mastery-fill { height: 100%; border-radius: 50px; transition: width 0.5s ease; }
+
+.mastery-pct {
+  font-family: 'Fredoka', sans-serif;
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.lb-row {
+  display: grid;
+  grid-template-columns: 40px 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  margin-bottom: 9px;
+  background: var(--bg-card);
+  border: 2.5px solid var(--border);
+  box-shadow: 0 4px 0 var(--shadow-col);
+  font-weight: 700;
+}
+.lb-row.me { background: var(--sun); box-shadow: 0 4px 0 var(--sun-dark); }
+
+.lb-rank {
+  font-family: 'Fredoka', sans-serif;
+  font-size: 1.05rem;
+  font-weight: 600;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.lb-stat {
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.lb-row.me .lb-stat { color: var(--ink); }
+
+/* Note block for grown-ups */
+.note {
+  display: flex;
+  gap: 11px;
+  align-items: flex-start;
+  background: var(--bg-elevated);
+  border: 2.5px dashed var(--border);
+  border-radius: 16px;
+  padding: 13px 15px;
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+/* ─── Scrollbars ─── */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--shadow-col); border-radius: 99px; }
+
+/* ─── Motion ─── */
+@keyframes pop-in {
+  0%   { transform: scale(0.8); opacity: 0; }
+  65%  { transform: scale(1.04); }
+  100% { transform: scale(1); opacity: 1; }
+}
+.pop-in { animation: pop-in 0.3s cubic-bezier(0.34, 1.4, 0.5, 1) forwards; }
+
+@keyframes nudge {
+  0%, 100% { transform: translateX(0); }
+  25%      { transform: translateX(-5px); }
+  75%      { transform: translateX(5px); }
+}
+.nudge { animation: nudge 0.28s ease; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ─── Focus ─── */
+:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 3px;
 }

@@ -22,9 +22,6 @@ export interface LibraryText {
   textType: TextTypeKey;
   band: BandKey;
   blurb: string;
-  /** Emoji + gradient stand in for cover art — no external images. */
-  emoji: string;
-  gradient: string;
   /** Paragraphs of prose. Split into words at load time. */
   body: string[];
 }
@@ -38,8 +35,6 @@ export const LIBRARY: LibraryText[] = [
     textType: 'narrative',
     band: 'topaz',
     blurb: 'Father Wolf wakes, and a jackal brings news that will change everything for the wolves of Seeonee.',
-    emoji: '🐺',
-    gradient: 'linear-gradient(135deg, #2E7D32, #8BC34A)',
     body: [
       "It was seven o'clock of a very warm evening in the Seeonee hills when Father Wolf woke up from his day's rest, scratched himself, yawned, and spread out his paws one after the other to get rid of the sleepy feeling in their tips.",
       'Mother Wolf lay with her big grey nose dropped across her four tumbling, squealing cubs, and the moon shone into the mouth of the cave where they all lived.',
@@ -64,8 +59,6 @@ export const LIBRARY: LibraryText[] = [
     textType: 'poetry',
     band: 'jade',
     blurb: 'A nonsense poem about a boat, a five pound note, and a wedding by the light of the moon.',
-    emoji: '🦉',
-    gradient: 'linear-gradient(135deg, #5C6BC0, #26C6DA)',
     body: [
       'The Owl and the Pussy-cat went to sea in a beautiful pea-green boat.',
       'They took some honey, and plenty of money, wrapped up in a five pound note.',
@@ -89,8 +82,6 @@ export const LIBRARY: LibraryText[] = [
     textType: 'descriptive',
     band: 'sapphire',
     blurb: 'Stand on the cold rocks and watch the old lighthouse wake up with the sun.',
-    emoji: '🗼',
-    gradient: 'linear-gradient(135deg, #37474F, #FF8A65)',
     body: [
       'The lighthouse stands on the edge of the island, straight and white and certain, the way it has stood for almost a century.',
       'At this early hour the sea is the colour of old iron. It heaves against the rocks, and the sound it makes is not a crash but a long, slow breath, in and out, in and out.',
@@ -111,8 +102,6 @@ export const LIBRARY: LibraryText[] = [
     textType: 'expository',
     band: 'topaz',
     blurb: 'In September 1666 a fire started in a bakery. Four days later, most of London was gone.',
-    emoji: '🔥',
-    gradient: 'linear-gradient(135deg, #BF360C, #FFB300)',
     body: [
       'The Great Fire of London began early on a Sunday morning in September 1666. It started in a bakery on Pudding Lane, and it burned for four days.',
       'London at that time was a difficult place for a fire to be stopped. Most houses were built of wood, and their upper floors leaned forwards over the street until they almost touched the house opposite.',
@@ -133,8 +122,6 @@ export const LIBRARY: LibraryText[] = [
     textType: 'persuasive',
     band: 'sapphire',
     blurb: 'An argument, in four steps, for why the library should never be the first room to go.',
-    emoji: '📣',
-    gradient: 'linear-gradient(135deg, #1565C0, #42A5F5)',
     body: [
       'Every school should have a proper library, with a librarian in it. This is not a luxury. It is one of the most important rooms in the building, and it is often the first one to be closed.',
       'Consider what a library actually does. It is the only place in school where a child chooses what to read. In a lesson, the book is decided for you. In a library, you decide, and that changes everything.',
@@ -154,8 +141,6 @@ export const LIBRARY: LibraryText[] = [
     textType: 'procedural',
     band: 'jade',
     blurb: 'Six folds, one sheet of paper, and a plane that really flies.',
-    emoji: '✈️',
-    gradient: 'linear-gradient(135deg, #0288D1, #B3E5FC)',
     body: [
       'You will need one sheet of paper. That is all. Do not use card, because it is too stiff to fold, and do not use paper that is old and soft.',
       'Step one. Put the paper on the table in front of you, with the short edge at the top.',
@@ -176,8 +161,6 @@ export const LIBRARY: LibraryText[] = [
     textType: 'recount',
     band: 'amber',
     blurb: 'What happened on the day Class Four went to the sea, told in order from morning to home time.',
-    emoji: '🚌',
-    gradient: 'linear-gradient(135deg, #00838F, #4DD0E1)',
     body: [
       'On Friday our whole class went to the coast. We had to be at school very early, before the doors were even open.',
       'The bus was full. My friend and I sat by the window at the back. Mrs Patel counted us all twice, and then we could go.',
@@ -198,8 +181,6 @@ export const LIBRARY: LibraryText[] = [
     textType: 'explanation',
     band: 'topaz',
     blurb: 'The Sun does not go anywhere. So why does it get dark? The answer is that we are the ones moving.',
-    emoji: '🌍',
-    gradient: 'linear-gradient(135deg, #1A237E, #FDD835)',
     body: [
       'It certainly appears as though the Sun travels across the sky. It arrives in the east early in the morning, continues overhead, and disappears in the west. Although that is what we notice, the Sun is not actually moving at all. We are.',
       'The Earth spins. It turns completely round once every twenty-four hours, and although it is an extreme speed, we do not feel a thing.',
@@ -220,8 +201,6 @@ export const LIBRARY: LibraryText[] = [
     textType: 'report',
     band: 'jade',
     blurb: 'The largest animal that has ever lived, set out fact by fact.',
-    emoji: '🐋',
-    gradient: 'linear-gradient(135deg, #01579B, #4FC3F7)',
     body: [
       'The blue whale is the largest animal that has ever lived on Earth. It is bigger than any dinosaur that we have found.',
       'Size. A full grown blue whale can be thirty metres long. That is longer than three buses in a line. Its heart alone can weigh as much as a small car.',
@@ -242,8 +221,6 @@ export const LIBRARY: LibraryText[] = [
     textType: 'biography',
     band: 'violet',
     blurb: 'She found creatures nobody knew existed, and for most of her life was not allowed to say so.',
-    emoji: '🦕',
-    gradient: 'linear-gradient(135deg, #4E342E, #A1887F)',
     body: [
       'Mary Anning was born in the seaside community of Lyme Regis in 1799. Her family was poor, and no formal education was available to her. She taught herself to read, especially so that she could follow the scientific papers of the day.',
       'Her father collected ancient fossils from the cliffs and sold them to visitors. When he died, Mary was eleven, and the family had no money whatsoever. She continued the work because it was necessary, searching the cliffs immediately after winter storms, when landslides brought fresh fossils to the surface.',

@@ -2,11 +2,12 @@ import { useKidAuth } from '@/hooks/useKidAuth';
 import { updateKidTheme } from '@/lib/kidAuth';
 import type { KidUser } from '@/lib/kidAuth';
 
-const THEMES: { key: KidUser['theme']; label: string; emoji: string; bg: string; border: string }[] = [
-  { key: 'cream',  label: 'Cream',  emoji: '🟡', bg: '#FFF2CC', border: '#E8D48A' },
-  { key: 'blue',   label: 'Blue',   emoji: '🔵', bg: '#D9EAF7', border: '#93C6E8' },
-  { key: 'green',  label: 'Green',  emoji: '🟢', bg: '#E2F0D9', border: '#9DD47F' },
-  { key: 'pink',   label: 'Pink',   emoji: '🌸', bg: '#FCE4EC', border: '#F06292' },
+// Named after the album grounds they're taken from, not "blue" / "pink".
+const THEMES: { key: KidUser['theme']; label: string; bg: string; ink: string }[] = [
+  { key: 'cream', label: 'Sand',   bg: '#F4E7D0', ink: '#C8322B' },
+  { key: 'blue',  label: 'Marine', bg: '#CFE3EE', ink: '#1D5C86' },
+  { key: 'green', label: 'Jungle', bg: '#D9E8D4', ink: '#3E8563' },
+  { key: 'pink',  label: 'Poppy',  bg: '#F6DED9', ink: '#A6432F' },
 ];
 
 export function ThemeSelector() {
@@ -19,27 +20,31 @@ export function ThemeSelector() {
   };
 
   return (
-    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-      {THEMES.map(t => (
-        <button
-          key={t.key}
-          title={t.label}
-          onClick={() => handleChange(t.key)}
-          style={{
-            width: '32px',
-            height: '32px',
-            borderRadius: '50%',
-            background: t.bg,
-            border: `3px solid ${current === t.key ? '#333' : t.border}`,
-            cursor: 'pointer',
-            transition: 'transform 0.15s ease, border-color 0.15s ease',
-            transform: current === t.key ? 'scale(1.2)' : 'scale(1)',
-            outline: 'none',
-            flexShrink: 0,
-          }}
-          aria-label={`Switch to ${t.label} theme`}
-        />
-      ))}
+    <div style={{ display: 'flex', gap: '5px', alignItems: 'center', flexShrink: 0 }}>
+      {THEMES.map((t) => {
+        const active = current === t.key;
+        return (
+          <button
+            key={t.key}
+            title={t.label}
+            aria-label={`${t.label} theme`}
+            aria-pressed={active}
+            onClick={() => handleChange(t.key)}
+            style={{
+              width: active ? '26px' : '22px',
+              height: active ? '26px' : '22px',
+              borderRadius: '50%',
+              background: t.bg,
+              border: `2.5px solid ${active ? t.ink : 'var(--border)'}`,
+              boxShadow: active ? `0 2px 0 ${t.ink}` : 'none',
+              cursor: 'pointer',
+              padding: 0,
+              transition: 'width 0.15s ease, height 0.15s ease',
+              flexShrink: 0,
+            }}
+          />
+        );
+      })}
     </div>
   );
 }

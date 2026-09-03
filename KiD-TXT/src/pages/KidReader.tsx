@@ -3,6 +3,7 @@ import { useMemo } from 'react';
 import { KidKineticPlayer, type ParsedText } from '@/components/KidKineticPlayer';
 import { useKidAuth } from '@/hooks/useKidAuth';
 import { getText, toWordParagraphs } from '@/lib/library';
+import { Icon } from '@/components/art/Icon';
 
 export default function KidReader() {
   const { kid } = useKidAuth();
@@ -24,17 +25,14 @@ export default function KidReader() {
 
   if (!parsed) {
     return (
-      <div style={{
-        minHeight: '100dvh', background: 'var(--bg)',
+      <div className="page" style={{
         display: 'flex', flexDirection: 'column',
-        alignItems: 'center', justifyContent: 'center', padding: '24px', gap: '16px',
+        alignItems: 'center', justifyContent: 'center', gap: '16px', textAlign: 'center',
       }}>
-        <div style={{ fontSize: '3rem' }}>📚</div>
-        <h2 style={{ fontFamily: "'Baloo 2', sans-serif", fontSize: '1.5rem', fontWeight: 800, color: 'var(--text)' }}>
-          We can't find that book
-        </h2>
+        <Icon name="narrative" size={56} colour="var(--text-muted)" strokeWidth={1.6} />
+        <h2 style={{ fontSize: '1.4rem' }}>We can't find that book</h2>
         <button onClick={() => navigate('/')} className="kid-btn kid-btn-primary">
-          ← Back to Library
+          Back to Library
         </button>
       </div>
     );

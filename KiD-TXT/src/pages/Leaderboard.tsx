@@ -1,9 +1,11 @@
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import { useMemo } from 'react';
 import { useKidAuth } from '@/hooks/useKidAuth';
 import { ThemeSelector } from '@/components/ThemeSelector';
+import { Icon } from '@/components/art/Icon';
 import { loadProgress, buildLeaderboard } from '@/lib/progress';
+
+const MEDAL = ['#EDB230', '#B9BCC0', '#C08552'];
 
 export default function Leaderboard() {
   const { kid } = useKidAuth();
@@ -15,68 +17,69 @@ export default function Leaderboard() {
 
   if (!kid) return null;
 
-  const medal = (rank: number) => (rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `${rank}`);
-
   return (
-    <div style={{ minHeight: '100dvh', background: 'var(--bg)', padding: '20px 18px 48px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '24px' }}>
-        <button onClick={() => navigate('/')} className="kid-btn kid-btn-ghost" style={{ padding: '8px 14px', fontSize: '0.9rem' }}>
-          ← Back
-        </button>
-        <div style={{ flex: 1 }} />
-        <ThemeSelector />
-      </div>
+    <div className="page">
+      <div className="wrap">
 
-      <div style={{ maxWidth: '560px', margin: '0 auto' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
+          <button onClick={() => navigate('/')} className="icon-btn" aria-label="Back">
+            <Icon name="back" size={22} strokeWidth={2.4} />
+          </button>
+          <div style={{ flex: 1 }} />
+          <ThemeSelector />
+        </div>
+
         <div style={{ textAlign: 'center', marginBottom: '8px' }}>
-          <div style={{ fontSize: '2.6rem' }}>🏆</div>
-          <h1 style={{ fontFamily: "'Baloo 2', sans-serif", fontSize: '2rem', fontWeight: 800, color: 'var(--text)' }}>
-            Class Leaderboard
-          </h1>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '8px' }}>
+            <Icon name="trophy" size={52} colour="var(--sun)" strokeWidth={1.7} />
+          </div>
+          <h1 style={{ fontSize: '1.9rem' }}>Class Leaderboard</h1>
         </div>
 
-        {/* Ranked by reading and understanding — deliberately not by speed */}
-        <p style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)', textAlign: 'center', marginBottom: '22px', lineHeight: 1.5 }}>
-          Ranked by texts read, then by how many questions you get right.
-          <br />
-          <span style={{ opacity: 0.75 }}>Reading speed is never ranked — understanding is what counts.</span>
-        </p>
-
-        {/* Column headings */}
-        <div style={{
-          display: 'grid', gridTemplateColumns: '38px 1fr auto auto auto',
-          gap: '11px', padding: '0 15px 7px',
-          fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-muted)',
-          letterSpacing: '0.04em', textTransform: 'uppercase',
+        <p style={{
+          fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-muted)',
+          textAlign: 'center', margin: '0 auto 22px', lineHeight: 1.5, maxWidth: '24rem',
         }}>
-          <div style={{ textAlign: 'center' }}>#</div>
-          <div>Name</div>
-          <div style={{ minWidth: '54px', textAlign: 'right' }}>Texts</div>
-          <div style={{ minWidth: '54px', textAlign: 'right' }}>Right</div>
-          <div style={{ minWidth: '54px', textAlign: 'right' }}>Coins</div>
-        </div>
+          Ranked by texts read, then by questions you get right.
+          Reading speed is never ranked.
+        </p>
 
         {rows.map((row, i) => (
-          <motion.div
-            key={row.name + i}
-            className={`lb-row${row.isMe ? ' me' : ''}`}
-            initial={{ opacity: 0, x: -10 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: i * 0.05 }}
-          >
-            <div className="lb-rank">{medal(i + 1)}</div>
-            <div style={{ color: 'var(--text)', fontWeight: row.isMe ? 900 : 700, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              {row.name}{row.isMe && ' (you)'}
+          <div key={row.name + i} className={`lb-row${row.isMe ? ' me' : ''}`}>
+            <div className="lb-rank" style={{ color: i < 3 ? MEDAL[i] : 'var(--text-muted)' }}>
+              {i < 3 ? <Icon name="star" size={22} colour={MEDAL[i]} strokeWidth={2.2} /> : i + 1}
             </div>
-            <div className="lb-stat">{row.textsRead}</div>
-            <div className="lb-stat">{row.accuracy}%</div>
-            <div className="lb-stat">🪙 {row.coins}</div>
-          </motion.div>
+
+            <div style={{ minWidth: 0 }}>
+              <div style={{
+                fontFamily: 'Fredoka, sans-serif', fontWeight: 600, fontSize: '1.02rem',
+                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+              }}>
+                {row.name}{row.isMe && ' (you)'}
+              </div>
+              <div className="lb-stat">
+                {row.textsRead} read · {row.accuracy}% correct
+              </div>
+            </div>
+
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: '5px',
+              fontFamily: 'Fredoka, sans-serif', fontWeight: 600, fontSize: '0.95rem',
+              fontVariantNumeric: 'tabular-nums',
+            }}>
+              <Icon name="coin" size={17} />
+              {row.coins}
+            </div>
+          </div>
         ))}
 
-        <p style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', textAlign: 'center', marginTop: '20px', opacity: 0.7 }}>
+        <p style={{
+          fontSize: '0.74rem', fontWeight: 700, color: 'var(--text-muted)',
+          textAlign: 'center', marginTop: '18px', opacity: 0.75,
+        }}>
           Classmates shown are demo data.
         </p>
+
       </div>
     </div>
   );

@@ -31,7 +31,6 @@ export interface ReadingSkill {
   /** DfE content domain reference. */
   domain: string;
   colour: string;
-  icon: string;
 }
 
 export const READING_SKILLS: Record<SkillKey, ReadingSkill> = {
@@ -40,56 +39,49 @@ export const READING_SKILLS: Record<SkillKey, ReadingSkill> = {
     label: 'Clarify',
     kidLabel: 'I know what the words mean',
     domain: '2a — vocabulary',
-    colour: '#E8543F',
-    icon: '🔍',
+    colour: '#C8322B',
   },
   retrieve: {
     key: 'retrieve',
     label: 'Retrieve',
     kidLabel: 'I can find the answer in the text',
     domain: '2b — retrieve & record',
-    colour: '#F2A03D',
-    icon: '📌',
+    colour: '#E0891E',
   },
   summarise: {
     key: 'summarise',
     label: 'Summarise',
     kidLabel: 'I can say what happened, in order',
     domain: '2c — summarise',
-    colour: '#5BA85B',
-    icon: '📝',
+    colour: '#3E8563',
   },
   infer: {
     key: 'infer',
     label: 'Infer',
     kidLabel: 'I can work out what is not written down',
     domain: '2d — inference',
-    colour: '#3E8FC4',
-    icon: '💭',
+    colour: '#1D5C86',
   },
   predict: {
     key: 'predict',
     label: 'Predict',
     kidLabel: 'I can guess what happens next',
     domain: '2e — prediction',
-    colour: '#8E6BC4',
-    icon: '🔮',
+    colour: '#7A5C9E',
   },
   structure: {
     key: 'structure',
     label: 'Structure',
     kidLabel: 'I know how the writing is put together',
     domain: '2f — structure & organisation',
-    colour: '#C4568E',
-    icon: '🧱',
+    colour: '#A64C6B',
   },
   language: {
     key: 'language',
     label: 'Language',
     kidLabel: 'I can see why the writer chose those words',
     domain: '2g — language choice',
-    colour: '#3FA9A0',
-    icon: '🎨',
+    colour: '#2E8A8A',
   },
   compare: {
     key: 'compare',
@@ -97,7 +89,6 @@ export const READING_SKILLS: Record<SkillKey, ReadingSkill> = {
     kidLabel: 'I can spot what is the same and different',
     domain: '2h — comparison',
     colour: '#7A6A55',
-    icon: '⚖️',
   },
 };
 
@@ -136,43 +127,43 @@ export interface ReadingBand {
 
 export const READING_BANDS: Record<BandKey, ReadingBand> = {
   coral: {
-    key: 'coral', label: 'Coral', colour: '#FF7B6B',
+    key: 'coral', label: 'Coral', colour: '#E4674F',
     yearLabel: 'Year 1 (Autumn)',
     targetWcpm: 18, minWcpm: 12, maxWcpm: 26,
     wordsPerQuestion: 60, spellingList: 'y1_2',
   },
   amber: {
-    key: 'amber', label: 'Amber', colour: '#F5A623',
+    key: 'amber', label: 'Amber', colour: '#E0952A',
     yearLabel: 'Year 1 (Summer)',
     targetWcpm: 65, minWcpm: 50, maxWcpm: 80,
     wordsPerQuestion: 100, spellingList: 'y1_2',
   },
   jade: {
-    key: 'jade', label: 'Jade', colour: '#4CAF7D',
+    key: 'jade', label: 'Jade', colour: '#4A9A72',
     yearLabel: 'Year 2',
     targetWcpm: 95, minWcpm: 80, maxWcpm: 110,
     wordsPerQuestion: 150, spellingList: 'y1_2',
   },
   topaz: {
-    key: 'topaz', label: 'Topaz', colour: '#D4A017',
+    key: 'topaz', label: 'Topaz', colour: '#C99A1E',
     yearLabel: 'Year 3',
     targetWcpm: 115, minWcpm: 95, maxWcpm: 135,
     wordsPerQuestion: 200, spellingList: 'y3_4',
   },
   sapphire: {
-    key: 'sapphire', label: 'Sapphire', colour: '#3E7FC4',
+    key: 'sapphire', label: 'Sapphire', colour: '#2F72A8',
     yearLabel: 'Year 4',
     targetWcpm: 130, minWcpm: 110, maxWcpm: 150,
     wordsPerQuestion: 250, spellingList: 'y3_4',
   },
   violet: {
-    key: 'violet', label: 'Violet', colour: '#8E6BC4',
+    key: 'violet', label: 'Violet', colour: '#7A5C9E',
     yearLabel: 'Year 5',
     targetWcpm: 150, minWcpm: 130, maxWcpm: 170,
     wordsPerQuestion: 300, spellingList: 'y5_6',
   },
   ruby: {
-    key: 'ruby', label: 'Ruby', colour: '#D9455F',
+    key: 'ruby', label: 'Ruby', colour: '#A6432F',
     yearLabel: 'Year 6',
     targetWcpm: 160, minWcpm: 140, maxWcpm: 185,
     wordsPerQuestion: 350, spellingList: 'y5_6',
@@ -201,21 +192,20 @@ export interface TextType {
   key: TextTypeKey;
   label: string;
   kidBlurb: string;
-  icon: string;
   colour: string;
 }
 
 export const TEXT_TYPES: Record<TextTypeKey, TextType> = {
-  narrative:   { key: 'narrative',   label: 'Narrative',   kidBlurb: 'A story with characters and a plot',      icon: '📖', colour: '#E8543F' },
-  descriptive: { key: 'descriptive', label: 'Descriptive', kidBlurb: 'Paints a picture using your senses',      icon: '🎨', colour: '#F2A03D' },
-  expository:  { key: 'expository',  label: 'Expository',  kidBlurb: 'Explains a topic and gives you facts',    icon: '📚', colour: '#5BA85B' },
-  persuasive:  { key: 'persuasive',  label: 'Persuasive',  kidBlurb: 'Tries to make you agree or act',          icon: '📣', colour: '#3E8FC4' },
-  procedural:  { key: 'procedural',  label: 'Procedural',  kidBlurb: 'Tells you how to do it, step by step',    icon: '🪜', colour: '#8E6BC4' },
-  recount:     { key: 'recount',     label: 'Recount',     kidBlurb: 'Retells what happened, in order',         icon: '🗓️', colour: '#C4568E' },
-  explanation: { key: 'explanation', label: 'Explanation', kidBlurb: 'Tells you how or why something happens',  icon: '⚙️', colour: '#3FA9A0' },
-  report:      { key: 'report',      label: 'Report',      kidBlurb: 'Organised facts about one subject',       icon: '📊', colour: '#7A6A55' },
-  poetry:      { key: 'poetry',      label: 'Poetry',      kidBlurb: 'Rhythm, verses and playful language',      icon: '🪶', colour: '#D4A017' },
-  biography:   { key: 'biography',   label: 'Biography',   kidBlurb: 'The true story of a real person',         icon: '👤', colour: '#D9455F' },
+  narrative:   { key: 'narrative',   label: 'Narrative',   kidBlurb: 'A story with characters and a plot', colour: '#C8322B' },
+  descriptive: { key: 'descriptive', label: 'Descriptive', kidBlurb: 'Paints a picture using your senses', colour: '#E0891E' },
+  expository:  { key: 'expository',  label: 'Expository',  kidBlurb: 'Explains a topic and gives you facts', colour: '#3E8563' },
+  persuasive:  { key: 'persuasive',  label: 'Persuasive',  kidBlurb: 'Tries to make you agree or act', colour: '#1D5C86' },
+  procedural:  { key: 'procedural',  label: 'Procedural',  kidBlurb: 'Tells you how to do it, step by step', colour: '#7A5C9E' },
+  recount:     { key: 'recount',     label: 'Recount',     kidBlurb: 'Retells what happened, in order', colour: '#A64C6B' },
+  explanation: { key: 'explanation', label: 'Explanation', kidBlurb: 'Tells you how or why something happens', colour: '#2E8A8A' },
+  report:      { key: 'report',      label: 'Report',      kidBlurb: 'Organised facts about one subject', colour: '#7A6A55' },
+  poetry:      { key: 'poetry',      label: 'Poetry',      kidBlurb: 'Rhythm, verses and playful language', colour: '#C99A1E' },
+  biography:   { key: 'biography',   label: 'Biography',   kidBlurb: 'The true story of a real person', colour: '#A6432F' },
 };
 
 export const TEXT_TYPE_ORDER: TextTypeKey[] = [
