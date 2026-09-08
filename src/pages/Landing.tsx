@@ -9,6 +9,7 @@ import { MobileShowcaseSection } from '@/components/landing/MobileShowcaseSectio
 import { NewsSection } from '@/components/landing/NewsSection'
 import { NetworkSection } from '@/components/landing/NetworkSection'
 import { SonarLogo } from '@/components/landing/SonarLogo'
+import { AppStoreBadge } from '@/components/landing/AppStoreBadge'
 
 const Landing = () => {
     // Enable global pull gesture
@@ -16,7 +17,9 @@ const Landing = () => {
 
     return (
         <div className="relative min-h-screen bg-black">
-            {/* 
+            <AppStoreBadge />
+
+            {/*
         The Fixed/Sticky Title Overlay.
         It uses mix-blend-difference (defined in SplashScreen) 
         so it changes color based on the background behind it.
@@ -56,6 +59,7 @@ const Landing = () => {
                         { label: 'Data Policy', href: '/data' },
                         { label: 'Copyright Policy', href: '/copyright' },
                         { label: 'Payment Policy', href: '/payment-policy' },
+                        { label: 'Writers & Submissions', href: '/submissions' },
                       ].map(link => (
                         <a
                           key={link.href}

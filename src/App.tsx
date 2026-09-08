@@ -21,6 +21,7 @@ import DataPolicy from "./pages/DataPolicy";
 import CopyrightPolicy from "./pages/CopyrightPolicy";
 import PaymentPolicy from "./pages/PaymentPolicy";
 import Support from "./pages/Support";
+import Submissions from "./pages/Submissions";
 import ResetPassword from "./pages/ResetPassword";
 import { useState, useEffect } from "react";
 import { SplashScreen } from "@/components/SplashScreen";
@@ -80,6 +81,7 @@ const AppContent = () => {
         <Route path="/copyright" element={<CopyrightPolicy />} />
         <Route path="/payment-policy" element={<PaymentPolicy />} />
         <Route path="/support" element={<Support />} />
+        <Route path="/submissions" element={<Submissions />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/tiktok" element={<CinematicPromo />} />
         <Route path="/target" element={<CinematicTargetPromo />} />

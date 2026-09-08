@@ -3,6 +3,14 @@ project_id = "pxvnylvkzdcuuauppull"
 [functions.scrape-url]
 verify_jwt = false
 
+# Both must work for a fully signed-out visitor — the writer application form
+# and the £10 paid submission path have no session at all.
+[functions.submit-application]
+verify_jwt = false
+
+[functions.create-submission-checkout-session]
+verify_jwt = false
+
 [functions.fetch-news]
 verify_jwt = false
 
