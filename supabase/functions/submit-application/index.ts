@@ -128,6 +128,27 @@ serve(async (req) => {
         });
       }
 
+      // Free entry requires an ACTIVE KiN-TXT Pro membership — not merely an
+      // account. RLS hides the subscriptions table from a plain user token
+      // (confirmed separately — anon and user tokens both see zero rows), so
+      // this has to run with the service-role key to get a real answer.
+      const admin = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+      );
+      const { data: subRow } = await admin
+        .from("subscriptions")
+        .select("status")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      const isPro = !!subRow && ["active", "trialing", "lifetime"].includes(subRow.status);
+      if (!isPro) {
+        return new Response(
+          JSON.stringify({ error: "Free entry needs an active KiN-TXT Pro membership. Upgrade, or submit for £10 instead." }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
       const authorName = clip(payload.authorName, 200);
       const bookTitle = clip(payload.bookTitle, 300);
       const genre = clip(payload.genre, 200);
@@ -146,8 +167,8 @@ serve(async (req) => {
         from: "KiN-TXT Submissions <hello@kin-txt.com>",
         to: ["hello@kin-txt.com"],
         replyTo: user.email,
-        subject: `First Book Open Call — ${bookTitle} (free entry, signed-in member)`,
-        html: wrapEmail("First Book Open Call — free entry", [
+        subject: `First Book Open Call — ${bookTitle} (free entry, Pro member)`,
+        html: wrapEmail("First Book Open Call — free entry (Pro member)", [
           ["Author", authorName],
           ["Account email", user.email ?? ""],
           ["Book title", bookTitle],

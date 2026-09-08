@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, CheckCircle2, Loader2 } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Loader2, Sparkles, Gauge, Music2, Image as ImageIcon, type LucideIcon } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { useAuth } from '@/hooks/useAuth';
+import { useSubscription } from '@/hooks/useSubscription';
 import { supabase } from '@/integrations/supabase/client';
 
 const DRAFT_KEY = 'kinxt_first_book_draft';
@@ -32,10 +33,23 @@ const EMPTY_BOOK_FORM: BookForm = {
 const FIELD_CLASS =
   'w-full rounded-xl border border-border bg-card/50 px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-foreground/40 transition-colors';
 
+function FeatureItem({ icon: Icon, label, text }: { icon: LucideIcon; label: string; text: string }) {
+  return (
+    <div className="flex gap-3">
+      <Icon className="w-4 h-4 text-foreground shrink-0 mt-0.5" />
+      <div>
+        <p className="text-sm font-semibold text-foreground">{label}</p>
+        <p className="text-xs text-muted-foreground leading-relaxed mt-0.5">{text}</p>
+      </div>
+    </div>
+  );
+}
+
 export default function Submissions() {
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const { user, session } = useAuth();
+  const { isSubscribed } = useSubscription();
   const isNative = Capacitor.isNativePlatform();
 
   // This page sells a one-off payment outside Apple's IAP system — Apple
@@ -57,7 +71,7 @@ export default function Submissions() {
   const [bookStatus, setBookStatus] = useState<'idle' | 'sending' | 'sent' | 'error' | 'redirecting'>('idle');
   const [bookError, setBookError] = useState('');
 
-  // Restore a draft saved before sending someone off to /register or to
+  // Restore a draft saved before sending someone off to /pricing or to
   // Stripe, so leaving this page never loses their work.
   useEffect(() => {
     if (paidParam === 'success') {
@@ -128,7 +142,7 @@ export default function Submissions() {
     setBookStatus('sent');
   };
 
-  const submitBookSignUpFree = () => {
+  const goUpgradeAndSubmit = () => {
     const validationError = validateBookForm();
     if (validationError) {
       setBookError(validationError);
@@ -136,7 +150,7 @@ export default function Submissions() {
     }
     setBookError('');
     saveDraft(bookForm);
-    navigate('/register');
+    navigate('/pricing');
   };
 
   const submitBookPaid = async () => {
@@ -163,7 +177,11 @@ export default function Submissions() {
     window.location.href = data.url;
   };
 
-  const bookPitchLimit = user ? 6000 : 490;
+  // Free entry needs an active KiN-TXT Pro membership — enforced again,
+  // server-side, in submit-application. Anyone else (signed out, or signed in
+  // without Pro) pays £10, and that entry rides through Stripe metadata, which
+  // caps a value at 500 characters — hence the shorter limit below.
+  const bookPitchLimit = isSubscribed ? 6000 : 490;
 
   return (
     <div className="min-h-[100svh] bg-background flex flex-col">
@@ -180,13 +198,33 @@ export default function Submissions() {
 
       <div className="flex-1 max-w-2xl mx-auto px-6 pt-[calc(6.5rem+env(safe-area-inset-top,0px))] pb-20 w-full">
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-          <p className="text-xs uppercase tracking-widest text-muted-foreground font-display mb-2">KiN-TXT</p>
+          {/* Deliberately no text-transform here — the wordmark's lowercase
+              "i" must survive, and an ancestor `uppercase` class would erase it. */}
+          <p className="text-xs tracking-widest text-muted-foreground font-display mb-2">KiN-TXT</p>
           <h1 className="font-display text-4xl tracking-wide text-foreground mb-3">Writers &amp; Submissions</h1>
-          <p className="text-sm text-muted-foreground leading-relaxed mb-12 max-w-lg">
+          <p className="text-sm text-muted-foreground leading-relaxed mb-10 max-w-lg">
             KiN-TXT is open to writers at any age and any stage — first-timers and career authors alike.
-            Fiction, poetry, essays, news, sport, travel, memoir, whatever you've got. If it's worth reading
-            one word at a time, we want to see it.
+            Opinion or fact, fiction or memoir, news, sport, travel, a single essay or a finished manuscript.
+            If it's worth reading one word at a time, we want to see it.
           </p>
+
+          {/* ---------------------------------------------------------- */}
+          {/* Shared: what publishing on KiN-TXT actually gives a writer */}
+          {/* ---------------------------------------------------------- */}
+          <div className="rounded-2xl border border-border bg-card/50 p-6 mb-12">
+            <p className="text-xs uppercase tracking-widest text-muted-foreground font-display mb-1">The Format</p>
+            <h2 className="font-display text-xl tracking-wide text-foreground mb-2">Your Words, Delivered Differently</h2>
+            <p className="text-sm text-muted-foreground leading-relaxed mb-6">
+              KiN-TXT doesn't just publish your writing — it performs it. Every piece is read one word at a
+              time, which makes the delivery part of the work. When we publish you, you have a say in how it lands:
+            </p>
+            <div className="grid sm:grid-cols-2 gap-x-6 gap-y-5">
+              <FeatureItem icon={Sparkles} label="Emphasis" text="Choose which words hit harder, and where the reader's eye should catch." />
+              <FeatureItem icon={Gauge} label="Pace" text="Set the rhythm — where it races, where it holds, where it breathes." />
+              <FeatureItem icon={Music2} label="Atmosphere" text="Pick the background music that plays behind your piece as it's read." />
+              <FeatureItem icon={ImageIcon} label="Imagery — New" text="Full-screen images that appear inside the text, exactly where you place them. A KiN-TXT first, launching with our published writers." />
+            </div>
+          </div>
 
           {/* ---------------------------------------------------------- */}
           {/* Writers Wanted */}
@@ -195,8 +233,11 @@ export default function Submissions() {
             <p className="text-xs uppercase tracking-widest text-muted-foreground font-display mb-1">Ongoing</p>
             <h2 className="font-display text-2xl tracking-wide text-foreground mb-2">Writers Wanted</h2>
             <p className="text-sm text-muted-foreground leading-relaxed mb-6">
-              We're always looking for regular contributors — people who want their words read on KiN-TXT
-              on an ongoing basis. Tell us who you are and what you write.
+              Be one of the first names on KiN-TXT. We're building a small, ongoing roster of contributors —
+              in-house writers whose work becomes part of the platform itself, not a one-off byline. Opinion or
+              fact, fiction or reporting, a running column or a single short story: write with total freedom.
+              Every piece you publish is instantly shareable to your own socials, presented exactly the way
+              readers experience the rest of KiN-TXT.
             </p>
 
             {writerStatus === 'sent' ? (
@@ -224,13 +265,13 @@ export default function Submissions() {
                 </div>
                 <input
                   type="text"
-                  placeholder="Links / portfolio / published work (optional)"
+                  placeholder="Portfolio, published work, or a writing sample (recommended)"
                   value={writerForm.links}
                   onChange={(e) => setWriterForm((f) => ({ ...f, links: e.target.value }))}
                   className={FIELD_CLASS}
                 />
                 <textarea
-                  placeholder="Tell us about yourself and what you'd want to write for KiN-TXT"
+                  placeholder="Tell us who you are, what you write, and why KiN-TXT should be reading it"
                   value={writerForm.pitch}
                   onChange={(e) => setWriterForm((f) => ({ ...f, pitch: e.target.value }))}
                   maxLength={4000}
@@ -246,7 +287,7 @@ export default function Submissions() {
                   className="w-full h-12 rounded-xl font-display tracking-widest uppercase text-sm bg-foreground text-background hover:bg-foreground/90 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {writerStatus === 'sending' && <Loader2 className="w-4 h-4 animate-spin" />}
-                  {writerStatus === 'sending' ? 'Sending…' : 'Apply to Write for KiN-TXT'}
+                  {writerStatus === 'sending' ? 'Sending…' : 'Apply Now'}
                 </button>
               </form>
             )}
@@ -260,11 +301,25 @@ export default function Submissions() {
           <section>
             <p className="text-xs uppercase tracking-widest text-muted-foreground font-display mb-1">Open Call</p>
             <h2 className="font-display text-2xl tracking-wide text-foreground mb-2">The KiN-TXT First Book</h2>
-            <p className="text-sm text-muted-foreground leading-relaxed mb-2">
+            <p className="text-sm text-muted-foreground leading-relaxed mb-6">
               We're looking for the first book we will ever publish. One writer. One manuscript. The beginning
-              of KiN-TXT as a publishing house.
+              of KiN-TXT as a publishing house — and you could be the name it starts with.
             </p>
-            <p className="text-sm text-foreground font-semibold mb-6">Author royalty: 60%.</p>
+
+            <div className="rounded-xl border border-foreground/30 bg-foreground/5 p-5 mb-6">
+              <p className="text-xs uppercase tracking-widest text-muted-foreground font-display mb-1">Author Royalty</p>
+              <p className="font-display text-5xl text-foreground mb-2">60%</p>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Every sale goes through the KiN-TXT app, and 60% of everything it earns goes straight to you.
+                Traditional publishing deals typically pay authors 5–15%. This is a real book deal, not a
+                competition — and we think our first author should be treated like a partner, not a supplier.
+              </p>
+            </div>
+
+            <p className="text-sm text-muted-foreground leading-relaxed mb-6">
+              As our first published author, your book gets the full treatment above — emphasis, pace,
+              atmosphere, and full-screen imagery, built around your text with you.
+            </p>
 
             {paidParam === 'success' && (
               <div className="rounded-2xl border border-border bg-card/50 p-6 flex items-center gap-3 mb-6">
@@ -334,16 +389,16 @@ export default function Submissions() {
                 />
                 <div>
                   <textarea
-                    placeholder="Short pitch — what is it, and why should we read it?"
+                    placeholder="What is it, who is it for, and why does it deserve to be KiN-TXT's first book?"
                     value={bookForm.pitch}
                     onChange={(e) => setBookForm((f) => ({ ...f, pitch: e.target.value.slice(0, bookPitchLimit) }))}
                     maxLength={bookPitchLimit}
                     rows={5}
                     className={`${FIELD_CLASS} resize-none`}
                   />
-                  {!user && (
+                  {!isSubscribed && (
                     <p className="text-xs text-muted-foreground mt-1.5">
-                      Keep it under {bookPitchLimit} characters for a paid entry. Sign up free below for more room.
+                      Keep it under {bookPitchLimit} characters for a paid entry. KiN-TXT Pro members get more room.
                     </p>
                   )}
                 </div>
@@ -351,25 +406,25 @@ export default function Submissions() {
                 {bookError && <p className="text-xs text-destructive">{bookError}</p>}
 
                 <div className="pt-2 space-y-3">
-                  {user ? (
+                  {isSubscribed ? (
                     <button
                       onClick={submitBookFree}
                       disabled={bookStatus === 'sending'}
                       className="w-full h-12 rounded-xl font-display tracking-widest uppercase text-sm bg-foreground text-background hover:bg-foreground/90 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                     >
                       {bookStatus === 'sending' && <Loader2 className="w-4 h-4 animate-spin" />}
-                      {bookStatus === 'sending' ? 'Submitting…' : `Submit Free — Signed in as ${user.email}`}
+                      {bookStatus === 'sending' ? 'Submitting…' : 'Submit Free — Pro Member'}
                     </button>
                   ) : (
                     <>
                       <p className="text-xs text-muted-foreground text-center">
-                        Free if you sign up to KiN-TXT on the website. £10 to submit without an account.
+                        Free with KiN-TXT Pro — new or existing members. £10 to submit without one.
                       </p>
                       <button
-                        onClick={submitBookSignUpFree}
+                        onClick={goUpgradeAndSubmit}
                         className="w-full h-12 rounded-xl font-display tracking-widest uppercase text-sm border border-foreground/40 text-foreground hover:bg-foreground/10 transition-all"
                       >
-                        Sign Up Free &amp; Submit
+                        Upgrade to Pro &amp; Submit Free
                       </button>
                       <button
                         onClick={submitBookPaid}
