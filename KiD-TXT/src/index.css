@@ -715,7 +715,9 @@ button { font-family: inherit; -webkit-tap-highlight-color: transparent; }
    makes every join identical, split or not — the geometry is then
    the font's raw advances, which never overlap. */
 .word-stage {
-  display: inline-block;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: baseline;
   white-space: nowrap;
   font-family: 'Fredoka', 'Nunito', sans-serif;
   font-weight: 600;
@@ -726,24 +728,28 @@ button { font-family: inherit; -webkit-tap-highlight-color: transparent; }
   letter-spacing: 0.01em;
   /* Sized by the word's length so a long word never leaves the screen:
      13vw for short words, shrinking as --chars grows. */
-  font-size: min(13vw, calc(84vw / (var(--chars, 6) * 0.58)), 5.5rem);
-  padding: 0.04em 0.1em 0.12em;
+  /* --chars is the layout's virtual width: both sides as wide as the
+     longer one, so the centre column never moves. */
+  font-size: min(13vw, calc(94vw / (var(--chars, 6) * 0.58)), 5.5rem);
+  padding: 0.04em 0 0.12em;
   border-bottom: 0.1em solid transparent;
   transition: font-size 0.18s ease, border-color 0.2s ease;
   -webkit-user-select: none;
   user-select: none;
 }
 .word-stage .focus { color: var(--accent); }
+.word-stage .w-before { text-align: right; }
+.word-stage .w-after  { text-align: left; }
 
 /* A spelling word grows, and sits on a gold rule */
 .word-stage.teach {
-  font-size: min(16vw, calc(88vw / (var(--chars, 6) * 0.58)), 6.4rem);
+  font-size: min(16vw, calc(94vw / (var(--chars, 6) * 0.58)), 6.4rem);
   border-bottom-color: var(--sun);
 }
 
 @media (min-width: 768px) {
-  .word-stage { font-size: min(9vw, calc(70vw / (var(--chars, 6) * 0.58)), 6rem); }
-  .word-stage.teach { font-size: min(11vw, calc(74vw / (var(--chars, 6) * 0.58)), 7rem); }
+  .word-stage { font-size: min(9vw, calc(80vw / (var(--chars, 6) * 0.58)), 6rem); }
+  .word-stage.teach { font-size: min(11vw, calc(80vw / (var(--chars, 6) * 0.58)), 7rem); }
 }
 
 /* ─── Spelling lesson ─── */
@@ -763,28 +769,32 @@ button { font-family: inherit; -webkit-tap-highlight-color: transparent; }
 }
 
 .spell-tiles {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 7px;
-  max-width: 100%;
+  display: grid;
+  grid-template-columns: repeat(var(--n, 5), minmax(0, 1fr));
+  gap: 6px;
+  width: 100%;
+  max-width: calc(var(--n, 5) * 52px);
+  container-type: inline-size;
 }
 
-/* One letter. Pops in on arrival, lifts when spoken, turns gold when done. */
+/* One letter. Pops in on arrival, lifts when spoken, turns gold when done.
+   Width comes from the grid cell; the glyph is sized from the cell so
+   eleven letters shrink to fit an iPhone rather than wrap. */
 .tile {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 46px;
-  height: 54px;
-  border-radius: 12px;
+  width: 100%;
+  min-width: 0;
+  height: clamp(40px, calc(100cqw / var(--n, 5) * 1.25), 56px);
+  border-radius: clamp(8px, calc(100cqw / var(--n, 5) * 0.26), 12px);
   border: 2.5px solid var(--border);
   background: var(--bg);
   color: var(--text);
   box-shadow: 0 4px 0 var(--shadow-col);
   font-family: 'Fredoka', sans-serif;
   font-weight: 600;
-  font-size: 1.7rem;
+  font-size: clamp(0.95rem, calc(100cqw / var(--n, 5) * 0.62), 1.7rem);
   line-height: 1;
   animation: tile-in 0.32s cubic-bezier(0.34, 1.4, 0.5, 1) both;
   animation-delay: calc(var(--i, 0) * 45ms);
@@ -816,12 +826,6 @@ button { font-family: inherit; -webkit-tap-highlight-color: transparent; }
   color: var(--text-muted);
   text-align: center;
   letter-spacing: 0.02em;
-}
-
-/* Long words get narrower tiles so they fit an iPhone in one row */
-@media (max-width: 420px) {
-  .spell-tiles[data-long="true"] .tile { width: 36px; height: 46px; font-size: 1.35rem; border-radius: 10px; }
-  .spell-tiles { gap: 5px; }
 }
 
 /* A pulsing primary button, so the one thing to press is obvious */
@@ -889,3 +893,226 @@ button { font-family: inherit; -webkit-tap-highlight-color: transparent; }
   flex-shrink: 0;
 }
 .voice-row[data-selected="true"] .voice-dot { background: var(--accent); }
+
+.voice-row[data-selectable="false"] { cursor: default; }
+
+.voice-group {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  font-family: 'Fredoka', sans-serif;
+  font-weight: 600;
+  font-size: 0.92rem;
+  margin: 4px 0 9px;
+}
+.voice-group-note {
+  font-family: 'Nunito', sans-serif;
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: var(--text-muted);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.dl-btn {
+  padding: 8px 13px;
+  min-height: 38px;
+  font-size: 0.8rem;
+  border-radius: 12px;
+  white-space: nowrap;
+}
+
+.dl-track {
+  position: relative;
+  width: 84px;
+  height: 30px;
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Fredoka', sans-serif;
+  font-weight: 600;
+  font-size: 0.78rem;
+  flex-shrink: 0;
+}
+.dl-fill {
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  background: var(--sun);
+  transition: width 0.2s ease;
+}
+.dl-track span { position: relative; }
+
+.spinner {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border: 3px solid var(--border);
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ============================================================
+   Teacher
+   ============================================================ */
+
+.standing {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 8px;
+  border-radius: 50px;
+  border: 2px solid var(--border);
+  color: #FFF9EC;
+  font-family: 'Fredoka', sans-serif;
+  font-weight: 600;
+  font-size: 0.62rem;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.attn-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+  padding: 11px 12px;
+  border: 2.5px solid var(--border);
+  border-radius: 14px;
+  background: var(--bg);
+  color: var(--text);
+  cursor: pointer;
+  font-family: inherit;
+}
+.attn-row:active { background: var(--bg-elevated); }
+
+.t-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  text-align: left;
+  padding: 10px 14px;
+  margin-bottom: 8px;
+  border: 2.5px solid var(--border);
+  border-radius: 16px;
+  background: var(--bg-card);
+  color: var(--text);
+  box-shadow: 0 4px 0 var(--shadow-col);
+  cursor: pointer;
+  font-family: inherit;
+  transition: transform 0.06s ease, box-shadow 0.06s ease;
+}
+.t-row:active { transform: translateY(4px); box-shadow: 0 0 0 var(--shadow-col); }
+
+.t-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.t-stats b {
+  font-family: 'Fredoka', sans-serif;
+  font-weight: 600;
+  font-size: 0.98rem;
+  color: var(--text);
+  margin-right: 2px;
+}
+
+.t-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.76rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.t-table td:first-child { white-space: normal; min-width: 7rem; line-height: 1.25; }
+.t-table th {
+  text-align: right;
+  font-size: 0.62rem;
+  font-weight: 800;
+  color: var(--text-muted);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 0 6px 6px;
+  border-bottom: 2px solid var(--border);
+  white-space: nowrap;
+}
+.t-table th:first-child, .t-table td:first-child { text-align: left; padding-left: 0; }
+.t-table td {
+  text-align: right;
+  padding: 7px 4px;
+  border-bottom: 1.5px solid var(--bg-elevated);
+  white-space: nowrap;
+}
+.t-table tr:last-child td { border-bottom: none; }
+.t-table td:last-child, .t-table th:last-child { padding-right: 0; }
+
+.type-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 50px;
+  border: 2.5px solid;
+  font-size: 0.74rem;
+  font-weight: 800;
+}
+.type-chip b { font-family: 'Fredoka', sans-serif; font-weight: 600; margin-left: 2px; }
+
+.band-choice {
+  padding: 7px 12px;
+  border-radius: 50px;
+  border: 2.5px solid var(--border);
+  font-family: 'Fredoka', sans-serif;
+  font-weight: 600;
+  font-size: 0.8rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+}
+.band-choice small { font-family: 'Nunito', sans-serif; font-size: 0.62rem; font-weight: 800; opacity: 0.8; }
+
+/* Login: pupil / teacher switch */
+.seg {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  padding: 4px;
+  border: 2.5px solid var(--border);
+  border-radius: 16px;
+  background: var(--bg);
+  margin-bottom: 18px;
+}
+.seg button {
+  padding: 10px;
+  border-radius: 11px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-family: 'Fredoka', sans-serif;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+}
+.seg button[aria-pressed="true"] {
+  background: var(--bg-card);
+  color: var(--text);
+  border: 2px solid var(--border);
+  box-shadow: 0 3px 0 var(--shadow-col);
+}

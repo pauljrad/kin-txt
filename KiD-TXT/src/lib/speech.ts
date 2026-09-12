@@ -8,9 +8,53 @@
 // ──────────────────────────────────────────────────────────────────
 
 import { normaliseWord } from './curriculum';
+import { sayAi, stopAi, unlockAudio, warm, synthesise, isReady, play } from './aiVoice';
+
+/**
+ * How each letter is said aloud. Spoken as its name, written out, so no
+ * engine can say "capital em" or read "a" as the article. British: zed.
+ */
+const LETTER_NAMES: Record<string, string> = {
+  a: 'ay', b: 'bee', c: 'see', d: 'dee', e: 'ee', f: 'eff', g: 'gee',
+  h: 'aitch', i: 'eye', j: 'jay', k: 'kay', l: 'el', m: 'em', n: 'en',
+  o: 'oh', p: 'pee', q: 'queue', r: 'ar', s: 'ess', t: 'tee', u: 'you',
+  v: 'vee', w: 'double you', x: 'ex', y: 'why', z: 'zed',
+};
 
 let cachedVoice: SpeechSynthesisVoice | null = null;
 let preferredURI: string | null = null;
+
+// Which engine reads aloud: the device's own voices, or a downloaded
+// AI voice. An AI voice is chosen by id; null means the device.
+let aiVoiceId: string | null = null;
+
+export function setAiVoice(id: string | null): void {
+  aiVoiceId = id;
+}
+
+export function usingAiVoice(): boolean {
+  return aiVoiceId !== null;
+}
+
+/** Make these ready before they are needed — no-op on the device engine. */
+export function warmTexts(texts: string[]): void {
+  if (aiVoiceId) void warm(texts, aiVoiceId);
+}
+
+/** Can this be played with no wait? Always true for the device engine. */
+export function textReady(text: string): boolean {
+  return aiVoiceId ? isReady(text, aiVoiceId) : true;
+}
+
+/** The letter names, so a voice can be warmed with them once. */
+export function letterNames(): string[] {
+  return Object.values(LETTER_NAMES);
+}
+
+/** Everything a lesson on `word` will say, for warming ahead of the tap. */
+export function lessonTexts(word: string): string[] {
+  return [word, ...word.split('').map((ch) => LETTER_NAMES[ch.toLowerCase()] ?? ch)];
+}
 
 export function speechAvailable(): boolean {
   return typeof window !== 'undefined' && 'speechSynthesis' in window;
@@ -89,9 +133,15 @@ export function previewVoice(voice: SpeechSynthesisVoice, text: string): void {
  * "wolves," is read as "wolves" rather than trailing off.
  */
 export function speakWord(word: string): void {
-  if (!speechAvailable()) return;
   const clean = normaliseWord(word);
   if (!clean) return;
+
+  if (aiVoiceId) {
+    unlockAudio();                      // inside the tap, before any await
+    void sayAi(clean, aiVoiceId);
+    return;
+  }
+  if (!speechAvailable()) return;
 
   window.speechSynthesis.cancel();
 
@@ -107,7 +157,14 @@ export function speakWord(word: string): void {
 
 /** Read a whole sentence at a natural pace — used on the quiz question. */
 export function speakSentence(text: string): void {
-  if (!speechAvailable() || !text.trim()) return;
+  if (!text.trim()) return;
+
+  if (aiVoiceId) {
+    unlockAudio();
+    void sayAi(text, aiVoiceId);
+    return;
+  }
+  if (!speechAvailable()) return;
 
   window.speechSynthesis.cancel();
 
@@ -121,6 +178,7 @@ export function speakSentence(text: string): void {
 }
 
 export function stopSpeaking(): void {
+  stopAi();
   if (speechAvailable()) window.speechSynthesis.cancel();
 }
 
@@ -154,10 +212,31 @@ function estimateMs(text: string, rate: number): number {
  * a cancelled sequence stops sounding and never calls `onDone`.
  */
 export function speakSequence(steps: SpeechStep[], onDone: () => void): () => void {
-  if (!speechAvailable() || steps.length === 0) {
-    onDone();
-    return () => {};
+  if (steps.length === 0) { onDone(); return () => {}; }
+
+  // AI voice: each step is a buffer, played back to back.
+  if (aiVoiceId) {
+    const voice = aiVoiceId;
+    let cancelled = false;
+    unlockAudio();
+    (async () => {
+      for (const step of steps) {
+        if (cancelled) return;
+        step.onStart?.();
+        try {
+          const buffer = await synthesise(step.text, voice);
+          if (cancelled) return;
+          await play(buffer);
+        } catch { /* skip a step that failed rather than stall the lesson */ }
+        if (cancelled) return;
+        await new Promise((r) => setTimeout(r, step.gapMs ?? 80));
+      }
+      if (!cancelled) onDone();
+    })();
+    return () => { cancelled = true; stopAi(); };
   }
+
+  if (!speechAvailable()) { onDone(); return () => {}; }
 
   let cancelled = false;
   let timer: ReturnType<typeof setTimeout> | null = null;
@@ -206,16 +285,7 @@ export function speakSequence(steps: SpeechStep[], onDone: () => void): () => vo
   };
 }
 
-/**
- * How each letter is said aloud. Spoken as its name, written out, so no
- * engine can say "capital em" or read "a" as the article. British: zed.
- */
-const LETTER_NAMES: Record<string, string> = {
-  a: 'ay', b: 'bee', c: 'see', d: 'dee', e: 'ee', f: 'eff', g: 'gee',
-  h: 'aitch', i: 'eye', j: 'jay', k: 'kay', l: 'el', m: 'em', n: 'en',
-  o: 'oh', p: 'pee', q: 'queue', r: 'ar', s: 'ess', t: 'tee', u: 'you',
-  v: 'vee', w: 'double you', x: 'ex', y: 'why', z: 'zed',
-};
+
 
 /** The steps that teach one word: say it, spell it, say it again. */
 export function spellingSteps(

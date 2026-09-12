@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { useKidAuth } from '@/hooks/useKidAuth';
-import { logoutKid, updateKidBand } from '@/lib/kidAuth';
+import { logoutKid } from '@/lib/kidAuth';
 import { AvatarCanvas } from '@/components/kids/AvatarCanvas';
 import { ThemeSelector } from '@/components/ThemeSelector';
 import { Icon } from '@/components/art/Icon';
@@ -12,16 +12,15 @@ import {
   weakestSkill, allStatutoryMet,
 } from '@/lib/progress';
 import {
-  READING_BANDS, READING_SKILLS, SKILL_ORDER, BAND_ORDER,
+  READING_BANDS, READING_SKILLS, SKILL_ORDER,
   SPELLING_LISTS, TEXT_TYPE_ORDER, TEXT_TYPES,
 } from '@/lib/curriculum';
 import { LIBRARY } from '@/lib/library';
 
 export default function KidsProfile() {
-  const { kid, setKid, updateBand } = useKidAuth();
+  const { kid, setKid } = useKidAuth();
   const navigate = useNavigate();
   const [showCanvas, setShowCanvas] = useState(false);
-  const [showTeacher, setShowTeacher] = useState(false);
 
   const progress = useMemo(() => loadProgress(), []);
 
@@ -227,68 +226,6 @@ export default function KidsProfile() {
             </p>
             <VoicePicker />
           </div>
-
-          {/* ── Teacher settings ── */}
-          <button
-            onClick={() => setShowTeacher((s) => !s)}
-            className="kid-btn kid-btn-ghost"
-            style={{ width: '100%', fontSize: '0.92rem' }}
-          >
-            <Icon name="clipboard" size={19} />
-            Teacher settings
-            <span style={{
-              display: 'inline-flex',
-              transform: showTeacher ? 'rotate(90deg)' : 'rotate(0deg)',
-              transition: 'transform 0.2s ease',
-            }}>
-              <Icon name="chevron" size={17} strokeWidth={2.4} />
-            </span>
-          </button>
-
-          {showTeacher && (
-            <div className="kid-card pop-in" style={{ padding: '19px', marginTop: '12px' }}>
-              <h3 style={{ fontSize: '1.02rem', marginBottom: '3px' }}>Reading band</h3>
-              <p style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '14px', lineHeight: 1.5 }}>
-                Named after gemstones, not year groups, so a child working outside
-                their year cannot read their level off the screen.
-              </p>
-
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '7px', marginBottom: '15px' }}>
-                {BAND_ORDER.map((b) => {
-                  const meta = READING_BANDS[b];
-                  const active = kid.band === b;
-                  return (
-                    <button
-                      key={b}
-                      onClick={() => { updateBand(b); updateKidBand(b); }}
-                      style={{
-                        padding: '7px 14px', borderRadius: '50px',
-                        border: '2.5px solid var(--border)',
-                        background: active ? meta.colour : 'var(--bg)',
-                        color: active ? '#FFF9EC' : 'var(--text-muted)',
-                        boxShadow: active ? '0 3px 0 var(--shadow-col)' : 'none',
-                        fontFamily: 'Fredoka, sans-serif',
-                        fontWeight: 600, fontSize: '0.8rem', cursor: 'pointer',
-                      }}
-                    >
-                      {meta.label}
-                    </button>
-                  );
-                })}
-              </div>
-
-              <div style={{
-                background: 'var(--bg-elevated)', borderRadius: '14px',
-                border: '2.5px solid var(--border)', padding: '13px 15px',
-                fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)', lineHeight: 1.7,
-              }}>
-                <div><strong style={{ color: 'var(--text)' }}>{band.label}</strong> = {band.yearLabel}</div>
-                <div>Target {band.targetWcpm} WCPM (range {band.minWcpm}–{band.maxWcpm})</div>
-                <div>A question every {band.wordsPerQuestion} words</div>
-                <div>{spellingList.label}</div>
-              </div>
-            </div>
-          )}
 
           <div style={{ textAlign: 'center', marginTop: '20px' }}>
             <button onClick={handleLogout} className="kid-btn kid-btn-ghost">

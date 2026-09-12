@@ -12,8 +12,10 @@ export interface KidUser {
   band: BandKey;
   /** Words per minute the child currently reads at, within their band. */
   wcpm: number;
-  /** voiceURI of the chosen reading voice; unset means the best available. */
+  /** voiceURI of the chosen device voice; unset means the best available. */
   voiceURI?: string;
+  /** A downloaded AI voice. When set it is used instead of any device voice. */
+  aiVoiceId?: string;
 }
 
 import { READING_BANDS, type BandKey } from './curriculum';
@@ -36,18 +38,30 @@ export function loginKid(name: string, pupilId: string): KidUser | null {
 
   if (!match) return null;
 
+  // The teacher may have moved this child since they last logged in
+  let override: BandKey | undefined;
+  try {
+    override = (JSON.parse(localStorage.getItem('kid_txt_band_overrides') ?? '{}') as Record<string, BandKey>)[normalizedId];
+  } catch { /* none */ }
+
   // Load existing saved profile if it exists
   const existing = getKidSession();
   if (existing && existing.pupilId === normalizedId) {
+    if (override && existing.band !== override) {
+      const moved = { ...existing, band: override, wcpm: READING_BANDS[override].targetWcpm };
+      saveKidSession(moved);
+      return moved;
+    }
     return existing;
   }
 
+  const band = override ?? match.band;
   const user: KidUser = {
     name: match.name,
     pupilId: match.pupilId,
     theme: 'cream',
-    band: match.band,
-    wcpm: READING_BANDS[match.band].targetWcpm,
+    band,
+    wcpm: READING_BANDS[band].targetWcpm,
   };
 
   saveKidSession(user);
@@ -112,6 +126,15 @@ export function updateKidVoice(voiceURI: string | null): void {
   if (session) {
     const next = { ...session };
     if (voiceURI) next.voiceURI = voiceURI; else delete next.voiceURI;
+    saveKidSession(next);
+  }
+}
+
+export function updateKidAiVoice(aiVoiceId: string | null): void {
+  const session = getKidSession();
+  if (session) {
+    const next = { ...session };
+    if (aiVoiceId) next.aiVoiceId = aiVoiceId; else delete next.aiVoiceId;
     saveKidSession(next);
   }
 }

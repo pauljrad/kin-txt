@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { loginKid } from '@/lib/kidAuth';
+import { loginTeacher } from '@/lib/teacherAuth';
 import { useKidAuth } from '@/hooks/useKidAuth';
 import { Icon } from '@/components/art/Icon';
 import { Scene } from '@/components/art/Scenes';
@@ -10,8 +11,29 @@ export default function KidLogin() {
   const [pupilId, setPupilId] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [who, setWho] = useState<'pupil' | 'teacher'>('pupil');
   const { setKid } = useKidAuth();
   const navigate = useNavigate();
+
+  const switchTo = (w: 'pupil' | 'teacher') => { setWho(w); setError(''); setName(''); setPupilId(''); };
+
+  const handleTeacherLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    if (!name.trim() || !pupilId.trim()) {
+      setError('Type your name and your passcode.');
+      return;
+    }
+    setLoading(true);
+    await new Promise((r) => setTimeout(r, 350));
+    const teacher = loginTeacher(name, pupilId);
+    if (!teacher) {
+      setError("Those details don't match.");
+      setLoading(false);
+      return;
+    }
+    navigate('/teacher');
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,14 +81,23 @@ export default function KidLogin() {
           </p>
         </div>
 
-        <div className="kid-card" style={{ padding: '24px 22px' }}>
+        <div className="kid-card" style={{ padding: '22px 22px 24px' }}>
+          <div className="seg" role="group" aria-label="Who is logging in">
+            <button type="button" aria-pressed={who === 'pupil'} onClick={() => switchTo('pupil')}>
+              <Icon name="person" size={17} /> Pupil
+            </button>
+            <button type="button" aria-pressed={who === 'teacher'} onClick={() => switchTo('teacher')}>
+              <Icon name="clipboard" size={17} /> Teacher
+            </button>
+          </div>
+
           <h2 style={{ fontSize: '1.32rem', marginBottom: '18px', textAlign: 'center' }}>
-            Who are you?
+            {who === 'pupil' ? 'Who are you?' : 'Teacher login'}
           </h2>
 
-          <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          <form onSubmit={who === 'pupil' ? handleLogin : handleTeacherLogin} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
             <div>
-              <label htmlFor="kid-name" style={labelStyle}>First name</label>
+              <label htmlFor="kid-name" style={labelStyle}>{who === 'pupil' ? 'First name' : 'Surname'}</label>
               <input
                 id="kid-name"
                 className="kid-input"
@@ -82,11 +113,11 @@ export default function KidLogin() {
             </div>
 
             <div>
-              <label htmlFor="kid-id" style={labelStyle}>Pupil ID</label>
+              <label htmlFor="kid-id" style={labelStyle}>{who === 'pupil' ? 'Pupil ID' : 'Passcode'}</label>
               <input
                 id="kid-id"
                 className="kid-input"
-                type="text"
+                type={who === 'teacher' ? 'password' : 'text'}
                 inputMode="numeric"
                 pattern="[0-9]*"
                 value={pupilId}
@@ -118,7 +149,7 @@ export default function KidLogin() {
           textAlign: 'center', fontSize: '0.82rem', color: 'var(--text-muted)',
           marginTop: '18px', fontWeight: 700,
         }}>
-          Don't know your details? Ask your teacher.
+          {who === 'pupil' ? "Don't know your details? Ask your teacher." : 'Demo: PATEL · 1234'}
         </p>
 
       </div>

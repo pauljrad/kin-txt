@@ -4,6 +4,7 @@ import { useKidAuth } from '@/hooks/useKidAuth';
 import { ThemeSelector } from '@/components/ThemeSelector';
 import { Icon } from '@/components/art/Icon';
 import { loadProgress, buildLeaderboard } from '@/lib/progress';
+import { demoPupils } from '@/lib/classData';
 
 const MEDAL = ['#EDB230', '#B9BCC0', '#C08552'];
 
@@ -11,7 +12,7 @@ export default function Leaderboard() {
   const { kid } = useKidAuth();
   const navigate = useNavigate();
   const rows = useMemo(
-    () => (kid ? buildLeaderboard(loadProgress(), kid.name) : []),
+    () => (kid ? buildLeaderboard(loadProgress(), kid.name, demoPupils()) : []),
     [kid],
   );
 

@@ -19,7 +19,18 @@ export interface TextRecord {
   completed: boolean;
   /** Statutory words met in this text so far. */
   statutoryMet: string[];
+  /** Times the child stopped the reader themselves (not lessons or questions). */
+  pauses: number;
+  /** Questions on this text, first attempts only. */
+  asked: number;
+  correct: number;
+  /** Spelling lessons completed in this text. */
+  lessons: number;
 }
+
+const emptyText = (): TextRecord => ({
+  wordIndex: 0, completed: false, statutoryMet: [], pauses: 0, asked: 0, correct: 0, lessons: 0,
+});
 
 export interface Progress {
   coins: number;
@@ -52,8 +63,10 @@ export function loadProgress(): Progress {
     const raw = localStorage.getItem(KEY);
     if (!raw) return emptyProgress();
     const parsed = JSON.parse(raw) as Progress;
-    // Merge in any skills added since this profile was saved.
-    return { ...emptyProgress(), ...parsed, skills: { ...emptySkills(), ...parsed.skills } };
+    // Merge in any fields added since this profile was saved.
+    const texts: Record<string, TextRecord> = {};
+    for (const [id, t] of Object.entries(parsed.texts ?? {})) texts[id] = { ...emptyText(), ...t };
+    return { ...emptyProgress(), ...parsed, skills: { ...emptySkills(), ...parsed.skills }, texts };
   } catch {
     return emptyProgress();
   }
@@ -78,8 +91,10 @@ export function recordAnswer(
   skill: SkillKey,
   correct: boolean,
   firstTry: boolean,
+  textId?: string,
 ): Progress {
   const s = p.skills[skill] ?? { asked: 0, correct: 0 };
+  const t = textId ? (p.texts[textId] ?? emptyText()) : null;
   const next: Progress = {
     ...p,
     totalAnswered: p.totalAnswered + (firstTry ? 1 : 0),
@@ -92,7 +107,31 @@ export function recordAnswer(
         correct: s.correct + (correct && firstTry ? 1 : 0),
       },
     },
+    texts: textId && t ? {
+      ...p.texts,
+      [textId]: {
+        ...t,
+        asked: t.asked + (firstTry ? 1 : 0),
+        correct: t.correct + (correct && firstTry ? 1 : 0),
+      },
+    } : p.texts,
   };
+  saveProgress(next);
+  return next;
+}
+
+/** The child stopped the reader. Counted per text, so a teacher can see where. */
+export function recordPause(p: Progress, textId: string): Progress {
+  const t = p.texts[textId] ?? emptyText();
+  const next: Progress = { ...p, texts: { ...p.texts, [textId]: { ...t, pauses: t.pauses + 1 } } };
+  saveProgress(next);
+  return next;
+}
+
+/** A spelling lesson was heard to the end. */
+export function recordLesson(p: Progress, textId: string): Progress {
+  const t = p.texts[textId] ?? emptyText();
+  const next: Progress = { ...p, texts: { ...p.texts, [textId]: { ...t, lessons: t.lessons + 1 } } };
   saveProgress(next);
   return next;
 }
@@ -104,7 +143,7 @@ export function recordReading(
   wordIndex: number,
   statutoryMet: string[],
 ): Progress {
-  const prev = p.texts[textId] ?? { wordIndex: 0, completed: false, statutoryMet: [] };
+  const prev = p.texts[textId] ?? emptyText();
   const merged = [...new Set([...prev.statutoryMet, ...statutoryMet])];
   const newWords = merged.length - prev.statutoryMet.length;
 
@@ -126,7 +165,7 @@ export function recordReading(
 
 /** Mark a text finished. Only pays out the first time. */
 export function recordCompletion(p: Progress, textId: string): Progress {
-  const prev = p.texts[textId] ?? { wordIndex: 0, completed: false, statutoryMet: [] };
+  const prev = p.texts[textId] ?? emptyText();
   if (prev.completed) return p;
 
   const next: Progress = {
@@ -180,10 +219,10 @@ export function allStatutoryMet(p: Progress): string[] {
 }
 
 // ─── Leaderboard ──────────────────────────────────────────────────
-// Demo classmates so the board has something to rank against. Real
-// data would come from the class table. Ranked by texts read first,
-// then comprehension accuracy — never by reading speed, which would
-// push children to skim.
+// Ranked by texts read first, then comprehension accuracy — never by
+// reading speed, which would push children to skim. Classmates come
+// from the class roster, so the teacher's view and the leaderboard
+// always agree.
 
 export interface LeaderboardRow {
   name: string;
@@ -193,16 +232,11 @@ export interface LeaderboardRow {
   isMe?: boolean;
 }
 
-const CLASSMATES: LeaderboardRow[] = [
-  { name: 'Amira',  textsRead: 7, accuracy: 91, coins: 340 },
-  { name: 'Jonah',  textsRead: 6, accuracy: 84, coins: 295 },
-  { name: 'Priya',  textsRead: 5, accuracy: 88, coins: 268 },
-  { name: 'Kwame',  textsRead: 4, accuracy: 79, coins: 205 },
-  { name: 'Ellis',  textsRead: 3, accuracy: 82, coins: 176 },
-  { name: 'Rosa',   textsRead: 2, accuracy: 74, coins: 120 },
-];
-
-export function buildLeaderboard(p: Progress, myName: string): LeaderboardRow[] {
+export function buildLeaderboard(
+  p: Progress,
+  myName: string,
+  classmates: { name: string; progress: Progress }[],
+): LeaderboardRow[] {
   const me: LeaderboardRow = {
     name: myName,
     textsRead: textsCompleted(p),
@@ -210,7 +244,13 @@ export function buildLeaderboard(p: Progress, myName: string): LeaderboardRow[] 
     coins: p.coins,
     isMe: true,
   };
-  return [...CLASSMATES, me].sort(
+  const others = classmates.map((c) => ({
+    name: c.name,
+    textsRead: textsCompleted(c.progress),
+    accuracy: accuracy(c.progress),
+    coins: c.progress.coins,
+  }));
+  return [...others, me].sort(
     (a, b) => b.textsRead - a.textsRead || b.accuracy - a.accuracy || b.coins - a.coins,
   );
 }

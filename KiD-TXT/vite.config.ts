@@ -4,6 +4,8 @@ import path from 'path'
 import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
+  // The voice worker imports a library that code-splits, which IIFE can't do
+  worker: { format: 'es' },
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: {

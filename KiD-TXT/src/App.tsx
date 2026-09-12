@@ -5,11 +5,20 @@ import KidLibrary from '@/pages/KidLibrary';
 import KidsProfile from '@/pages/KidsProfile';
 import KidReader from '@/pages/KidReader';
 import Leaderboard from '@/pages/Leaderboard';
+import { TeacherDashboard, TeacherPupil } from '@/pages/Teacher';
+import { getTeacherSession } from '@/lib/teacherAuth';
 import { ThemeSelector } from '@/components/ThemeSelector';
 import { Toaster } from 'sonner';
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { kid } = useKidAuth();
   if (!kid) {
+    return <Navigate to="/login" replace />;
+  }
+  return <>{children}</>;
+}
+
+function TeacherRoute({ children }: { children: React.ReactNode }) {
+  if (!getTeacherSession()) {
     return <Navigate to="/login" replace />;
   }
   return <>{children}</>;
@@ -33,6 +42,17 @@ export default function App() {
             <ProtectedRoute>
               <KidsProfile />
             </ProtectedRoute>
+          } />
+
+          <Route path="/teacher" element={
+            <TeacherRoute>
+              <TeacherDashboard />
+            </TeacherRoute>
+          } />
+          <Route path="/teacher/:pupilId" element={
+            <TeacherRoute>
+              <TeacherPupil />
+            </TeacherRoute>
           } />
 
           <Route path="/leaderboard" element={
