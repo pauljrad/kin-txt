@@ -715,9 +715,8 @@ button { font-family: inherit; -webkit-tap-highlight-color: transparent; }
    makes every join identical, split or not — the geometry is then
    the font's raw advances, which never overlap. */
 .word-stage {
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  align-items: baseline;
+  position: relative;          /* so the spans' offsetLeft is measured from here */
+  display: inline-block;
   white-space: nowrap;
   font-family: 'Fredoka', 'Nunito', sans-serif;
   font-weight: 600;
@@ -733,13 +732,14 @@ button { font-family: inherit; -webkit-tap-highlight-color: transparent; }
   font-size: min(13vw, calc(94vw / (var(--chars, 6) * 0.58)), 5.5rem);
   padding: 0.04em 0 0.12em;
   border-bottom: 0.1em solid transparent;
-  transition: font-size 0.18s ease, border-color 0.2s ease;
+  /* No font-size transition: the letter position is measured, and a
+     size that is still animating would be measured mid-flight. */
+  transition: border-color 0.2s ease;
   -webkit-user-select: none;
   user-select: none;
 }
 .word-stage .focus { color: var(--accent); }
-.word-stage .w-before { text-align: right; }
-.word-stage .w-after  { text-align: left; }
+.word-stage span { display: inline; }
 
 /* A spelling word grows, and sits on a gold rule */
 .word-stage.teach {

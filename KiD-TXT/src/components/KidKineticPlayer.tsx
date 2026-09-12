@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, useMemo, type CSSProperties } from 'react';
+import { useState, useEffect, useLayoutEffect, useCallback, useRef, useMemo, type CSSProperties } from 'react';
 import { motion } from 'framer-motion';
 import { getQuestion, type QuizQuestion } from '@/lib/quizQuestions';
 import { ThemeSelector } from '@/components/ThemeSelector';
@@ -6,9 +6,8 @@ import { Icon } from '@/components/art/Icon';
 import { useKidAuth } from '@/hooks/useKidAuth';
 import {
   speakWord, speakSentence, stopSpeaking, speechAvailable,
-  speakSequence, spellingSteps, warmTexts, textReady, lessonTexts, usingAiVoice,
+  speakSequence, spellingSteps,
 } from '@/lib/speech';
-import { unlockAudio } from '@/lib/aiVoice';
 import {
   READING_BANDS, READING_SKILLS, SPELLING_LISTS,
   isStatutoryWord, statutoryBase, statutoryWordsIn, wcpmToDelayMs, normaliseWord,
@@ -35,11 +34,15 @@ const isEndOfSentence = (word: string) => /[.!?]["'”)]*$/.test(word);
 const MIN_TEACH_LENGTH = 3;
 
 // ─── The word ────────────────────────────────────────────────────
-// The coloured letter — the optimal recognition point — always sits at
-// the exact centre of the page, so the eye never has to move. The
-// grid's outer columns are equal (each as wide as the longer side),
-// which pins the middle column to the centre. Kerning is off for the
-// whole word, so the three spans cannot shift a glyph (see .word-stage).
+// The coloured letter — the optimal recognition point — sits at the
+// exact centre of the page. The word is laid out as one plain run of
+// text, so the browser decides where every glyph goes and no two can
+// ever overlap; then we measure where the coloured letter landed and
+// slide the whole word so that letter is on the centreline.
+//
+// (The previous version used grid columns to do the centring. On iOS
+// the column for the coloured letter could be sized for the last
+// word's font size, and the letters after it drew on top of it.)
 function WordStage({
   word, teach, onTap, tappable,
 }: {
@@ -51,8 +54,32 @@ function WordStage({
   const orp = Math.max(0, Math.ceil(word.length * 0.35) - 1);
   const before = word.slice(0, orp);
   const after = word.slice(orp + 1);
-  // Width the layout needs: both sides as wide as the longer one, plus the letter.
+  // Room the shifted word needs: both sides as wide as the longer one.
   const virtualChars = 2 * Math.max(before.length, after.length) + 1;
+
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const focusRef = useRef<HTMLSpanElement>(null);
+  const [shift, setShift] = useState(0);
+
+  const measure = useCallback(() => {
+    const wrap = wrapRef.current;
+    const focus = focusRef.current;
+    if (!wrap || !focus) return;
+    // offsetLeft/offsetWidth are layout values, untouched by the transform
+    const focusCentre = focus.offsetLeft + focus.offsetWidth / 2;
+    setShift(wrap.offsetWidth / 2 - focusCentre);
+  }, []);
+
+  useLayoutEffect(measure, [measure, word, teach]);
+
+  // Re-measure when the font arrives or the screen turns
+  useEffect(() => {
+    const fonts = (document as Document & { fonts?: FontFaceSet }).fonts;
+    fonts?.ready.then(measure).catch(() => {});
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, [measure]);
+
   return (
     <button
       className="word-btn"
@@ -61,12 +88,13 @@ function WordStage({
       aria-label={tappable ? `Hear the word ${normaliseWord(word)}` : normaliseWord(word)}
     >
       <div
+        ref={wrapRef}
         className={`word-stage${teach ? ' teach' : ''}`}
-        style={{ '--chars': Math.max(3, virtualChars) } as CSSProperties}
+        style={{ '--chars': Math.max(3, virtualChars), transform: `translateX(${shift}px)` } as CSSProperties}
       >
-        <span className="w-before">{before}</span>
-        <span className="focus">{word[orp] ?? ''}</span>
-        <span className="w-after">{after}</span>
+        <span>{before}</span>
+        <span ref={focusRef} className="focus">{word[orp] ?? ''}</span>
+        <span>{after}</span>
       </div>
     </button>
   );
@@ -92,20 +120,6 @@ function SpellingCard({
 }) {
   const letters = lesson.word.split('');
   const speaking = lesson.step === 'word' || lesson.step === 'letters' || lesson.step === 'repeat';
-
-  // An AI voice has to make the sounds first. Warm them as the card
-  // appears, and hold the button until every one is ready.
-  const [audioReady, setAudioReady] = useState(() => !usingAiVoice());
-  useEffect(() => {
-    if (!usingAiVoice()) { setAudioReady(true); return; }
-    const texts = lessonTexts(lesson.word);
-    warmTexts(texts);
-    setAudioReady(texts.every(textReady));
-    const t = setInterval(() => {
-      if (texts.every(textReady)) { setAudioReady(true); clearInterval(t); }
-    }, 250);
-    return () => clearInterval(t);
-  }, [lesson.word]);
 
   const tileState = (i: number) => {
     if (lesson.step === 'letters') {
@@ -161,12 +175,12 @@ function SpellingCard({
       ) : (
         <button
           onClick={onHear}
-          disabled={speaking || !audioReady}
-          className={`kid-btn kid-btn-primary${lesson.step === 'ready' && audioReady ? ' pulse' : ''}`}
+          disabled={speaking}
+          className={`kid-btn kid-btn-primary${lesson.step === 'ready' ? ' pulse' : ''}`}
           style={{ width: '100%', fontSize: '1.08rem' }}
         >
-          {!audioReady ? <span className="spinner" style={{ borderColor: 'var(--accent-text)', borderTopColor: 'transparent' }} /> : <Icon name="sound" size={21} />}
-          {!audioReady ? 'Getting ready…' : speaking ? 'Listening…' : 'Hear it'}
+          <Icon name="sound" size={21} />
+          {speaking ? 'Listening…' : 'Hear it'}
         </button>
       )}
     </div>
@@ -340,7 +354,6 @@ export function KidKineticPlayer({ parsedText, onBack }: KidPlayerProps) {
 
   const hearLesson = useCallback(() => {
     if (!lesson) return;
-    unlockAudio();
     cancelLessonRef.current?.();
     const word = lesson.word;
     cancelLessonRef.current = speakSequence(
@@ -411,7 +424,6 @@ export function KidKineticPlayer({ parsedText, onBack }: KidPlayerProps) {
   }, [isPlaying, showQuiz, scheduleNext]);
 
   const togglePlay = () => {
-    unlockAudio();
     if (isComplete || lessonLocksPlay) return;
     if (lesson) { continueReading(); return; }
     stopSpeaking();
@@ -451,13 +463,6 @@ export function KidKineticPlayer({ parsedText, onBack }: KidPlayerProps) {
   const activeQuestion = showQuiz ? getQuestion(parsedText.id, quizIndex) : null;
   const paused = !isPlaying && !isComplete;
 
-  // Paused on a word: make its sound now, so "Hear it" is instant
-  useEffect(() => {
-    if (paused && !lesson) warmTexts([normaliseWord(currentWord)]);
-  }, [paused, lesson, currentWord]);
-  useEffect(() => {
-    if (activeQuestion) warmTexts([activeQuestion.question]);
-  }, [activeQuestion]);
 
   return (
     <div style={{ minHeight: '100dvh', background: 'var(--reader-bg)', display: 'flex', flexDirection: 'column' }}>

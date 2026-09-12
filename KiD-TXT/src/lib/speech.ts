@@ -8,7 +8,6 @@
 // ──────────────────────────────────────────────────────────────────
 
 import { normaliseWord } from './curriculum';
-import { sayAi, stopAi, unlockAudio, warm, synthesise, isReady, play } from './aiVoice';
 
 /**
  * How each letter is said aloud. Spoken as its name, written out, so no
@@ -24,37 +23,7 @@ const LETTER_NAMES: Record<string, string> = {
 let cachedVoice: SpeechSynthesisVoice | null = null;
 let preferredURI: string | null = null;
 
-// Which engine reads aloud: the device's own voices, or a downloaded
-// AI voice. An AI voice is chosen by id; null means the device.
-let aiVoiceId: string | null = null;
 
-export function setAiVoice(id: string | null): void {
-  aiVoiceId = id;
-}
-
-export function usingAiVoice(): boolean {
-  return aiVoiceId !== null;
-}
-
-/** Make these ready before they are needed — no-op on the device engine. */
-export function warmTexts(texts: string[]): void {
-  if (aiVoiceId) void warm(texts, aiVoiceId);
-}
-
-/** Can this be played with no wait? Always true for the device engine. */
-export function textReady(text: string): boolean {
-  return aiVoiceId ? isReady(text, aiVoiceId) : true;
-}
-
-/** The letter names, so a voice can be warmed with them once. */
-export function letterNames(): string[] {
-  return Object.values(LETTER_NAMES);
-}
-
-/** Everything a lesson on `word` will say, for warming ahead of the tap. */
-export function lessonTexts(word: string): string[] {
-  return [word, ...word.split('').map((ch) => LETTER_NAMES[ch.toLowerCase()] ?? ch)];
-}
 
 export function speechAvailable(): boolean {
   return typeof window !== 'undefined' && 'speechSynthesis' in window;
@@ -118,14 +87,12 @@ function pickVoice(): SpeechSynthesisVoice | null {
 /** Speak a sample in a specific voice, so a child can pick one they like. */
 export function previewVoice(voice: SpeechSynthesisVoice, text: string): void {
   if (!speechAvailable()) return;
-  window.speechSynthesis.cancel();
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.voice = voice;
   utterance.lang = voice.lang;
   utterance.rate = 0.9;
   utterance.pitch = 1.05;
-  // A beat after cancel(), or iOS drops it.
-  setTimeout(() => window.speechSynthesis.speak(utterance), 80);
+  say(utterance);
 }
 
 /**
@@ -136,14 +103,7 @@ export function speakWord(word: string): void {
   const clean = normaliseWord(word);
   if (!clean) return;
 
-  if (aiVoiceId) {
-    unlockAudio();                      // inside the tap, before any await
-    void sayAi(clean, aiVoiceId);
-    return;
-  }
   if (!speechAvailable()) return;
-
-  window.speechSynthesis.cancel();
 
   const utterance = new SpeechSynthesisUtterance(clean);
   const voice = pickVoice();
@@ -152,21 +112,28 @@ export function speakWord(word: string): void {
   utterance.rate = 0.75;   // slow enough to hear each sound
   utterance.pitch = 1.05;  // slightly bright, reads as friendly
 
-  window.speechSynthesis.speak(utterance);
+  say(utterance);
+}
+
+/**
+ * iOS drops an utterance queued in the same tick as cancel(). So: cancel
+ * only if something is sounding, and leave a beat before speaking.
+ */
+function say(utterance: SpeechSynthesisUtterance): void {
+  const synth = window.speechSynthesis;
+  if (synth.speaking || synth.pending) {
+    synth.cancel();
+    setTimeout(() => synth.speak(utterance), 100);
+  } else {
+    synth.speak(utterance);
+  }
 }
 
 /** Read a whole sentence at a natural pace — used on the quiz question. */
 export function speakSentence(text: string): void {
   if (!text.trim()) return;
 
-  if (aiVoiceId) {
-    unlockAudio();
-    void sayAi(text, aiVoiceId);
-    return;
-  }
   if (!speechAvailable()) return;
-
-  window.speechSynthesis.cancel();
 
   const utterance = new SpeechSynthesisUtterance(text);
   const voice = pickVoice();
@@ -174,11 +141,10 @@ export function speakSentence(text: string): void {
   utterance.lang = voice?.lang ?? 'en-GB';
   utterance.rate = 0.9;
 
-  window.speechSynthesis.speak(utterance);
+  say(utterance);
 }
 
 export function stopSpeaking(): void {
-  stopAi();
   if (speechAvailable()) window.speechSynthesis.cancel();
 }
 
@@ -213,28 +179,6 @@ function estimateMs(text: string, rate: number): number {
  */
 export function speakSequence(steps: SpeechStep[], onDone: () => void): () => void {
   if (steps.length === 0) { onDone(); return () => {}; }
-
-  // AI voice: each step is a buffer, played back to back.
-  if (aiVoiceId) {
-    const voice = aiVoiceId;
-    let cancelled = false;
-    unlockAudio();
-    (async () => {
-      for (const step of steps) {
-        if (cancelled) return;
-        step.onStart?.();
-        try {
-          const buffer = await synthesise(step.text, voice);
-          if (cancelled) return;
-          await play(buffer);
-        } catch { /* skip a step that failed rather than stall the lesson */ }
-        if (cancelled) return;
-        await new Promise((r) => setTimeout(r, step.gapMs ?? 80));
-      }
-      if (!cancelled) onDone();
-    })();
-    return () => { cancelled = true; stopAi(); };
-  }
 
   if (!speechAvailable()) { onDone(); return () => {}; }
 

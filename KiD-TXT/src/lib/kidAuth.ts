@@ -14,8 +14,6 @@ export interface KidUser {
   wcpm: number;
   /** voiceURI of the chosen device voice; unset means the best available. */
   voiceURI?: string;
-  /** A downloaded AI voice. When set it is used instead of any device voice. */
-  aiVoiceId?: string;
 }
 
 import { READING_BANDS, type BandKey } from './curriculum';
@@ -72,7 +70,9 @@ export function getKidSession(): KidUser | null {
   try {
     const raw = localStorage.getItem(SESSION_KEY);
     if (!raw) return null;
-    const user = JSON.parse(raw) as KidUser;
+    const user = JSON.parse(raw) as KidUser & { aiVoiceId?: string };
+    // An earlier build stored an AI voice choice; it must not linger.
+    if ('aiVoiceId' in user) { delete user.aiVoiceId; saveKidSession(user); }
     // Profiles saved before bands existed need defaults.
     if (!user.band || !READING_BANDS[user.band]) user.band = 'topaz';
     if (typeof user.wcpm !== 'number') user.wcpm = READING_BANDS[user.band].targetWcpm;
@@ -126,15 +126,6 @@ export function updateKidVoice(voiceURI: string | null): void {
   if (session) {
     const next = { ...session };
     if (voiceURI) next.voiceURI = voiceURI; else delete next.voiceURI;
-    saveKidSession(next);
-  }
-}
-
-export function updateKidAiVoice(aiVoiceId: string | null): void {
-  const session = getKidSession();
-  if (session) {
-    const next = { ...session };
-    if (aiVoiceId) next.aiVoiceId = aiVoiceId; else delete next.aiVoiceId;
     saveKidSession(next);
   }
 }

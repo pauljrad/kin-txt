@@ -12,7 +12,7 @@ export interface Teacher {
 const SESSION_KEY = 'kid_txt_teacher';
 
 const TEACHERS: { name: string; code: string; display: string; className: string }[] = [
-  { name: 'PATEL', code: '1234', display: 'Mrs Patel', className: 'Class 4P' },
+  { name: 'GALLIMORE', code: '12345', display: 'Mr Gallimore', className: 'Class 4G' },
 ];
 
 export function loginTeacher(name: string, code: string): Teacher | null {

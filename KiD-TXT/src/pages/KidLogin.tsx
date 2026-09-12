@@ -149,7 +149,7 @@ export default function KidLogin() {
           textAlign: 'center', fontSize: '0.82rem', color: 'var(--text-muted)',
           marginTop: '18px', fontWeight: 700,
         }}>
-          {who === 'pupil' ? "Don't know your details? Ask your teacher." : 'Demo: PATEL · 1234'}
+          {who === 'pupil' ? "Don't know your details? Ask your teacher." : 'Demo: GALLIMORE · 12345'}
         </p>
 
       </div>
