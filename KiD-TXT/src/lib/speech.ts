@@ -133,18 +133,20 @@ export function speakWord(word: string): void {
 
   if (cloudVoiceId) {
     cloud.unlockAudio();                  // inside the tap, before any await
-    void cloud.say(clean, cloudVoiceId, 'slow');
+    cloud.say(clean, cloudVoiceId, 'slow').catch(() => deviceWord(clean));
     return;
   }
-  if (!speechAvailable()) return;
+  deviceWord(clean);
+}
 
+function deviceWord(clean: string): void {
+  if (!speechAvailable()) return;
   const utterance = new SpeechSynthesisUtterance(clean);
   const voice = pickVoice();
   if (voice) utterance.voice = voice;
   utterance.lang = voice?.lang ?? 'en-GB';
   utterance.rate = 0.75;   // slow enough to hear each sound
   utterance.pitch = 1.05;  // slightly bright, reads as friendly
-
   say(utterance);
 }
 
@@ -168,17 +170,19 @@ export function speakSentence(text: string): void {
 
   if (cloudVoiceId) {
     cloud.unlockAudio();
-    void cloud.say(text, cloudVoiceId, 'normal');
+    cloud.say(text, cloudVoiceId, 'normal').catch(() => deviceSentence(text));
     return;
   }
-  if (!speechAvailable()) return;
+  deviceSentence(text);
+}
 
+function deviceSentence(text: string): void {
+  if (!speechAvailable()) return;
   const utterance = new SpeechSynthesisUtterance(text);
   const voice = pickVoice();
   if (voice) utterance.voice = voice;
   utterance.lang = voice?.lang ?? 'en-GB';
   utterance.rate = 0.9;
-
   say(utterance);
 }
 

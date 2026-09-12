@@ -3,7 +3,7 @@ import { Icon } from '@/components/art/Icon';
 import { useKidAuth } from '@/hooks/useKidAuth';
 import { updateKidVoice, updateKidCloudVoice } from '@/lib/kidAuth';
 import { listVoices, previewVoice, speechAvailable, voiceQuality } from '@/lib/speech';
-import { CLOUD_VOICES, cloudConfigured, prepare, play, unlockAudio, stop } from '@/lib/cloudVoice';
+import { BUNDLED_VOICES, AZURE_VOICES, cloudConfigured, prepare, play, unlockAudio, stop } from '@/lib/cloudVoice';
 
 const SAMPLE = "Hello! I'm going to help you read today.";
 
@@ -120,14 +120,12 @@ export function VoicePicker() {
 
   return (
     <div>
-      {cloudOn && (
-        <>
-          <div className="voice-group">
-            <span>Realistic voices</span>
-            <span className="voice-group-note">Needs internet</span>
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
-            {CLOUD_VOICES.map((v) => (
+      <div className="voice-group">
+        <span>Realistic voices</span>
+        <span className="voice-group-note">Recommended</span>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
+        {[...BUNDLED_VOICES, ...(cloudOn ? AZURE_VOICES : [])].map((v) => (
               <VoiceRow
                 key={v.id}
                 name={v.name}
@@ -138,15 +136,13 @@ export function VoicePicker() {
                 busy={busy === v.id}
                 onSelect={() => chooseCloud(v.id)}
                 onTry={() => tryCloud(v.id)}
-              />
-            ))}
-          </div>
-          <div className="voice-group">
-            <span>On this device</span>
-            <span className="voice-group-note">Works offline</span>
-          </div>
-        </>
-      )}
+          />
+        ))}
+      </div>
+      <div className="voice-group">
+        <span>On this device</span>
+        <span className="voice-group-note">Built in</span>
+      </div>
       {deviceList}
     </div>
   );

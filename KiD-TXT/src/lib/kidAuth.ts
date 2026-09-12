@@ -22,6 +22,9 @@ import { READING_BANDS, type BandKey } from './curriculum';
 
 const SESSION_KEY = 'kid_txt_session';
 
+/** The realistic voice a new pupil starts with. */
+export const DEFAULT_VOICE = 'bf_emma';
+
 // Hardcoded school pupils (demo). A real deployment reads the band
 // from the school's assessment data, not from the child.
 const REGISTERED_PUPILS: { name: string; pupilId: string; band: BandKey }[] = [
@@ -62,6 +65,7 @@ export function loginKid(name: string, pupilId: string): KidUser | null {
     theme: 'cream',
     band,
     wcpm: READING_BANDS[band].targetWcpm,
+    cloudVoice: DEFAULT_VOICE,
   };
 
   saveKidSession(user);
@@ -75,6 +79,8 @@ export function getKidSession(): KidUser | null {
     const user = JSON.parse(raw) as KidUser & { aiVoiceId?: string };
     // An earlier build stored an AI voice choice; it must not linger.
     if ('aiVoiceId' in user) { delete user.aiVoiceId; saveKidSession(user); }
+    // Nobody has chosen a voice yet: the realistic one is the default.
+    if (!user.cloudVoice && !user.voiceURI) { user.cloudVoice = DEFAULT_VOICE; saveKidSession(user); }
     // Profiles saved before bands existed need defaults.
     if (!user.band || !READING_BANDS[user.band]) user.band = 'topaz';
     if (typeof user.wcpm !== 'number') user.wcpm = READING_BANDS[user.band].targetWcpm;
