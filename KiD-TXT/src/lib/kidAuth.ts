@@ -12,6 +12,8 @@ export interface KidUser {
   band: BandKey;
   /** Words per minute the child currently reads at, within their band. */
   wcpm: number;
+  /** voiceURI of the chosen reading voice; unset means the best available. */
+  voiceURI?: string;
 }
 
 import { READING_BANDS, type BandKey } from './curriculum';
@@ -102,5 +104,14 @@ export function updateKidWcpm(wcpm: number): void {
   if (session) {
     const b = READING_BANDS[session.band];
     saveKidSession({ ...session, wcpm: Math.min(b.maxWcpm, Math.max(b.minWcpm, wcpm)) });
+  }
+}
+
+export function updateKidVoice(voiceURI: string | null): void {
+  const session = getKidSession();
+  if (session) {
+    const next = { ...session };
+    if (voiceURI) next.voiceURI = voiceURI; else delete next.voiceURI;
+    saveKidSession(next);
   }
 }

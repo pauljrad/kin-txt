@@ -859,3 +859,33 @@ button { font-family: inherit; -webkit-tap-highlight-color: transparent; }
   border-radius: 12px;
 }
 .word-btn:disabled { cursor: default; }
+
+/* ─── Voice picker ─── */
+.voice-row {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 9px 10px 9px 12px;
+  border: 2.5px solid var(--border);
+  border-radius: 16px;
+  background: var(--bg);
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+.voice-row[data-selected="true"] {
+  background: var(--bg-card);
+  box-shadow: 0 4px 0 var(--shadow-col);
+}
+.voice-dot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2.5px solid var(--border);
+  background: var(--bg-card);
+  color: var(--accent-text);
+  flex-shrink: 0;
+}
+.voice-row[data-selected="true"] .voice-dot { background: var(--accent); }

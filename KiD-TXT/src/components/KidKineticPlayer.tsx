@@ -453,12 +453,16 @@ export function KidKineticPlayer({ parsedText, onBack }: KidPlayerProps) {
       </div>
 
       {/* ── Stage ──
-          Playing: the word alone, dead centre.
+          Playing: the word alone, dead centre. A tap anywhere here pauses.
           Paused:  the word, then the lesson or the tappable sentence. */}
-      <div style={{
-        flex: 1, display: 'flex', flexDirection: 'column',
-        alignItems: 'center', justifyContent: 'center', padding: '16px',
-      }}>
+      <div
+        onClick={() => { if (isPlaying) { stopSpeaking(); setIsPlaying(false); } }}
+        style={{
+          flex: 1, display: 'flex', flexDirection: 'column',
+          alignItems: 'center', justifyContent: 'center', padding: '16px',
+          cursor: isPlaying ? 'pointer' : 'default',
+        }}
+      >
         {isComplete ? (
           <div className="pop-in" style={{ textAlign: 'center', maxWidth: '22rem' }}>
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '14px' }}>

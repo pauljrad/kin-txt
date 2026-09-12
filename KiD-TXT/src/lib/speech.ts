@@ -10,38 +10,78 @@
 import { normaliseWord } from './curriculum';
 
 let cachedVoice: SpeechSynthesisVoice | null = null;
-let voicesRequested = false;
+let preferredURI: string | null = null;
 
 export function speechAvailable(): boolean {
   return typeof window !== 'undefined' && 'speechSynthesis' in window;
 }
 
-/** Pick the best available British voice, falling back to any English one. */
+if (speechAvailable()) {
+  // Voices load asynchronously; drop the cache whenever the list changes.
+  window.speechSynthesis.addEventListener('voiceschanged', () => { cachedVoice = null; });
+}
+
+/** The voice the child (or their teacher) chose in settings. */
+export function setPreferredVoice(uri: string | null): void {
+  preferredURI = uri;
+  cachedVoice = null;
+}
+
+/**
+ * How good a voice is likely to sound, higher is better. On iPhone the
+ * compact default ("Daniel") is the robotic one; the Enhanced and
+ * Premium downloads, and the Siri voices, are the pleasant ones.
+ */
+export function voiceQuality(v: SpeechSynthesisVoice): number {
+  const n = v.name.toLowerCase();
+  let q = 0;
+  if (/premium/.test(n)) q += 40;
+  if (/enhanced/.test(n)) q += 30;
+  if (/siri/.test(n)) q += 30;
+  if (/neural|natural|online/.test(n)) q += 25;      // Edge / Chrome cloud voices
+  if (/google/.test(n)) q += 10;
+  if (/compact|espeak|robot/.test(n)) q -= 30;
+  if (v.lang === 'en-GB') q += 15;
+  else if (v.lang.startsWith('en')) q += 5;
+  return q;
+}
+
+/** macOS ships joke voices. A child should not be read to by "Zarvox". */
+const NOVELTY = /^(albert|bad news|bahh|bells|boing|bubbles|cellos|deranged|good news|hysterical|jester|organ|pipe organ|superstar|trinoids|whisper|wobble|zarvox|junior|ralph|fred|kathy|princess|grandma|grandpa|rocko|shelley|eddy|flo|reed|sandy)\b/i;
+
+/** Every English voice on this device, best first, novelties excluded. */
+export function listVoices(): SpeechSynthesisVoice[] {
+  if (!speechAvailable()) return [];
+  return window.speechSynthesis
+    .getVoices()
+    .filter((v) => v.lang.toLowerCase().startsWith('en') && !NOVELTY.test(v.name))
+    .sort((a, b) => voiceQuality(b) - voiceQuality(a) || a.name.localeCompare(b.name));
+}
+
+/** The chosen voice if it exists here, otherwise the best one available. */
 function pickVoice(): SpeechSynthesisVoice | null {
   if (!speechAvailable()) return null;
   if (cachedVoice) return cachedVoice;
 
   const voices = window.speechSynthesis.getVoices();
-  if (voices.length === 0) {
-    // Voices load asynchronously in most browsers — ask once, retry later.
-    if (!voicesRequested) {
-      voicesRequested = true;
-      window.speechSynthesis.addEventListener('voiceschanged', () => {
-        cachedVoice = null;
-        pickVoice();
-      }, { once: true });
-    }
-    return null;
-  }
+  if (voices.length === 0) return null;
 
-  cachedVoice =
-    voices.find((v) => v.lang === 'en-GB' && /female|kate|serena|sonia/i.test(v.name)) ??
-    voices.find((v) => v.lang === 'en-GB') ??
-    voices.find((v) => v.lang.startsWith('en')) ??
-    voices[0] ??
-    null;
-
+  const chosen = preferredURI ? voices.find((v) => v.voiceURI === preferredURI) ?? null : null;
+  cachedVoice = chosen ?? listVoices()[0] ?? voices[0] ?? null;
   return cachedVoice;
+}
+
+/** Speak a sample in a specific voice, so a child can pick one they like. */
+export function previewVoice(voice: SpeechSynthesisVoice, text: string): void {
+  if (!speechAvailable()) return;
+  window.speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.voice = voice;
+  utterance.lang = voice.lang;
+  utterance.rate = 0.9;
+  utterance.pitch = 1.05;
+  // A beat after cancel(), or iOS drops it.
+  setTimeout(() => window.speechSynthesis.speak(utterance), 80);
 }
 
 /**
@@ -167,10 +207,17 @@ export function speakSequence(steps: SpeechStep[], onDone: () => void): () => vo
 }
 
 /**
- * The steps that teach one word: say it, spell it, say it again.
- * Letters are spoken as capitals — engines read "A" as the letter name
- * and lowercase "a" as the article.
+ * How each letter is said aloud. Spoken as its name, written out, so no
+ * engine can say "capital em" or read "a" as the article. British: zed.
  */
+const LETTER_NAMES: Record<string, string> = {
+  a: 'ay', b: 'bee', c: 'see', d: 'dee', e: 'ee', f: 'eff', g: 'gee',
+  h: 'aitch', i: 'eye', j: 'jay', k: 'kay', l: 'el', m: 'em', n: 'en',
+  o: 'oh', p: 'pee', q: 'queue', r: 'ar', s: 'ess', t: 'tee', u: 'you',
+  v: 'vee', w: 'double you', x: 'ex', y: 'why', z: 'zed',
+};
+
+/** The steps that teach one word: say it, spell it, say it again. */
 export function spellingSteps(
   word: string,
   onWord: () => void,
@@ -181,7 +228,7 @@ export function spellingSteps(
   return [
     { text: word, rate: 0.72, gapMs: 420, onStart: onWord },
     ...letters.map((ch, i) => ({
-      text: ch.toUpperCase(),
+      text: LETTER_NAMES[ch.toLowerCase()] ?? ch,
       rate: 0.85,
       gapMs: 140,
       onStart: () => onLetter(i),

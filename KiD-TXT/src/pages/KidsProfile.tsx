@@ -5,6 +5,7 @@ import { logoutKid, updateKidBand } from '@/lib/kidAuth';
 import { AvatarCanvas } from '@/components/kids/AvatarCanvas';
 import { ThemeSelector } from '@/components/ThemeSelector';
 import { Icon } from '@/components/art/Icon';
+import { VoicePicker } from '@/components/VoicePicker';
 import { useNavigate } from 'react-router-dom';
 import {
   loadProgress, textsCompleted, accuracy, skillAccuracy,
@@ -216,6 +217,15 @@ export default function KidsProfile() {
                 ))
               )}
             </div>
+          </div>
+
+          {/* ── Reading voice ── */}
+          <div className="kid-card" style={{ padding: '19px', marginBottom: '14px' }}>
+            <h2 style={{ fontSize: '1.18rem' }}>Reading Voice</h2>
+            <p style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-muted)', margin: '3px 0 14px' }}>
+              Who reads the words to you. Tap the speaker to hear each one.
+            </p>
+            <VoicePicker />
           </div>
 
           {/* ── Teacher settings ── */}
