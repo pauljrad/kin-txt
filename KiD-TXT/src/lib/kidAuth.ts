@@ -14,6 +14,8 @@ export interface KidUser {
   wcpm: number;
   /** voiceURI of the chosen device voice; unset means the best available. */
   voiceURI?: string;
+  /** A realistic cloud voice. When set it is used instead of any device voice. */
+  cloudVoice?: string;
 }
 
 import { READING_BANDS, type BandKey } from './curriculum';
@@ -126,6 +128,15 @@ export function updateKidVoice(voiceURI: string | null): void {
   if (session) {
     const next = { ...session };
     if (voiceURI) next.voiceURI = voiceURI; else delete next.voiceURI;
+    saveKidSession(next);
+  }
+}
+
+export function updateKidCloudVoice(cloudVoice: string | null): void {
+  const session = getKidSession();
+  if (session) {
+    const next = { ...session };
+    if (cloudVoice) next.cloudVoice = cloudVoice; else delete next.cloudVoice;
     saveKidSession(next);
   }
 }

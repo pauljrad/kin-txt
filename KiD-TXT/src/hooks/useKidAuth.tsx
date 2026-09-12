@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import { getKidSession, saveKidSession, type KidUser } from '@/lib/kidAuth';
 import { READING_BANDS } from '@/lib/curriculum';
-import { setPreferredVoice } from '@/lib/speech';
+import { setPreferredVoice, setCloudVoice } from '@/lib/speech';
 
 interface KidAuthCtx {
   kid: KidUser | null;
@@ -12,6 +12,7 @@ interface KidAuthCtx {
   /** Clamped to the child's own band — they cannot race past it. */
   updateWcpm: (wcpm: number) => void;
   updateVoice: (voiceURI: string | null) => void;
+  updateCloudVoice: (cloudVoice: string | null) => void;
 }
 
 const Ctx = createContext<KidAuthCtx | undefined>(undefined);
@@ -49,10 +50,20 @@ export function KidAuthProvider({ children }: { children: ReactNode }) {
     setKid(next);
   };
 
+  const updateCloudVoice = (cloudVoice: string | null) => {
+    if (!kid) return;
+    const next = { ...kid };
+    if (cloudVoice) next.cloudVoice = cloudVoice; else delete next.cloudVoice;
+    setKid(next);
+  };
+
   // The speech engine follows the saved choice
   useEffect(() => {
     setPreferredVoice(kid?.voiceURI ?? null);
   }, [kid?.voiceURI]);
+  useEffect(() => {
+    setCloudVoice(kid?.cloudVoice ?? null);
+  }, [kid?.cloudVoice]);
 
 
   // Apply theme to document root
@@ -61,7 +72,7 @@ export function KidAuthProvider({ children }: { children: ReactNode }) {
   }, [kid?.theme]);
 
   return (
-    <Ctx.Provider value={{ kid, setKid, updateTheme, updateAvatar, updateBand, updateWcpm, updateVoice }}>
+    <Ctx.Provider value={{ kid, setKid, updateTheme, updateAvatar, updateBand, updateWcpm, updateVoice, updateCloudVoice }}>
       {children}
     </Ctx.Provider>
   );

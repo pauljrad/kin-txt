@@ -1,16 +1,21 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Icon } from '@/components/art/Icon';
 import { useKidAuth } from '@/hooks/useKidAuth';
-import { updateKidVoice } from '@/lib/kidAuth';
+import { updateKidVoice, updateKidCloudVoice } from '@/lib/kidAuth';
 import { listVoices, previewVoice, speechAvailable, voiceQuality } from '@/lib/speech';
+import { CLOUD_VOICES, cloudConfigured, prepare, play, unlockAudio, stop } from '@/lib/cloudVoice';
 
 const SAMPLE = "Hello! I'm going to help you read today.";
 
 /** Pick the reading voice from those the device has. Tap the speaker to hear one. */
 export function VoicePicker() {
-  const { kid, updateVoice } = useKidAuth();
+  const { kid, updateVoice, updateCloudVoice } = useKidAuth();
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>(() => listVoices());
   const [playing, setPlaying] = useState<string | null>(null);
+  const [cloudOn, setCloudOn] = useState(false);
+  const [busy, setBusy] = useState<string | null>(null);
+
+  useEffect(() => { cloudConfigured().then(setCloudOn); }, []);
 
   const refresh = useCallback(() => setVoices(listVoices()), []);
 
@@ -28,16 +33,31 @@ export function VoicePicker() {
 
   if (!kid) return null;
 
-  if (!speechAvailable()) {
-    return <p style={{ fontSize: '0.84rem', fontWeight: 700, color: 'var(--text-muted)' }}>This device can't read aloud.</p>;
-  }
-
   const chosen = kid.voiceURI ?? null;
+  const chosenCloud = kid.cloudVoice ?? null;
   const best = voices[0]?.voiceURI ?? null;
 
   const choose = (uri: string | null) => {
-    updateVoice(uri);
-    updateKidVoice(uri);
+    updateCloudVoice(null); updateKidCloudVoice(null);
+    updateVoice(uri); updateKidVoice(uri);
+  };
+
+  const chooseCloud = (id: string) => {
+    updateCloudVoice(id); updateKidCloudVoice(id);
+  };
+
+  const tryCloud = async (id: string) => {
+    unlockAudio();
+    stop();
+    setBusy(id);
+    try {
+      const buffer = await prepare(SAMPLE, id, 'normal');
+      setBusy(null);
+      setPlaying(id);
+      await play(buffer);
+    } catch { /* nothing to play */ }
+    setBusy(null);
+    setPlaying((p) => (p === id ? null : p));
   };
 
   const tryVoice = (v: SpeechSynthesisVoice) => {
@@ -60,27 +80,25 @@ export function VoicePicker() {
       : tag === 'EN-IE' ? 'Irish' : tag === 'EN-ZA' ? 'South African' : tag === 'EN-IN' ? 'Indian' : v.lang;
   };
 
-  if (voices.length === 0) {
-    return (
-      <div className="note">
-        <Icon name="sound" size={19} />
-        <div>
-          No voices found yet.{' '}
-          <button onClick={refresh} style={{ background: 'none', border: 'none', color: 'var(--accent)', fontWeight: 800, cursor: 'pointer', padding: 0, font: 'inherit' }}>
-            Look again
-          </button>
-        </div>
+  const deviceList = !speechAvailable() ? (
+    <p style={{ fontSize: '0.84rem', fontWeight: 700, color: 'var(--text-muted)' }}>This device can't read aloud on its own.</p>
+  ) : voices.length === 0 ? (
+    <div className="note">
+      <Icon name="sound" size={19} />
+      <div>
+        No voices found yet.{' '}
+        <button onClick={refresh} style={{ background: 'none', border: 'none', color: 'var(--accent)', fontWeight: 800, cursor: 'pointer', padding: 0, font: 'inherit' }}>
+          Look again
+        </button>
       </div>
-    );
-  }
-
-  return (
+    </div>
+  ) : (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '19rem', overflowY: 'auto', paddingRight: '2px' }}>
       <VoiceRow
         name="Automatic"
         detail={voices[0] ? `Currently ${voices[0].name.replace(/\s*\(.*\)$/, '')}` : 'Best voice on this device'}
         badge={null}
-        selected={chosen === null}
+        selected={chosenCloud === null && chosen === null}
         playing={best !== null && playing === best}
         onSelect={() => choose(null)}
         onTry={voices[0] ? () => tryVoice(voices[0]) : undefined}
@@ -91,7 +109,7 @@ export function VoicePicker() {
           name={v.name.replace(/\s*\((Enhanced|Premium)\)$/i, '')}
           detail={region(v)}
           badge={badge(v)}
-          selected={chosen === v.voiceURI}
+          selected={chosenCloud === null && chosen === v.voiceURI}
           playing={playing === v.voiceURI}
           onSelect={() => choose(v.voiceURI)}
           onTry={() => tryVoice(v)}
@@ -99,16 +117,50 @@ export function VoicePicker() {
       ))}
     </div>
   );
+
+  return (
+    <div>
+      {cloudOn && (
+        <>
+          <div className="voice-group">
+            <span>Realistic voices</span>
+            <span className="voice-group-note">Needs internet</span>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
+            {CLOUD_VOICES.map((v) => (
+              <VoiceRow
+                key={v.id}
+                name={v.name}
+                detail={`${v.accent} · ${v.blurb}`}
+                badge={v.child ? 'Child' : null}
+                selected={chosenCloud === v.id}
+                playing={playing === v.id}
+                busy={busy === v.id}
+                onSelect={() => chooseCloud(v.id)}
+                onTry={() => tryCloud(v.id)}
+              />
+            ))}
+          </div>
+          <div className="voice-group">
+            <span>On this device</span>
+            <span className="voice-group-note">Works offline</span>
+          </div>
+        </>
+      )}
+      {deviceList}
+    </div>
+  );
 }
 
 function VoiceRow({
-  name, detail, badge, selected, playing, onSelect, onTry,
+  name, detail, badge, selected, playing, busy, onSelect, onTry,
 }: {
   name: string;
   detail: string;
   badge: string | null;
   selected: boolean;
   playing: boolean;
+  busy?: boolean;
   onSelect: () => void;
   onTry?: () => void;
 }) {
@@ -142,8 +194,9 @@ function VoiceRow({
           className="icon-btn"
           style={{ width: '42px', height: '42px', background: playing ? 'var(--sun)' : undefined }}
           aria-label={`Hear ${name}`}
+          disabled={busy}
         >
-          <Icon name="sound" size={19} />
+          {busy ? <span className="spinner" aria-hidden="true" /> : <Icon name="sound" size={19} />}
         </button>
       )}
     </div>

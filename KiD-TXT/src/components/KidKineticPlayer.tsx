@@ -6,8 +6,9 @@ import { Icon } from '@/components/art/Icon';
 import { useKidAuth } from '@/hooks/useKidAuth';
 import {
   speakWord, speakSentence, stopSpeaking, speechAvailable,
-  speakSequence, spellingSteps,
+  speakSequence, spellingSteps, warmTexts, textReady, lessonTexts, usingCloudVoice,
 } from '@/lib/speech';
+import { unlockAudio } from '@/lib/cloudVoice';
 import {
   READING_BANDS, READING_SKILLS, SPELLING_LISTS,
   isStatutoryWord, statutoryBase, statutoryWordsIn, wcpmToDelayMs, normaliseWord,
@@ -121,6 +122,22 @@ function SpellingCard({
   const letters = lesson.word.split('');
   const speaking = lesson.step === 'word' || lesson.step === 'letters' || lesson.step === 'repeat';
 
+  // A cloud voice has to fetch the sounds first. Start as the card
+  // appears, and hold the button until every one is here.
+  const [audioReady, setAudioReady] = useState(() => !usingCloudVoice());
+  useEffect(() => {
+    if (!usingCloudVoice()) { setAudioReady(true); return; }
+    const texts = lessonTexts(lesson.word);
+    warmTexts(texts);
+    setAudioReady(texts.every((t) => textReady(t)));
+    const timer = setInterval(() => {
+      if (texts.every((t) => textReady(t))) { setAudioReady(true); clearInterval(timer); }
+    }, 200);
+    // Never hold a child hostage to a slow network: release after 8s regardless
+    const bail = setTimeout(() => { setAudioReady(true); clearInterval(timer); }, 8000);
+    return () => { clearInterval(timer); clearTimeout(bail); };
+  }, [lesson.word]);
+
   const tileState = (i: number) => {
     if (lesson.step === 'letters') {
       if (i === lesson.letter) return ' on';
@@ -175,12 +192,14 @@ function SpellingCard({
       ) : (
         <button
           onClick={onHear}
-          disabled={speaking}
-          className={`kid-btn kid-btn-primary${lesson.step === 'ready' ? ' pulse' : ''}`}
+          disabled={speaking || !audioReady}
+          className={`kid-btn kid-btn-primary${lesson.step === 'ready' && audioReady ? ' pulse' : ''}`}
           style={{ width: '100%', fontSize: '1.08rem' }}
         >
-          <Icon name="sound" size={21} />
-          {speaking ? 'Listening…' : 'Hear it'}
+          {!audioReady
+            ? <span className="spinner" style={{ borderColor: 'var(--accent-text)', borderTopColor: 'transparent' }} />
+            : <Icon name="sound" size={21} />}
+          {!audioReady ? 'Getting ready…' : speaking ? 'Listening…' : 'Hear it'}
         </button>
       )}
     </div>
@@ -354,6 +373,7 @@ export function KidKineticPlayer({ parsedText, onBack }: KidPlayerProps) {
 
   const hearLesson = useCallback(() => {
     if (!lesson) return;
+    unlockAudio();
     cancelLessonRef.current?.();
     const word = lesson.word;
     cancelLessonRef.current = speakSequence(
@@ -424,6 +444,7 @@ export function KidKineticPlayer({ parsedText, onBack }: KidPlayerProps) {
   }, [isPlaying, showQuiz, scheduleNext]);
 
   const togglePlay = () => {
+    unlockAudio();
     if (isComplete || lessonLocksPlay) return;
     if (lesson) { continueReading(); return; }
     stopSpeaking();
@@ -462,6 +483,14 @@ export function KidKineticPlayer({ parsedText, onBack }: KidPlayerProps) {
 
   const activeQuestion = showQuiz ? getQuestion(parsedText.id, quizIndex) : null;
   const paused = !isPlaying && !isComplete;
+
+  // Paused on a word: fetch its sound now, so "Hear it" is instant
+  useEffect(() => {
+    if (paused && !lesson) warmTexts([normaliseWord(currentWord)]);
+  }, [paused, lesson, currentWord]);
+  useEffect(() => {
+    if (activeQuestion) warmTexts([activeQuestion.question], 'normal');
+  }, [activeQuestion]);
 
 
   return (

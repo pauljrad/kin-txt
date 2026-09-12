@@ -8,20 +8,48 @@
 // ──────────────────────────────────────────────────────────────────
 
 import { normaliseWord } from './curriculum';
+import * as cloud from './cloudVoice';
 
 /**
- * How each letter is said aloud. Spoken as its name, written out, so no
- * engine can say "capital em" or read "a" as the article. British: zed.
+ * How each letter is said aloud. A single lowercase letter on its own
+ * is read as the letter's name by every engine we've met; the two
+ * things that went wrong before were sending capitals (iOS announces
+ * "capital M") and spelling the names out ("ay" is read as "aye",
+ * which sounds like the letter I).
  */
-const LETTER_NAMES: Record<string, string> = {
-  a: 'ay', b: 'bee', c: 'see', d: 'dee', e: 'ee', f: 'eff', g: 'gee',
-  h: 'aitch', i: 'eye', j: 'jay', k: 'kay', l: 'el', m: 'em', n: 'en',
-  o: 'oh', p: 'pee', q: 'queue', r: 'ar', s: 'ess', t: 'tee', u: 'you',
-  v: 'vee', w: 'double you', x: 'ex', y: 'why', z: 'zed',
-};
+const LETTER_NAMES: Record<string, string> = Object.fromEntries(
+  'abcdefghijklmnopqrstuvwxyz'.split('').map((ch) => [ch, ch]),
+);
 
 let cachedVoice: SpeechSynthesisVoice | null = null;
 let preferredURI: string | null = null;
+
+// A realistic (cloud) voice, by id. When set, it is used for everything;
+// null means the device's own voice.
+let cloudVoiceId: string | null = null;
+
+export function setCloudVoice(id: string | null): void {
+  cloudVoiceId = id;
+}
+
+export function usingCloudVoice(): boolean {
+  return cloudVoiceId !== null;
+}
+
+/** Fetch these now so they play without a wait. No-op on the device engine. */
+export function warmTexts(texts: string[], rate: cloud.Rate = 'slow'): void {
+  if (cloudVoiceId) void cloud.warm(texts, cloudVoiceId, rate);
+}
+
+/** Can this play with no wait? Always true for the device engine. */
+export function textReady(text: string, rate: cloud.Rate = 'slow'): boolean {
+  return cloudVoiceId ? cloud.isReady(text, cloudVoiceId, rate) : true;
+}
+
+/** Everything a lesson on `word` will say, for warming ahead of the tap. */
+export function lessonTexts(word: string): string[] {
+  return [word, ...word.split('').map((ch) => LETTER_NAMES[ch.toLowerCase()] ?? ch)];
+}
 
 
 
@@ -103,6 +131,11 @@ export function speakWord(word: string): void {
   const clean = normaliseWord(word);
   if (!clean) return;
 
+  if (cloudVoiceId) {
+    cloud.unlockAudio();                  // inside the tap, before any await
+    void cloud.say(clean, cloudVoiceId, 'slow');
+    return;
+  }
   if (!speechAvailable()) return;
 
   const utterance = new SpeechSynthesisUtterance(clean);
@@ -133,6 +166,11 @@ function say(utterance: SpeechSynthesisUtterance): void {
 export function speakSentence(text: string): void {
   if (!text.trim()) return;
 
+  if (cloudVoiceId) {
+    cloud.unlockAudio();
+    void cloud.say(text, cloudVoiceId, 'normal');
+    return;
+  }
   if (!speechAvailable()) return;
 
   const utterance = new SpeechSynthesisUtterance(text);
@@ -145,6 +183,7 @@ export function speakSentence(text: string): void {
 }
 
 export function stopSpeaking(): void {
+  cloud.stop();
   if (speechAvailable()) window.speechSynthesis.cancel();
 }
 
@@ -179,6 +218,28 @@ function estimateMs(text: string, rate: number): number {
  */
 export function speakSequence(steps: SpeechStep[], onDone: () => void): () => void {
   if (steps.length === 0) { onDone(); return () => {}; }
+
+  // Cloud voice: each step is a decoded buffer, played back to back.
+  if (cloudVoiceId) {
+    const voice = cloudVoiceId;
+    let cancelled = false;
+    cloud.unlockAudio();
+    (async () => {
+      for (const step of steps) {
+        if (cancelled) return;
+        step.onStart?.();
+        try {
+          const buffer = await cloud.prepare(step.text, voice, 'slow');
+          if (cancelled) return;
+          await cloud.play(buffer);
+        } catch { /* skip a step rather than stall the lesson */ }
+        if (cancelled) return;
+        await new Promise((r) => setTimeout(r, step.gapMs ?? 80));
+      }
+      if (!cancelled) onDone();
+    })();
+    return () => { cancelled = true; cloud.stop(); };
+  }
 
   if (!speechAvailable()) { onDone(); return () => {}; }
 
