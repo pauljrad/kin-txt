@@ -703,3 +703,159 @@ button { font-family: inherit; -webkit-tap-highlight-color: transparent; }
   outline: 3px solid var(--accent);
   outline-offset: 3px;
 }
+
+/* ============================================================
+   Reader — the word, and the spelling lesson
+   ============================================================ */
+
+/* The word is one uninterrupted text run. Splitting a word into
+   spans loses the kerning between them, so a pair like "f" + "r"
+   spaces differently at the join than the font intends and letters
+   collide. Turning kerning and ligatures off for the whole word
+   makes every join identical, split or not — the geometry is then
+   the font's raw advances, which never overlap. */
+.word-stage {
+  display: inline-block;
+  white-space: nowrap;
+  font-family: 'Fredoka', 'Nunito', sans-serif;
+  font-weight: 600;
+  line-height: 1.1;
+  color: var(--text);
+  font-kerning: none;
+  font-variant-ligatures: none;
+  letter-spacing: 0.01em;
+  /* Sized by the word's length so a long word never leaves the screen:
+     13vw for short words, shrinking as --chars grows. */
+  font-size: min(13vw, calc(84vw / (var(--chars, 6) * 0.58)), 5.5rem);
+  padding: 0.04em 0.1em 0.12em;
+  border-bottom: 0.1em solid transparent;
+  transition: font-size 0.18s ease, border-color 0.2s ease;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.word-stage .focus { color: var(--accent); }
+
+/* A spelling word grows, and sits on a gold rule */
+.word-stage.teach {
+  font-size: min(16vw, calc(88vw / (var(--chars, 6) * 0.58)), 6.4rem);
+  border-bottom-color: var(--sun);
+}
+
+@media (min-width: 768px) {
+  .word-stage { font-size: min(9vw, calc(70vw / (var(--chars, 6) * 0.58)), 6rem); }
+  .word-stage.teach { font-size: min(11vw, calc(74vw / (var(--chars, 6) * 0.58)), 7rem); }
+}
+
+/* ─── Spelling lesson ─── */
+.spell-card {
+  width: 100%;
+  max-width: 30rem;
+  margin-top: 18px;
+  background: var(--bg-card);
+  border: 3px solid var(--border);
+  border-radius: 22px;
+  box-shadow: 0 var(--lift) 0 var(--shadow-col);
+  padding: 18px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.spell-tiles {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 7px;
+  max-width: 100%;
+}
+
+/* One letter. Pops in on arrival, lifts when spoken, turns gold when done. */
+.tile {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 54px;
+  border-radius: 12px;
+  border: 2.5px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  box-shadow: 0 4px 0 var(--shadow-col);
+  font-family: 'Fredoka', sans-serif;
+  font-weight: 600;
+  font-size: 1.7rem;
+  line-height: 1;
+  animation: tile-in 0.32s cubic-bezier(0.34, 1.4, 0.5, 1) both;
+  animation-delay: calc(var(--i, 0) * 45ms);
+  transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.tile.on {
+  background: var(--accent);
+  color: var(--accent-text);
+  box-shadow: 0 4px 0 var(--accent-dark);
+  animation: tile-say 0.36s cubic-bezier(0.34, 1.5, 0.5, 1);
+}
+
+.tile.done {
+  background: var(--sun);
+  color: var(--ink);
+  box-shadow: 0 4px 0 var(--sun-dark);
+}
+
+/* The whole word cheers when it is spoken again at the end */
+.spell-tiles.cheer .tile {
+  animation: tile-cheer 0.5s cubic-bezier(0.34, 1.4, 0.5, 1);
+  animation-delay: calc(var(--i, 0) * 40ms);
+}
+
+.spell-hint {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: var(--text-muted);
+  text-align: center;
+  letter-spacing: 0.02em;
+}
+
+/* Long words get narrower tiles so they fit an iPhone in one row */
+@media (max-width: 420px) {
+  .spell-tiles[data-long="true"] .tile { width: 36px; height: 46px; font-size: 1.35rem; border-radius: 10px; }
+  .spell-tiles { gap: 5px; }
+}
+
+/* A pulsing primary button, so the one thing to press is obvious */
+.kid-btn.pulse { animation: btn-pulse 1.4s ease-in-out infinite; }
+
+@keyframes tile-in {
+  0%   { transform: translateY(14px) scale(0.6); opacity: 0; }
+  70%  { transform: translateY(-3px) scale(1.06); opacity: 1; }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+@keyframes tile-say {
+  0%   { transform: translateY(0) scale(1); }
+  40%  { transform: translateY(-9px) scale(1.16); }
+  100% { transform: translateY(0) scale(1); }
+}
+@keyframes tile-cheer {
+  0%   { transform: translateY(0) rotate(0); }
+  35%  { transform: translateY(-10px) rotate(-6deg); }
+  70%  { transform: translateY(0) rotate(4deg); }
+  100% { transform: translateY(0) rotate(0); }
+}
+@keyframes btn-pulse {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.04); }
+}
+.kid-btn.pulse:active { animation: none; }
+
+/* The word is a button, but must not look like one */
+.word-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  max-width: 100%;
+  border-radius: 12px;
+}
+.word-btn:disabled { cursor: default; }

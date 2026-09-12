@@ -1,13 +1,16 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useEffect, useCallback, useRef, useMemo, type CSSProperties } from 'react';
+import { motion } from 'framer-motion';
 import { getQuestion, type QuizQuestion } from '@/lib/quizQuestions';
 import { ThemeSelector } from '@/components/ThemeSelector';
 import { Icon } from '@/components/art/Icon';
 import { useKidAuth } from '@/hooks/useKidAuth';
-import { speakWord, speakSentence, stopSpeaking, speechAvailable } from '@/lib/speech';
 import {
-  READING_BANDS, READING_SKILLS, isStatutoryWord, statutoryWordsIn,
-  wcpmToDelayMs, normaliseWord,
+  speakWord, speakSentence, stopSpeaking, speechAvailable,
+  speakSequence, spellingSteps,
+} from '@/lib/speech';
+import {
+  READING_BANDS, READING_SKILLS, SPELLING_LISTS,
+  isStatutoryWord, statutoryBase, statutoryWordsIn, wcpmToDelayMs, normaliseWord,
 } from '@/lib/curriculum';
 import {
   loadProgress, recordAnswer, recordReading, recordCompletion,
@@ -26,6 +29,128 @@ interface KidPlayerProps {
 }
 
 const isEndOfSentence = (word: string) => /[.!?]["'”)]*$/.test(word);
+
+/** Spelling words shorter than this are read, not taught — "a" and "I" need no lesson. */
+const MIN_TEACH_LENGTH = 3;
+
+// ─── The word ────────────────────────────────────────────────────
+// One text run, sized by its length so it never leaves the screen.
+// The focus letter is coloured, not repositioned: the word stays
+// centred and the split cannot move a single glyph (see .word-stage).
+function WordStage({
+  word, teach, onTap, tappable,
+}: {
+  word: string;
+  teach: boolean;
+  onTap: () => void;
+  tappable: boolean;
+}) {
+  const orp = Math.max(0, Math.ceil(word.length * 0.35) - 1);
+  return (
+    <button
+      className="word-btn"
+      onClick={onTap}
+      disabled={!tappable}
+      aria-label={tappable ? `Hear the word ${normaliseWord(word)}` : normaliseWord(word)}
+    >
+      <div
+        className={`word-stage${teach ? ' teach' : ''}`}
+        style={{ '--chars': Math.max(3, word.length) } as CSSProperties}
+      >
+        <span>{word.slice(0, orp)}</span>
+        <span className="focus">{word[orp] ?? ''}</span>
+        <span>{word.slice(orp + 1)}</span>
+      </div>
+    </button>
+  );
+}
+
+// ─── Spelling lesson ─────────────────────────────────────────────
+type LessonStep = 'ready' | 'word' | 'letters' | 'repeat' | 'done';
+
+interface Lesson {
+  /** The list's own spelling, e.g. "certain" for "certainly". */
+  word: string;
+  step: LessonStep;
+  /** Index of the letter being spoken, or -1. */
+  letter: number;
+}
+
+function SpellingCard({
+  lesson, onHear, onContinue,
+}: {
+  lesson: Lesson;
+  onHear: () => void;
+  onContinue: () => void;
+}) {
+  const letters = lesson.word.split('');
+  const speaking = lesson.step === 'word' || lesson.step === 'letters' || lesson.step === 'repeat';
+
+  const tileState = (i: number) => {
+    if (lesson.step === 'letters') {
+      if (i === lesson.letter) return ' on';
+      if (i < lesson.letter) return ' done';
+      return '';
+    }
+    if (lesson.step === 'repeat' || lesson.step === 'done') return ' done';
+    return '';
+  };
+
+  const hint = (() => {
+    switch (lesson.step) {
+      case 'ready':   return 'Tap to hear it, then listen for every letter.';
+      case 'word':    return 'Listen…';
+      case 'letters': return letters.slice(0, lesson.letter + 1).join(' · ');
+      case 'repeat':  return lesson.word;
+      case 'done':    return `You can spell ${lesson.word}.`;
+    }
+  })();
+
+  return (
+    <div className="spell-card pop-in">
+      <div className="statutory-flag">
+        <Icon name="star" size={16} strokeWidth={2.4} />
+        Spelling word
+      </div>
+
+      <div
+        className={`spell-tiles${lesson.step === 'repeat' ? ' cheer' : ''}`}
+        data-long={letters.length > 8 ? 'true' : 'false'}
+        aria-label={`${lesson.word}, spelled ${letters.join(' ')}`}
+      >
+        {letters.map((ch, i) => (
+          <span key={i} className={`tile${tileState(i)}`} style={{ '--i': i } as CSSProperties}>
+            {ch}
+          </span>
+        ))}
+      </div>
+
+      <p className="spell-hint" aria-live="polite">{hint}</p>
+
+      {lesson.step === 'done' ? (
+        <div style={{ display: 'flex', gap: '10px', width: '100%' }}>
+          <button onClick={onHear} className="kid-btn kid-btn-ghost" style={{ flex: '0 0 auto', padding: '12px 16px' }} aria-label="Hear it again">
+            <Icon name="sound" size={20} />
+          </button>
+          <button onClick={onContinue} className="kid-btn kid-btn-primary" style={{ flex: 1 }}>
+            <Icon name="play" size={18} strokeWidth={2.4} />
+            Keep reading
+          </button>
+        </div>
+      ) : (
+        <button
+          onClick={onHear}
+          disabled={speaking}
+          className={`kid-btn kid-btn-primary${lesson.step === 'ready' ? ' pulse' : ''}`}
+          style={{ width: '100%', fontSize: '1.08rem' }}
+        >
+          <Icon name="sound" size={21} />
+          {speaking ? 'Listening…' : 'Hear it'}
+        </button>
+      )}
+    </div>
+  );
+}
 
 // ─── Quiz ────────────────────────────────────────────────────────
 function QuizOverlay({
@@ -61,7 +186,6 @@ function QuizOverlay({
   return (
     <div className="quiz-overlay">
       <div className="quiz-card pop-in">
-        {/* Which skill this question practises */}
         <div className="skill-chip" style={{ color: skill.colour, margin: '0 auto 16px' }}>
           <Icon name={question.skill} size={17} strokeWidth={2.2} />
           {skill.label}
@@ -123,6 +247,7 @@ function QuizOverlay({
 export function KidKineticPlayer({ parsedText, onBack }: KidPlayerProps) {
   const { kid, updateWcpm } = useKidAuth();
   const band = READING_BANDS[kid?.band ?? 'topaz'];
+  const listWords = SPELLING_LISTS[band.spellingList].words;
 
   const allWords = useMemo(() => parsedText.paragraphs.flat(), [parsedText.paragraphs]);
   const totalWords = allWords.length;
@@ -137,6 +262,12 @@ export function KidKineticPlayer({ parsedText, onBack }: KidPlayerProps) {
   const [quizIndex, setQuizIndex] = useState(0);
   const [pendingQuizMilestone, setPendingQuizMilestone] = useState<number | null>(null);
 
+  // The spelling lesson. Words already taught this session are not
+  // taught again — "the" would otherwise stop a Year 1 reader every line.
+  const [lesson, setLesson] = useState<Lesson | null>(null);
+  const taughtRef = useRef<Set<string>>(new Set());
+  const cancelLessonRef = useRef<(() => void) | null>(null);
+
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const wordIndexRef = useRef(wordIndex);
   const wcpm = kid?.wcpm ?? band.targetWcpm;
@@ -145,7 +276,6 @@ export function KidKineticPlayer({ parsedText, onBack }: KidPlayerProps) {
 
   const currentWord = allWords[wordIndex] ?? '';
   const progress = totalWords > 0 ? (wordIndex / totalWords) * 100 : 0;
-  const isStatutory = isStatutoryWord(currentWord, band.spellingList);
 
   const statutorySoFar = useMemo(
     () => statutoryWordsIn(allWords.slice(0, wordIndex + 1), band.spellingList),
@@ -157,8 +287,9 @@ export function KidKineticPlayer({ parsedText, onBack }: KidPlayerProps) {
     setProgressState((p) => recordReading(p, parsedText.id, wordIndex, statutorySoFar));
   }, [wordIndex, parsedText.id, statutorySoFar]);
 
-  useEffect(() => () => stopSpeaking(), []);
+  useEffect(() => () => { cancelLessonRef.current?.(); stopSpeaking(); }, []);
 
+  // ── Advance ───────────────────────────────────────────────────
   const advance = useCallback(() => {
     const idx = wordIndexRef.current;
     if (idx >= allWords.length - 1) {
@@ -172,6 +303,48 @@ export function KidKineticPlayer({ parsedText, onBack }: KidPlayerProps) {
     wordIndexRef.current = next;
   }, [allWords.length, parsedText.id]);
 
+  // ── Spelling words stop the reader ────────────────────────────
+  // Fires on arrival at a word while playing, and when play starts on
+  // one. The taught-set means a resume from the same word carries on.
+  useEffect(() => {
+    if (!isPlaying || showQuiz || lesson) return;
+    const base = statutoryBase(allWords[wordIndex] ?? '', band.spellingList);
+    if (!base || base.length < MIN_TEACH_LENGTH || taughtRef.current.has(base)) return;
+
+    // Use the list's casing — "February", not "february"
+    const canonical = listWords.find((w) => w.toLowerCase() === base) ?? base;
+    setIsPlaying(false);
+    setLesson({ word: canonical, step: 'ready', letter: -1 });
+  }, [wordIndex, isPlaying, showQuiz, lesson, allWords, band.spellingList, listWords]);
+
+  const hearLesson = useCallback(() => {
+    if (!lesson) return;
+    cancelLessonRef.current?.();
+    const word = lesson.word;
+    cancelLessonRef.current = speakSequence(
+      spellingSteps(
+        word,
+        () => setLesson((l) => l && { ...l, step: 'word', letter: -1 }),
+        (i) => setLesson((l) => l && { ...l, step: 'letters', letter: i }),
+        () => setLesson((l) => l && { ...l, step: 'repeat', letter: -1 }),
+      ),
+      () => {
+        taughtRef.current.add(word.toLowerCase());
+        setLesson((l) => l && { ...l, step: 'done', letter: -1 });
+      },
+    );
+  }, [lesson]);
+
+  const continueReading = useCallback(() => {
+    cancelLessonRef.current?.();
+    cancelLessonRef.current = null;
+    setLesson(null);
+    setIsPlaying(true);
+  }, []);
+
+  const lessonLocksPlay = lesson !== null && lesson.step !== 'done';
+
+  // ── Questions ─────────────────────────────────────────────────
   const wordsPerQuiz = band.wordsPerQuestion;
 
   useEffect(() => {
@@ -185,7 +358,6 @@ export function KidKineticPlayer({ parsedText, onBack }: KidPlayerProps) {
     }
   }, [wordIndex, quizIndex, pendingQuizMilestone, showQuiz, wordsPerQuiz]);
 
-  // Hold the question until a sentence ends, so we never cut a clause
   useEffect(() => {
     if (pendingQuizMilestone === null || !isPlaying || showQuiz) return;
     if (isEndOfSentence(allWords[wordIndex] ?? '')) {
@@ -195,6 +367,7 @@ export function KidKineticPlayer({ parsedText, onBack }: KidPlayerProps) {
     }
   }, [wordIndex, pendingQuizMilestone, isPlaying, showQuiz, allWords]);
 
+  // ── Playback loop ─────────────────────────────────────────────
   const scheduleNext = useCallback(() => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
     const word = allWords[wordIndexRef.current] ?? '';
@@ -214,6 +387,13 @@ export function KidKineticPlayer({ parsedText, onBack }: KidPlayerProps) {
     return () => { if (timeoutRef.current) clearTimeout(timeoutRef.current); };
   }, [isPlaying, showQuiz, scheduleNext]);
 
+  const togglePlay = () => {
+    if (isComplete || lessonLocksPlay) return;
+    if (lesson) { continueReading(); return; }
+    stopSpeaking();
+    setIsPlaying((p) => !p);
+  };
+
   const handleQuizAnswer = (correct: boolean, firstTry: boolean) => {
     const q = getQuestion(parsedText.id, quizIndex);
     if (!q) return;
@@ -230,26 +410,19 @@ export function KidKineticPlayer({ parsedText, onBack }: KidPlayerProps) {
     setTimeout(() => setIsPlaying(true), 500);
   };
 
-  // Optimal recognition point — the letter the eye lands on
-  const orp = Math.ceil(currentWord.length * 0.35) - 1;
-  const before = currentWord.slice(0, orp);
-  const focus = currentWord.slice(orp, orp + 1);
-  const after = currentWord.slice(orp + 1);
-
   const contextWords = useMemo(() => {
     const start = Math.max(0, wordIndex - 6);
     return allWords.slice(start, wordIndex + 7).map((w, i) => ({ word: w, index: start + i }));
   }, [allWords, wordIndex]);
 
   const activeQuestion = showQuiz ? getQuestion(parsedText.id, quizIndex) : null;
+  const paused = !isPlaying && !isComplete;
 
   return (
     <div style={{ minHeight: '100dvh', background: 'var(--reader-bg)', display: 'flex', flexDirection: 'column' }}>
-      <AnimatePresence>
-        {showQuiz && activeQuestion && (
-          <QuizOverlay question={activeQuestion} onCorrect={handleQuizCorrect} onAnswer={handleQuizAnswer} />
-        )}
-      </AnimatePresence>
+      {showQuiz && activeQuestion && (
+        <QuizOverlay question={activeQuestion} onCorrect={handleQuizCorrect} onAnswer={handleQuizAnswer} />
+      )}
 
       {/* ── Top bar ── */}
       <div style={{
@@ -279,10 +452,12 @@ export function KidKineticPlayer({ parsedText, onBack }: KidPlayerProps) {
         </div>
       </div>
 
-      {/* ── Stage ── */}
+      {/* ── Stage ──
+          Playing: the word alone, dead centre.
+          Paused:  the word, then the lesson or the tappable sentence. */}
       <div style={{
         flex: 1, display: 'flex', flexDirection: 'column',
-        alignItems: 'center', justifyContent: 'center', padding: '20px 16px',
+        alignItems: 'center', justifyContent: 'center', padding: '16px',
       }}>
         {isComplete ? (
           <div className="pop-in" style={{ textAlign: 'center', maxWidth: '22rem' }}>
@@ -310,74 +485,56 @@ export function KidKineticPlayer({ parsedText, onBack }: KidPlayerProps) {
           </div>
         ) : (
           <>
-            {/* The word. Tap it to hear it. */}
-            <button
-              onClick={() => speakWord(currentWord)}
-              aria-label={`Hear the word ${normaliseWord(currentWord)}`}
-              style={{
-                background: 'none', border: 'none', padding: '4px 0 10px',
-                cursor: speechAvailable() ? 'pointer' : 'default',
-                borderBottom: `7px solid ${isStatutory ? 'var(--sun)' : 'transparent'}`,
-                borderRadius: 0, transition: 'border-color 0.2s ease',
-                maxWidth: '100%',
+            <WordStage
+              word={currentWord}
+              teach={lesson !== null}
+              tappable={paused ? speechAvailable() : true}
+              onTap={() => {
+                if (isPlaying) { setIsPlaying(false); return; }  // tap the word to stop
+                if (!lesson) speakWord(currentWord);
               }}
-            >
-              <div style={{
-                display: 'grid', gridTemplateColumns: '1fr auto 1fr',
-                alignItems: 'baseline',
-                fontSize: 'clamp(2.5rem, 13vw, 5.5rem)',
-              }}>
-                <span className="kid-word" style={{ textAlign: 'right' }}>{before}</span>
-                <span className="kid-word" style={{ color: 'var(--accent)' }}>{focus}</span>
-                <span className="kid-word" style={{ textAlign: 'left' }}>{after}</span>
-              </div>
-            </button>
+            />
 
-            {/* Statutory flag holds its space so the word never jumps */}
-            <div style={{ height: '34px', display: 'flex', alignItems: 'center', marginTop: '12px' }}>
-              {isStatutory && (
-                <div className="statutory-flag pop-in">
-                  <Icon name="star" size={16} strokeWidth={2.4} />
-                  Spelling word
-                </div>
-              )}
-            </div>
-
-            {speechAvailable() && (
-              <button
-                onClick={() => speakWord(currentWord)}
-                className="kid-btn kid-btn-ghost"
-                style={{ padding: '9px 18px', minHeight: '44px', fontSize: '0.88rem', marginTop: '2px' }}
-              >
-                <Icon name="sound" size={18} />
-                Hear it
-              </button>
+            {lesson && (
+              <SpellingCard lesson={lesson} onHear={hearLesson} onContinue={continueReading} />
             )}
 
-            {/* Paused: the sentence around the word, every word tappable */}
-            {!isPlaying && (
-              <div className="context-strip">
-                <p className="context-hint">Tap any word to hear it</p>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '3px', justifyContent: 'center' }}>
-                  {contextWords.map(({ word, index }) => (
-                    <button
-                      key={index}
-                      onClick={() => { setWordIndex(index); speakWord(word); }}
-                      className="context-word"
-                      style={{
-                        opacity: index === wordIndex ? 1 : 0.5,
-                        color: index === wordIndex ? 'var(--accent)' : 'var(--text)',
-                        textDecoration: isStatutoryWord(word, band.spellingList) ? 'underline' : 'none',
-                        textDecorationColor: 'var(--sun)',
-                        textDecorationThickness: '3px',
-                        textUnderlineOffset: '3px',
-                      }}
-                    >
-                      {word}
-                    </button>
-                  ))}
+            {paused && !lesson && (
+              <>
+                {speechAvailable() && (
+                  <button
+                    onClick={() => speakWord(currentWord)}
+                    className="kid-btn kid-btn-ghost"
+                    style={{ padding: '10px 20px', minHeight: '46px', fontSize: '0.92rem', marginTop: '18px' }}
+                  >
+                    <Icon name="sound" size={19} />
+                    Hear it
+                  </button>
+                )}
+
+                <div className="context-strip">
+                  <p className="context-hint">Tap any word to hear it</p>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '3px', justifyContent: 'center' }}>
+                    {contextWords.map(({ word, index }) => (
+                      <button
+                        key={index}
+                        onClick={() => { setWordIndex(index); speakWord(word); }}
+                        className="context-word"
+                        style={{
+                          opacity: index === wordIndex ? 1 : 0.5,
+                          color: index === wordIndex ? 'var(--accent)' : 'var(--text)',
+                          textDecoration: isStatutoryWord(word, band.spellingList) ? 'underline' : 'none',
+                          textDecorationColor: 'var(--sun)',
+                          textDecorationThickness: '3px',
+                          textUnderlineOffset: '3px',
+                        }}
+                      >
+                        {word}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              </>
             )}
           </>
         )}
@@ -389,7 +546,6 @@ export function KidKineticPlayer({ parsedText, onBack }: KidPlayerProps) {
           padding: '16px 16px calc(20px + var(--safe-bottom))',
           display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '14px',
         }}>
-          {/* Speed, in real words per minute, clamped to the child's band */}
           <div className="speed-row">
             <button
               onClick={() => updateWcpm(wcpm - 5)}
@@ -427,6 +583,7 @@ export function KidKineticPlayer({ parsedText, onBack }: KidPlayerProps) {
           <div style={{ display: 'flex', alignItems: 'center', gap: '22px' }}>
             <button
               onClick={() => setWordIndex((i) => Math.max(0, i - 10))}
+              disabled={lesson !== null}
               className="icon-btn"
               aria-label="Back ten words"
             >
@@ -434,15 +591,18 @@ export function KidKineticPlayer({ parsedText, onBack }: KidPlayerProps) {
             </button>
 
             <button
-              onClick={() => { stopSpeaking(); setIsPlaying((p) => !p); }}
+              onClick={togglePlay}
+              disabled={lessonLocksPlay}
               className="play-btn"
               aria-label={isPlaying ? 'Pause' : 'Play'}
+              style={lessonLocksPlay ? { opacity: 0.35, cursor: 'not-allowed' } : undefined}
             >
               <Icon name={isPlaying ? 'pause' : 'play'} size={34} strokeWidth={2.6} />
             </button>
 
             <button
               onClick={() => { setWordIndex(0); setQuizIndex(0); setIsComplete(false); setIsPlaying(false); }}
+              disabled={lesson !== null}
               className="icon-btn"
               aria-label="Start again"
             >
