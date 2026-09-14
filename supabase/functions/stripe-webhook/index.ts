@@ -116,8 +116,33 @@ serve(async (req) => {
         const session = event.data.object as Stripe.Checkout.Session;
 
         if (session.mode === 'payment' && session.metadata?.type === 'first-book-submission') {
-          const submissionId = session.metadata.submissionId;
-          if (!submissionId) throw new Error('Paid submission is missing submissionId metadata');
+          const markerMatch = session.metadata.pitch?.match(/^submission:([0-9a-f-]{36})$/i);
+          let submissionId = session.metadata.submissionId ?? markerMatch?.[1] ?? null;
+
+          if (!submissionId) {
+            const { data: legacySubmission, error: legacyInsertError } = await supabase
+              .from('submissions')
+              .insert({
+                submission_type: 'first_book',
+                entry_method: 'paid',
+                payment_status: 'pending',
+                email_status: 'pending',
+                author_name: session.metadata.authorName ?? 'Unknown',
+                email: session.metadata.authorEmail ?? session.customer_details?.email ?? '',
+                book_title: session.metadata.bookTitle ?? 'Untitled',
+                genre: session.metadata.genre || null,
+                word_count: session.metadata.wordCount || null,
+                manuscript_link: session.metadata.manuscriptLink ?? '',
+                pitch: session.metadata.pitch ?? '',
+              })
+              .select('id')
+              .single();
+
+            if (legacyInsertError || !legacySubmission) {
+              throw legacyInsertError ?? new Error('Could not persist legacy paid submission');
+            }
+            submissionId = legacySubmission.id;
+          }
 
           const paymentIntentId = typeof session.payment_intent === 'string'
             ? session.payment_intent
