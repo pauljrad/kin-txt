@@ -1,23 +1,21 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@14.21.0?target=deno";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
-import { Resend } from "https://esm.sh/resend@2.0.0";
-
-const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
 function escapeHtml(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
-async function sendFirstBookSubmissionEmail(metadata: Record<string, string>) {
+function renderPaidSubmissionEmail(submission: Record<string, unknown>): string {
   const rows: [string, string][] = [
-    ["Author", metadata.authorName ?? ""],
-    ["Email", metadata.authorEmail ?? ""],
-    ["Book title", metadata.bookTitle ?? ""],
-    ["Genre / theme", metadata.genre ?? ""],
-    ["Word count", metadata.wordCount ?? ""],
-    ["Manuscript link", metadata.manuscriptLink ?? ""],
-    ["Pitch", metadata.pitch ?? ""],
+    ["Submission ID", String(submission.id ?? "")],
+    ["Author", String(submission.author_name ?? "")],
+    ["Email", String(submission.email ?? "")],
+    ["Book title", String(submission.book_title ?? "")],
+    ["Genre / theme", String(submission.genre ?? "")],
+    ["Word count", String(submission.word_count ?? "")],
+    ["Manuscript link", String(submission.manuscript_link ?? "")],
+    ["Pitch", String(submission.pitch ?? "")],
   ];
   const body = rows
     .filter(([, v]) => v)
@@ -30,32 +28,46 @@ async function sendFirstBookSubmissionEmail(metadata: Record<string, string>) {
     )
     .join("");
 
-  const { error: resendError } = await resend.emails.send({
-    from: "KiN-TXT Submissions <hello@kin-txt.com>",
-    to: ["hello@kin-txt.com"],
-    replyTo: metadata.authorEmail || undefined,
-    subject: `First Book Open Call — ${metadata.bookTitle ?? "Untitled"} (£10 fee paid)`,
-    html: `
-      <!DOCTYPE html><html><body style="margin:0; padding:0; background-color:#000000; font-family:'Inter',sans-serif; color:#ffffff;">
-        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color:#000000;">
-          <tr><td align="center" style="padding:40px 20px;">
-            <table role="presentation" width="100%" style="max-width:560px;">
-              <tr><td style="padding-bottom:24px;">
-                <div style="font-size:12px; letter-spacing:2px; text-transform:uppercase; color:#8a8a8a;">KiN-TXT</div>
-                <div style="font-size:22px; font-weight:700; margin-top:6px;">First Book Open Call — £10 fee paid</div>
-              </td></tr>
-              ${body}
-            </table>
-          </td></tr>
-        </table>
-      </body></html>
-    `,
+  return `
+    <!DOCTYPE html><html><body style="margin:0; padding:0; background-color:#000000; font-family:'Inter',sans-serif; color:#ffffff;">
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color:#000000;">
+        <tr><td align="center" style="padding:40px 20px;">
+          <table role="presentation" width="100%" style="max-width:560px;">
+            <tr><td style="padding-bottom:24px;">
+              <div style="font-size:12px; letter-spacing:2px; text-transform:uppercase; color:#8a8a8a;">KiN-TXT</div>
+              <div style="font-size:22px; font-weight:700; margin-top:6px;">First Book Open Call — £10 fee paid</div>
+            </td></tr>
+            ${body}
+          </table>
+        </td></tr>
+      </table>
+    </body></html>
+  `;
+}
+
+async function sendPaidSubmissionEmail(submission: Record<string, unknown>) {
+  const apiKey = Deno.env.get("RESEND_API_KEY") ?? "";
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+      "Idempotency-Key": `first-book-paid/${String(submission.id)}`,
+    },
+    body: JSON.stringify({
+      from: "KiN-TXT Submissions <hello@kin-txt.com>",
+      to: ["hello@kin-txt.com"],
+      reply_to: submission.email || undefined,
+      subject: `First Book Open Call — ${String(submission.book_title ?? "Untitled")} (£10 fee paid)`,
+      html: renderPaidSubmissionEmail(submission),
+    }),
   });
 
-  if (resendError) {
-    console.error("Resend rejected paid submission email:", resendError);
-    throw new Error("Paid submission email could not be delivered.");
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(`Resend ${response.status}: ${JSON.stringify(result)}`);
   }
+  return result as { id?: string };
 }
 
 const corsHeaders = {
@@ -103,13 +115,99 @@ serve(async (req) => {
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session;
 
-        // First Book Open Call £10 submission fee — a one-off payment, not a
-        // subscription. The email only goes out here, once Stripe confirms the
-        // charge actually succeeded, so this is the real enforcement of the
-        // "£10, or free if signed in" rule — not the client-side form.
         if (session.mode === 'payment' && session.metadata?.type === 'first-book-submission') {
-          await sendFirstBookSubmissionEmail(session.metadata as Record<string, string>);
-          console.log('First Book Open Call submission emailed for session', session.id);
+          const submissionId = session.metadata.submissionId;
+          if (!submissionId) throw new Error('Paid submission is missing submissionId metadata');
+
+          const paymentIntentId = typeof session.payment_intent === 'string'
+            ? session.payment_intent
+            : session.payment_intent?.id ?? null;
+
+          const { error: paidUpdateError } = await supabase
+            .from('submissions')
+            .update({
+              payment_status: 'paid',
+              stripe_checkout_session_id: session.id,
+              stripe_payment_intent_id: paymentIntentId,
+              paid_at: new Date().toISOString(),
+              last_error: null,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', submissionId)
+            .eq('entry_method', 'paid');
+
+          if (paidUpdateError) throw paidUpdateError;
+
+          const { data: submission, error: loadError } = await supabase
+            .from('submissions')
+            .select('*')
+            .eq('id', submissionId)
+            .eq('entry_method', 'paid')
+            .maybeSingle();
+
+          if (loadError || !submission) {
+            throw loadError ?? new Error(`Submission ${submissionId} not found`);
+          }
+
+          if (submission.email_status === 'sent') {
+            console.log('Paid submission notification already sent for', submissionId);
+            break;
+          }
+
+          if (submission.email_status === 'sending') {
+            const lastAttempt = submission.last_notification_attempt_at
+              ? new Date(submission.last_notification_attempt_at).getTime()
+              : 0;
+            if (Date.now() - lastAttempt < 10 * 60 * 1000) {
+              console.log('Paid submission notification already in progress for', submissionId);
+              break;
+            }
+          }
+
+          const { data: claimed, error: claimError } = await supabase
+            .from('submissions')
+            .update({
+              email_status: 'sending',
+              notification_attempts: (submission.notification_attempts ?? 0) + 1,
+              last_notification_attempt_at: new Date().toISOString(),
+              last_error: null,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', submissionId)
+            .neq('email_status', 'sent')
+            .select('*')
+            .maybeSingle();
+
+          if (claimError) throw claimError;
+          if (!claimed) {
+            console.log('Paid submission notification claim skipped for', submissionId);
+            break;
+          }
+
+          try {
+            const emailResult = await sendPaidSubmissionEmail(claimed);
+            const { error: sentUpdateError } = await supabase
+              .from('submissions')
+              .update({
+                email_status: 'sent',
+                resend_email_id: emailResult.id ?? null,
+                last_error: null,
+                updated_at: new Date().toISOString(),
+              })
+              .eq('id', submissionId);
+            if (sentUpdateError) throw sentUpdateError;
+            console.log('First Book Open Call submission stored, paid and emailed for session', session.id);
+          } catch (emailError) {
+            await supabase
+              .from('submissions')
+              .update({
+                email_status: 'failed',
+                last_error: (emailError as Error).message,
+                updated_at: new Date().toISOString(),
+              })
+              .eq('id', submissionId);
+            throw emailError;
+          }
           break;
         }
 
@@ -119,7 +217,6 @@ serve(async (req) => {
         const subscriptionId = session.subscription as string;
         const customerEmail = session.customer_email ?? session.customer_details?.email ?? '';
 
-        // Look up the user by email
         const { data: userData } = await supabase.auth.admin.listUsers();
         const matchedUser = userData?.users?.find(u => u.email === customerEmail);
 
@@ -128,23 +225,20 @@ serve(async (req) => {
           break;
         }
 
-        // Fetch the subscription to get trial end date
         const sub = await stripe.subscriptions.retrieve(subscriptionId);
         const trialEnd = sub.trial_end ? new Date(sub.trial_end * 1000).toISOString() : null;
         const periodEnd = sub.current_period_end
           ? new Date(sub.current_period_end * 1000).toISOString()
           : null;
 
-        // Determine plan label from price
         const priceId = sub.items.data[0]?.price?.id ?? '';
         const plan = priceId === 'price_1TIXbZRuFCnPyOr91szBn2Aq' ? 'annual' : 'monthly';
 
-        // Upsert into subscriptions table
         await supabase.from('subscriptions').upsert({
           user_id: matchedUser.id,
           stripe_customer_id: customerId,
           stripe_subscription_id: subscriptionId,
-          status: sub.status, // 'trialing' or 'active'
+          status: sub.status,
           plan,
           trial_ends_at: trialEnd,
           current_period_end: periodEnd,
