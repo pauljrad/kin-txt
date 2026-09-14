@@ -6,7 +6,6 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/hooks/useAuth";
 import { TextSizeProvider } from "@/hooks/useTextSize";
-import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Landing from "./pages/Landing";
@@ -22,9 +21,12 @@ import CopyrightPolicy from "./pages/CopyrightPolicy";
 import PaymentPolicy from "./pages/PaymentPolicy";
 import Support from "./pages/Support";
 import Submissions from "./pages/Submissions";
+import CreatorCreate from "./pages/CreatorCreate";
+import CreatorReview from "./pages/CreatorReview";
 import ResetPassword from "./pages/ResetPassword";
 import { useState, useEffect } from "react";
 import { SplashScreen } from "@/components/SplashScreen";
+import { CreatorHomeShortcut } from "@/components/CreatorHomeShortcut";
 import { AnimatePresence } from "framer-motion";
 import { Capacitor } from "@capacitor/core";
 import { SplashScreen as CapSplashScreen } from "@capacitor/splash-screen";
@@ -62,7 +64,6 @@ const AppContent = () => {
       clearTimeout(timer);
       window.removeEventListener('pageshow', handlePageShow);
     };
-
   }, []);
 
   return (
@@ -82,20 +83,26 @@ const AppContent = () => {
         <Route path="/payment-policy" element={<PaymentPolicy />} />
         <Route path="/support" element={<Support />} />
         <Route path="/submissions" element={<Submissions />} />
+        <Route path="/create" element={<CreatorCreate />} />
+        <Route path="/creator-review" element={<CreatorReview />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/tiktok" element={<CinematicPromo />} />
         <Route path="/target" element={<CinematicTargetPromo />} />
 
         <Route
           path="/home"
-          element={<Index />}
+          element={(
+            <div className="relative min-h-[100svh]">
+              <CreatorHomeShortcut />
+              <Index />
+            </div>
+          )}
         />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </>
   );
 };
-
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -114,6 +121,5 @@ const App = () => (
     </ThemeProvider>
   </QueryClientProvider>
 );
-
 
 export default App;

@@ -421,7 +421,7 @@ const Index = () => {
   const handleNewsSelect = useCallback(async (
     parsed: ParsedText,
     title: string,
-    meta?: { link: string; source: string; author?: string; rawHtml?: string }
+    meta?: { link: string; source: string; author?: string; rawHtml?: string; emphasisWords?: string[]; whisperedWords?: string[]; publicationId?: string }
   ) => {
     setIsAnalyzing(true);
     toast.info('Analyzing article for emphasis...');
@@ -460,10 +460,10 @@ const Index = () => {
     const { emphasisWords: aiEmphasis, whisperedWords: aiWhispered } = await analyzeEmphasis(fullText);
 
     // Merge findings
-    const finalWhisperedWords = Array.from(new Set([...detectedWhispered, ...aiWhispered]));
+    const finalWhisperedWords = Array.from(new Set([...detectedWhispered, ...(meta?.whisperedWords || []), ...aiWhispered]));
 
     // Filter emphasis to EXCLUDE any detected whispers (Deterministic whisper > AI emphasis)
-    const rawEmphasis = [...detectedEmphasis, ...aiEmphasis];
+    const rawEmphasis = [...detectedEmphasis, ...(meta?.emphasisWords || []), ...aiEmphasis];
     const finalEmphasisWords = filterEmphasis(Array.from(new Set(
       rawEmphasis.filter(w => !finalWhisperedWords.includes(w))
     )));
@@ -971,7 +971,7 @@ const Index = () => {
                       }`}
                   >
                     <Newspaper className="w-4 h-4" />
-                    <span>News</span>
+                    <span>Journal</span>
                   </button>
                 </div>
 

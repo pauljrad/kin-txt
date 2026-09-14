@@ -1,0 +1,198 @@
+import { useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { ArrowLeft, CheckCircle2, FileUp, Italic, Loader2, Send } from 'lucide-react';
+import mammoth from 'mammoth';
+import { supabase } from '@/integrations/supabase/client';
+import { ThemeToggle } from '@/components/ThemeToggle';
+import { useCreatorAccess } from '@/hooks/useCreatorAccess';
+import { plainTextToEditorHtml, richHtmlToCreatorMarkup } from '@/lib/creatorText';
+
+const FIELD = 'w-full rounded-xl border border-border bg-card/60 px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-foreground/40 transition-colors';
+
+export default function CreatorCreate() {
+  const navigate = useNavigate();
+  const { isCreator, displayName, loading } = useCreatorAccess();
+  const editorRef = useRef<HTMLDivElement>(null);
+  const [title, setTitle] = useState('');
+  const [contentType, setContentType] = useState('essay');
+  const [editorHtml, setEditorHtml] = useState('');
+  const [status, setStatus] = useState<'idle' | 'submitting' | 'sent' | 'error'>('idle');
+  const [message, setMessage] = useState('');
+  const [loadingFile, setLoadingFile] = useState(false);
+
+  const setEditor = (html: string) => {
+    setEditorHtml(html);
+    if (editorRef.current) editorRef.current.innerHTML = html;
+  };
+
+  const applyItalic = () => {
+    editorRef.current?.focus();
+    document.execCommand('italic', false);
+    setEditorHtml(editorRef.current?.innerHTML ?? '');
+  };
+
+  const handleFile = async (file?: File) => {
+    if (!file) return;
+    setLoadingFile(true);
+    setMessage('');
+    try {
+      const ext = file.name.split('.').pop()?.toLowerCase();
+      if (ext === 'txt') {
+        setEditor(plainTextToEditorHtml(await file.text()));
+      } else if (ext === 'docx') {
+        const arrayBuffer = await file.arrayBuffer();
+        const result = await mammoth.convertToHtml({ arrayBuffer });
+        setEditor(result.value);
+      } else {
+        throw new Error('Use a .txt or .docx file so KiN-TXT can preserve your formatting.');
+      }
+      if (!title.trim()) setTitle(file.name.replace(/\.[^.]+$/, ''));
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : 'Could not read that file.');
+      setStatus('error');
+    } finally {
+      setLoadingFile(false);
+    }
+  };
+
+  const submit = async () => {
+    const body = richHtmlToCreatorMarkup(editorHtml);
+    setMessage('');
+
+    if (!title.trim()) {
+      setStatus('error');
+      setMessage('Give your TXT a title.');
+      return;
+    }
+    if (body.split(/\s+/).filter(Boolean).length < 20) {
+      setStatus('error');
+      setMessage('Add a little more text before submitting.');
+      return;
+    }
+
+    setStatus('submitting');
+    const { data, error } = await supabase.functions.invoke('submit-creator-txt', {
+      body: {
+        title: title.trim(),
+        contentType,
+        body,
+      },
+    });
+
+    if (error || !data?.success) {
+      setStatus('error');
+      setMessage(data?.error || 'Could not submit this TXT. Please try again.');
+      return;
+    }
+
+    setStatus('sent');
+    setMessage('Sent for approval. The TXT is safely stored and the review link has been sent to KiN-TXT.');
+    setTitle('');
+    setEditor('');
+  };
+
+  return (
+    <div className="min-h-[100svh] bg-background text-foreground px-5 pb-16 pt-[calc(5.5rem+env(safe-area-inset-top,0px))]">
+      <ThemeToggle />
+      <button
+        onClick={() => navigate('/home')}
+        className="absolute left-4 top-[calc(1rem+env(safe-area-inset-top,0px))] z-40 flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
+      >
+        <ArrowLeft className="w-4 h-4" /> Back
+      </button>
+
+      <main className="max-w-2xl mx-auto">
+        <p className="text-xs uppercase tracking-[0.24em] text-muted-foreground mb-2">KiN-Creator</p>
+        <h1 className="font-display text-4xl tracking-wide mb-2">Create a TXT</h1>
+        <p className="text-sm text-muted-foreground leading-relaxed mb-8">
+          {displayName ? `${displayName}, ` : ''}write it your way. Paste directly below or upload a .txt or .docx file.
+        </p>
+
+        {loading ? (
+          <div className="flex items-center justify-center py-20 text-muted-foreground gap-2">
+            <Loader2 className="w-5 h-5 animate-spin" /> Checking Creator access…
+          </div>
+        ) : !isCreator ? (
+          <div className="rounded-2xl border border-border bg-card/60 p-6">
+            <p className="text-sm">This page is only available to approved KiN-Creators.</p>
+          </div>
+        ) : status === 'sent' ? (
+          <div className="rounded-2xl border border-border bg-card/60 p-7 text-center">
+            <CheckCircle2 className="w-8 h-8 mx-auto mb-3" />
+            <h2 className="font-display text-2xl mb-2">TXT submitted</h2>
+            <p className="text-sm text-muted-foreground leading-relaxed mb-6">{message}</p>
+            <button onClick={() => { setStatus('idle'); setMessage(''); }} className="px-5 py-2.5 rounded-xl bg-foreground text-background font-medium">
+              Create another
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-5">
+            <div className="grid sm:grid-cols-[1fr_180px] gap-3">
+              <input
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                maxLength={220}
+                placeholder="Title"
+                className={FIELD}
+              />
+              <select value={contentType} onChange={(e) => setContentType(e.target.value)} className={FIELD}>
+                <option value="essay">Essay</option>
+                <option value="story">Story</option>
+                <option value="news">News</option>
+                <option value="article">Article</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+
+            <div className="rounded-2xl border border-border bg-card/50 overflow-hidden">
+              <div className="px-4 py-3 border-b border-border flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={applyItalic}
+                  className="h-9 px-3 rounded-lg bg-secondary text-secondary-foreground hover:bg-secondary/80 flex items-center gap-2 text-xs font-medium"
+                >
+                  <Italic className="w-4 h-4" /> Italic
+                </button>
+                <label className="h-9 px-3 rounded-lg bg-secondary text-secondary-foreground hover:bg-secondary/80 flex items-center gap-2 text-xs font-medium cursor-pointer">
+                  {loadingFile ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileUp className="w-4 h-4" />}
+                  Upload .txt / .docx
+                  <input type="file" accept=".txt,.docx" className="hidden" onChange={(e) => handleFile(e.target.files?.[0])} />
+                </label>
+              </div>
+
+              <div className="px-4 py-3 border-b border-border/60 text-xs text-muted-foreground leading-relaxed space-y-1">
+                <p><span className="font-semibold text-foreground">ALL CAPS</span> makes a word hit harder.</p>
+                <p><em className="text-foreground">Italics</em> give words a softer delivery — lighter, quieter, almost under the breath.</p>
+              </div>
+
+              <div
+                ref={editorRef}
+                contentEditable
+                suppressContentEditableWarning
+                onInput={(e) => setEditorHtml(e.currentTarget.innerHTML)}
+                data-placeholder="Paste or write your essay, story, article or report here…"
+                className="min-h-[360px] px-5 py-5 text-[15px] leading-7 outline-none whitespace-pre-wrap empty:before:content-[attr(data-placeholder)] empty:before:text-muted-foreground"
+              />
+            </div>
+
+            {message && <p className="text-sm text-destructive">{message}</p>}
+
+            <button
+              onClick={submit}
+              disabled={status === 'submitting' || loadingFile}
+              className="w-full h-12 rounded-xl bg-foreground text-background font-display tracking-widest uppercase text-sm disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              {status === 'submitting' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+              {status === 'submitting' ? 'Submitting…' : 'Submit for approval'}
+            </button>
+
+            <p className="text-[11px] text-muted-foreground text-center leading-relaxed">
+              Submitting does not publish immediately. KiN-TXT reviews the TXT first; approved pieces appear in the KiN-Creators section of the Journal.
+            </p>
+          </div>
+        )}
+      </main>
+    </div>
+  );
+}
