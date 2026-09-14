@@ -1,0 +1,65 @@
+name: One-time KiN-Creator Index patch
+
+on:
+  push:
+    branches:
+      - feature/kin-creators
+    paths:
+      - '.github/workflows/one-time-creator-index-patch.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/kin-creators
+          fetch-depth: 0
+
+      - name: Patch Index Creator metadata
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('src/pages/Index.tsx')
+          s = p.read_text()
+
+          start = s.index('  const handleNewsSelect = useCallback(async (')
+          end = s.index('  const analyzeEmphasis = async', start)
+          block = s[start:end]
+
+          old_type = "meta?: { link: string; source: string; author?: string; rawHtml?: string }"
+          new_type = "meta?: { link: string; source: string; author?: string; rawHtml?: string; emphasisWords?: string[]; whisperedWords?: string[]; publicationId?: string }"
+          if old_type not in block:
+              raise SystemExit('handleNewsSelect meta signature not found')
+          block = block.replace(old_type, new_type, 1)
+
+          old_whisper = "const finalWhisperedWords = Array.from(new Set([...detectedWhispered, ...aiWhispered]));"
+          new_whisper = "const finalWhisperedWords = Array.from(new Set([...detectedWhispered, ...(meta?.whisperedWords || []), ...aiWhispered]));"
+          if old_whisper not in block:
+              raise SystemExit('news whispered merge not found')
+          block = block.replace(old_whisper, new_whisper, 1)
+
+          old_emphasis = "const rawEmphasis = [...detectedEmphasis, ...aiEmphasis];"
+          new_emphasis = "const rawEmphasis = [...detectedEmphasis, ...(meta?.emphasisWords || []), ...aiEmphasis];"
+          if old_emphasis not in block:
+              raise SystemExit('news emphasis merge not found')
+          block = block.replace(old_emphasis, new_emphasis, 1)
+
+          s = s[:start] + block + s[end:]
+          if '<span>News</span>' not in s:
+              raise SystemExit('News tab label not found')
+          s = s.replace('<span>News</span>', '<span>Journal</span>', 1)
+          p.write_text(s)
+          PY
+
+      - name: Remove one-time workflow and commit patch
+        run: |
+          rm .github/workflows/one-time-creator-index-patch.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/pages/Index.tsx .github/workflows/one-time-creator-index-patch.yml
+          git commit -m "Wire KiN-Creator formatting into Journal reader"
+          git push origin HEAD:feature/kin-creators
