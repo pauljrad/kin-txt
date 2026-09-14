@@ -160,6 +160,51 @@ serve(async (req) => {
       });
     }
 
+    if (type === "first-book-paid-pending") {
+      const authorName = clip(payload.authorName, 200);
+      const authorEmail = clip(payload.authorEmail, 200);
+      const bookTitle = clip(payload.bookTitle, 300);
+      const genre = clip(payload.genre, 200);
+      const wordCount = clip(payload.wordCount, 30);
+      const manuscriptLink = clip(payload.manuscriptLink, 1000);
+      const pitch = clip(payload.pitch, 6000);
+
+      if (!authorName || !authorEmail || !bookTitle || !manuscriptLink || !pitch) {
+        return new Response(
+          JSON.stringify({ error: "Author name, email, book title, manuscript link, and pitch are required." }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      const { data: submission, error: insertError } = await admin
+        .from("submissions")
+        .insert({
+          submission_type: "first_book",
+          entry_method: "paid",
+          payment_status: "pending",
+          email_status: "pending",
+          author_name: authorName,
+          email: authorEmail,
+          book_title: bookTitle,
+          genre: genre || null,
+          word_count: wordCount || null,
+          manuscript_link: manuscriptLink,
+          pitch,
+        })
+        .select("id")
+        .single();
+
+      if (insertError || !submission) {
+        console.error("Could not persist pending paid submission:", insertError);
+        throw new Error("Could not save the submission before checkout.");
+      }
+
+      return new Response(JSON.stringify({ success: true, submissionId: submission.id }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     if (type === "first-book-free") {
       const authHeader = req.headers.get("Authorization");
       if (!authHeader?.startsWith("Bearer ")) {
