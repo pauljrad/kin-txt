@@ -87,6 +87,24 @@ export async function logoutRevenueCatUser(): Promise<void> {
   }
 }
 
+/**
+ * Apple's subscription-management page for this user, as reported by
+ * RevenueCat. Cancellation for an App Store subscription can only happen
+ * through Apple, so this is the destination for "Manage subscription".
+ * Null when there is no store subscription to manage.
+ */
+export async function getManagementURL(): Promise<string | null> {
+  if (!isNativeApp()) return null;
+  try {
+    const { Purchases } = await import('@revenuecat/purchases-capacitor');
+    const { customerInfo } = await Purchases.getCustomerInfo();
+    return customerInfo.managementURL ?? null;
+  } catch (err) {
+    console.warn('RevenueCat managementURL lookup failed:', err);
+    return null;
+  }
+}
+
 /** Whether the active entitlement is currently granted. */
 export async function hasActiveEntitlement(): Promise<boolean> {
   if (!isNativeApp()) return false;

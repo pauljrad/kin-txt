@@ -199,34 +199,21 @@ serve(async (req) => {
   }
 
   try {
-    // Authenticate user
+    // Auth is optional — news article scraping is available to free users too.
     const authHeader = req.headers.get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return new Response(
-        JSON.stringify({ success: false, error: 'Unauthorized' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    let userId = 'anonymous';
+    if (authHeader?.startsWith('Bearer ')) {
+      const supabase = createClient(
+        Deno.env.get('SUPABASE_URL')!,
+        Deno.env.get('SUPABASE_ANON_KEY')!,
+        { global: { headers: { Authorization: authHeader } } }
       );
+      const jwt = authHeader.replace('Bearer ', '');
+      const { data: { user } } = await supabase.auth.getUser(jwt);
+      if (user) userId = user.id;
     }
 
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_ANON_KEY')!,
-      { global: { headers: { Authorization: authHeader } } }
-    );
-
-    // Pass the JWT explicitly (edge functions don't have auth storage)
-    const jwt = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: userError } = await supabase.auth.getUser(jwt);
-
-    if (userError || !user) {
-      console.error('Auth error (getUser):', userError?.message || 'No user');
-      return new Response(
-        JSON.stringify({ success: false, error: 'Unauthorized' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    console.log('Authenticated user:', user.id);
+    console.log('Scraping for:', userId);
 
     const { url } = await req.json();
 
@@ -316,18 +303,33 @@ serve(async (req) => {
     // Fallback: Basic HTTP fetch
     console.log(`[scraper] Fetching URL: ${formattedUrl}`);
 
-    const response = await fetch(formattedUrl, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.9',
-      },
-    });
+    // Some publishers (Global Voices among them) have unstable HTTP/2 and drop
+    // the stream mid-request with "unspecific protocol error". That failure is
+    // transient, so retry on a fresh connection before giving up.
+    const fetchWithRetry = async (attempts = 3): Promise<Response> => {
+      let lastErr: unknown;
+      for (let i = 0; i < attempts; i++) {
+        try {
+          const res = await fetch(formattedUrl, {
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+              'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+              'Accept-Language': 'en-US,en;q=0.9',
+              'Connection': 'close',
+            },
+          });
+          if (!res.ok) throw new Error(`Failed to fetch URL: ${res.statusText}`);
+          return res;
+        } catch (err) {
+          lastErr = err;
+          console.error(`[scraper] attempt ${i + 1}/${attempts} failed:`, err instanceof Error ? err.message : err);
+          if (i < attempts - 1) await new Promise((r) => setTimeout(r, 400 * (i + 1)));
+        }
+      }
+      throw lastErr instanceof Error ? lastErr : new Error(String(lastErr));
+    };
 
-    if (!response.ok) {
-      console.error(`[scraper] Fetch failed with status: ${response.status}`);
-      throw new Error(`Failed to fetch URL: ${response.statusText}`);
-    }
+    const response = await fetchWithRetry();
 
     const html = await response.text();
     console.log(`[scraper] Received HTML length: ${html.length}`);

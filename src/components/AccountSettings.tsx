@@ -1,22 +1,12 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { X, LogOut, Trash2, RotateCcw, RefreshCw, Crown } from 'lucide-react';
+import { X, LogOut, RefreshCw, Crown, CreditCard } from 'lucide-react';
 import { toast } from 'sonner';
 import { Capacitor } from '@capacitor/core';
 import { useAuth } from '@/hooks/useAuth';
-import { useOnboarding } from '@/hooks/useOnboarding';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import { ENTITLEMENT_ID } from '@/lib/revenuecat';
+import { ENTITLEMENT_ID, getManagementURL } from '@/lib/revenuecat';
+import { useHasAccess } from '@/hooks/useHasAccess';
 
 interface AccountSettingsProps {
   onClose: () => void;
@@ -34,41 +24,46 @@ const LEGAL_LINKS = [
 
 /**
  * Account & settings panel. Reachable from the home toolbar.
- * Houses the Apple-mandated account deletion, Restore Purchases (native),
- * a tutorial replay, sign-out, and links to all legal policies.
+ *
+ * Pre-Pro (native): upgrade + Restore Purchases. Active subscribers instead get
+ * subscription management, which hands off to Apple. Plus sign-out and links to
+ * all legal policies.
+ *
+ * Replaying the tutorial lives on the "i" button in the home toolbar, not here.
+ *
+ * NOTE: in-app account deletion was removed on the user's instruction. Apple
+ * Review Guideline 5.1.1(v) requires apps that support account creation to
+ * offer deletion in-app, so this is a known review risk, accepted deliberately.
+ * The `deleteAccount` implementation is still in `useAuth` if it needs to come
+ * back — only the UI was removed.
  */
 export function AccountSettings({ onClose, onUpgrade }: AccountSettingsProps) {
   const navigate = useNavigate();
-  const { user, signOut, deleteAccount } = useAuth();
-  const { resetOnboarding } = useOnboarding();
+  const { user, signOut } = useAuth();
   const isNative = Capacitor.isNativePlatform();
 
-  const [confirmDelete, setConfirmDelete] = useState(false);
-  const [deleting, setDeleting] = useState(false);
+  const { hasAccess } = useHasAccess();
+  const isPro = isNative && hasAccess;
+
   const [restoring, setRestoring] = useState(false);
+
+  // App Store subscriptions can only be cancelled through Apple, so this hands
+  // the user off to Apple's own subscription page rather than trying to cancel
+  // in-app (which Apple does not permit for StoreKit purchases).
+  const handleManageSubscription = async () => {
+    const url = await getManagementURL();
+    if (url) {
+      window.open(url, '_blank');
+      return;
+    }
+    // No management URL — send them to Apple's subscriptions page directly.
+    window.location.href = 'itms-apps://apps.apple.com/account/subscriptions';
+  };
 
   const handleSignOut = async () => {
     await signOut();
     onClose();
     navigate('/login');
-  };
-
-  const handleDelete = async () => {
-    setDeleting(true);
-    const { error } = await deleteAccount();
-    setDeleting(false);
-    if (error) {
-      toast.error(error.message || 'Could not delete your account. Please try again.');
-      return;
-    }
-    toast.success('Your account has been deleted.');
-    onClose();
-    navigate(isNative ? '/home' : '/');
-  };
-
-  const handleReplayTutorial = () => {
-    resetOnboarding();
-    onClose();
   };
 
   const handleRestore = async () => {
@@ -134,17 +129,20 @@ export function AccountSettings({ onClose, onUpgrade }: AccountSettingsProps) {
         )}
 
         <div className="space-y-3">
-          {isNative && onUpgrade && (
+          {/* Upgrade and Restore are only meaningful before Pro is active. Once
+              the entitlement is granted, the subscriber needs the opposite:
+              a way to review or cancel, which on iOS lives in Apple's own
+              subscription settings. */}
+          {isNative && onUpgrade && !isPro && (
             <Row icon={Crown} label="Unlock KiN-TXT Pro" onClick={() => { onClose(); onUpgrade(); }} />
           )}
-          {isNative && (
+          {isNative && !isPro && (
             <Row icon={RefreshCw} label={restoring ? 'Restoring…' : 'Restore Purchases'} onClick={handleRestore} />
           )}
-          <Row icon={RotateCcw} label="Replay tutorial" onClick={handleReplayTutorial} />
-          {user && <Row icon={LogOut} label="Sign out" onClick={handleSignOut} />}
-          {user && (
-            <Row icon={Trash2} label="Delete account" onClick={() => setConfirmDelete(true)} danger />
+          {isPro && (
+            <Row icon={CreditCard} label="Manage subscription" onClick={handleManageSubscription} />
           )}
+          {user && <Row icon={LogOut} label="Sign out" onClick={handleSignOut} />}
         </div>
 
         {/* Legal */}
@@ -164,28 +162,6 @@ export function AccountSettings({ onClose, onUpgrade }: AccountSettingsProps) {
         </div>
       </div>
 
-      <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete your account?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This permanently deletes your account and all associated data — your saved TXTs,
-              reading progress, and connections. This cannot be undone.
-              {isNative && ' Any active subscription must be cancelled separately in your device Settings.'}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={(e) => { e.preventDefault(); handleDelete(); }}
-              disabled={deleting}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {deleting ? 'Deleting…' : 'Delete account'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </motion.div>
   );
 }

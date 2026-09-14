@@ -56,6 +56,13 @@ function resolveSupabaseConfig() {
 
 const { url: SUPABASE_URL, key: SUPABASE_PUBLISHABLE_KEY } = resolveSupabaseConfig();
 
+// Exported so a caller can reach an edge function with a plain fetch(). Going
+// through supabase.functions.invoke() resolves the session first
+// (SupabaseClient._getAccessToken -> auth.getSession), which serialises on the
+// auth lock — unusable on a path that must not block.
+export const SUPABASE_FUNCTIONS_URL = `${SUPABASE_URL}/functions/v1`;
+export const SUPABASE_ANON_KEY = SUPABASE_PUBLISHABLE_KEY;
+
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 

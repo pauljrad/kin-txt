@@ -49,7 +49,7 @@ export default function Submissions() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { user, session } = useAuth();
-  const { isSubscribed } = useSubscription();
+  const { isSubscribed, loading: subscriptionLoading } = useSubscription();
   const isNative = Capacitor.isNativePlatform();
 
   // This page sells a one-off payment outside Apple's IAP system — Apple
@@ -150,7 +150,7 @@ export default function Submissions() {
     }
     setBookError('');
     saveDraft(bookForm);
-    navigate('/pricing');
+    navigate('/pricing?returnTo=submissions');
   };
 
   const submitBookPaid = async () => {
@@ -396,7 +396,7 @@ export default function Submissions() {
                     rows={5}
                     className={`${FIELD_CLASS} resize-none`}
                   />
-                  {!isSubscribed && (
+                  {!subscriptionLoading && !isSubscribed && (
                     <p className="text-xs text-muted-foreground mt-1.5">
                       Keep it under {bookPitchLimit} characters for a paid entry. KiN-TXT Pro members get more room.
                     </p>
@@ -406,7 +406,12 @@ export default function Submissions() {
                 {bookError && <p className="text-xs text-destructive">{bookError}</p>}
 
                 <div className="pt-2 space-y-3">
-                  {isSubscribed ? (
+                  {subscriptionLoading ? (
+                    <div className="h-12 flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Checking Pro membership…
+                    </div>
+                  ) : isSubscribed ? (
                     <button
                       onClick={submitBookFree}
                       disabled={bookStatus === 'sending'}
@@ -418,13 +423,13 @@ export default function Submissions() {
                   ) : (
                     <>
                       <p className="text-xs text-muted-foreground text-center">
-                        Free with KiN-TXT Pro — new or existing members. £10 to submit without one.
+                        Free for KiN-TXT Pro members. Otherwise, submit for £10.
                       </p>
                       <button
                         onClick={goUpgradeAndSubmit}
                         className="w-full h-12 rounded-xl font-display tracking-widest uppercase text-sm border border-foreground/40 text-foreground hover:bg-foreground/10 transition-all"
                       >
-                        Upgrade to Pro &amp; Submit Free
+                        {user ? 'Reactivate Pro & Submit Free' : 'Join Pro & Submit Free'}
                       </button>
                       <button
                         onClick={submitBookPaid}

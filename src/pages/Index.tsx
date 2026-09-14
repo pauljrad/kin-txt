@@ -29,7 +29,7 @@ import { migrateLocalDocumentsToAccount } from '@/lib/documentMigration';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useOnboarding } from '@/hooks/useOnboarding';
 import { useHasAccess } from '@/hooks/useHasAccess';
@@ -63,6 +63,7 @@ interface EmphasisAnalysis {
 const Index = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { isSubscribed, loading: subLoading } = useSubscription();
   const isNative = Capacitor.isNativePlatform();
   // First-launch onboarding (native app only). The hook persists completion in localStorage.
@@ -98,6 +99,9 @@ const Index = () => {
   const [isPongGameActive, setIsPongGameActive] = useState(false);
   const [showExitGuestModal, setShowExitGuestModal] = useState(false);
   const [showPaywall, setShowPaywall] = useState(false);
+  const [showLibraryLimitModal, setShowLibraryLimitModal] = useState(false);
+  const [showKinProfileModal, setShowKinProfileModal] = useState(false);
+  const [showKinClubModal, setShowKinClubModal] = useState(false);
   const [showAccount, setShowAccount] = useState(false);
 
   // Full-access gate. On web this mirrors the existing subscription state (no
@@ -116,14 +120,27 @@ const Index = () => {
     setFreeMode(proGate);
   }, [proGate]);
 
-  // Run a Pro-only action, or open the paywall if the user is on the free tier.
+  // Show paywall if redirected from registration
+  useEffect(() => {
+    if (searchParams.get('showPaywall') === 'true' && isNative) {
+      setShowPaywall(true);
+      searchParams.delete('showPaywall');
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [searchParams, setSearchParams, isNative]);
+
+  // Run a Pro-only action, or prompt registration/paywall if the user is on the free tier.
   const requirePro = useCallback((action: () => void) => {
     if (proGate) {
-      setShowPaywall(true);
+      if (!user) {
+        navigate('/login?signup=true');
+      } else {
+        setShowPaywall(true);
+      }
       return;
     }
     action();
-  }, [proGate]);
+  }, [proGate, user, navigate]);
 
   // KiN State
   const [kinSession, setKinSession] = useState<{ id: string; isHost: boolean; opponentId: string } | null>(null);
@@ -272,13 +289,7 @@ const Index = () => {
     if (!user || proGate) {
       const existing = sessionStorage.getItem('kinxt_guest_doc');
       if (existing) {
-        if (proGate) {
-          toast.info('Unlock Pro to keep more than one TXT.');
-          setShowPaywall(true);
-        } else {
-          toast.info("Register to save more than one TXT!");
-          navigate('/pricing');
-        }
+        setShowLibraryLimitModal(true);
         return;
       }
     }
@@ -351,13 +362,7 @@ const Index = () => {
     if (!user || proGate) {
       const existing = sessionStorage.getItem('kinxt_guest_doc');
       if (existing) {
-        if (proGate) {
-          toast.info('Unlock Pro to keep more than one TXT.');
-          setShowPaywall(true);
-        } else {
-          toast.info("Register to save more than one TXT!");
-          navigate('/pricing');
-        }
+        setShowLibraryLimitModal(true);
         return;
       }
     }
@@ -430,13 +435,7 @@ const Index = () => {
     if (!user || proGate) {
       const existing = sessionStorage.getItem('kinxt_guest_doc');
       if (existing) {
-        if (proGate) {
-          toast.info('Unlock Pro to keep more than one TXT.');
-          setShowPaywall(true);
-        } else {
-          toast.info("Register to save more than one TXT!");
-          navigate('/pricing');
-        }
+        setShowLibraryLimitModal(true);
         return;
       }
     }
@@ -666,7 +665,7 @@ const Index = () => {
   };
 
   const handleLoginClick = () => {
-    navigate('/login');
+    navigate('/login?signup=true');
   };
 
   const handleEndPong = () => {
@@ -997,7 +996,7 @@ const Index = () => {
                     ) : activeTab === 'library' ? (
                       <EbookLibrary onSelectEbook={handleEbookSelect} />
                     ) : (
-                      <NewsLibrary onSelectArticle={handleNewsSelect} />
+                      <NewsLibrary onSelectArticle={handleNewsSelect} isPro={!proGate && !!user} onUpgrade={() => { if (isNative) { if (!user) navigate('/login?signup=true'); else setShowPaywall(true); } else navigate('/pricing'); }} />
                     )}
                   </motion.div>
                 </AnimatePresence>
@@ -1071,10 +1070,11 @@ const Index = () => {
             onClick={handleLoginClick}
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            className="absolute left-4 z-50 toolbar-button px-4 py-0 h-9 sm:h-11 text-[10px] font-bold tracking-[0.1em] uppercase hover:scale-105 transition-all shadow-lg active:scale-95 flex items-center justify-center"
+            className="absolute left-4 z-50 toolbar-button px-3 py-1.5 h-auto sm:h-11 text-[9px] sm:text-[10px] font-bold tracking-[0.05em] uppercase hover:scale-105 transition-all shadow-lg active:scale-95 flex flex-col items-center justify-center leading-tight"
             style={{ top: 'calc(1rem + env(safe-area-inset-top, 0px))' }}
           >
-            Login / Signup
+            <span>Login</span>
+            <span className="text-[8px] sm:text-[9px] opacity-70">Join Pro</span>
           </motion.button>
         )
       )}
@@ -1084,7 +1084,7 @@ const Index = () => {
         <div
           className="absolute right-28 z-50 flex items-center justify-center p-0"
           style={{ top: 'calc(1rem + env(safe-area-inset-top, 0px))' }}
-          onClick={() => requirePro(() => { if (!user) navigate('/pricing'); })}
+          onClick={() => requirePro(() => { if (!user) navigate(isNative ? '/login?signup=true' : '/pricing'); })}
         >
           <Notifications
             onOpenDocument={handleOpenDocumentById}
@@ -1098,14 +1098,14 @@ const Index = () => {
 
       {/* KiN-Profile - Top Right (right-52) */}
       {!activeDocument && (
-        <div onClick={() => requirePro(() => { if (!user) navigate('/pricing'); })} className="cursor-pointer">
+        <div onClick={() => { if (proGate) { setShowKinProfileModal(true); return; } }} className="cursor-pointer">
           <KinProfileLayout />
         </div>
       )}
 
       {/* KiN - Unified Menu - Top Right (right-40) */}
       {!activeDocument && !isPongGameActive && (
-        <div onClick={() => requirePro(() => { if (!user) navigate('/pricing'); })} className="cursor-pointer">
+        <div onClick={() => { if (proGate) { setShowKinClubModal(true); return; } }} className="cursor-pointer">
           <KinUnifiedLayout onViewProfile={setActiveProfile} />
         </div>
       )}
@@ -1157,18 +1157,105 @@ const Index = () => {
           </DialogTitle>
           <div className="space-y-6 py-4">
             <p className="text-sm text-white/60 text-center leading-relaxed px-4">
-              Sign up now to save your progress, sync your TXTs across all devices, and unlock the full KiN-TXT experience. Don't lose your rhythm.
+              Sign up to Pro to save your progress, sync your TXTs across all devices, and never lose your place. Don't lose your rhythm.
             </p>
             <div className="flex flex-col gap-3 px-4 pb-4">
               <Button 
-                onClick={() => navigate('/pricing')}
+                onClick={() => navigate(isNative ? '/login?signup=true' : '/pricing')}
                 className="w-full h-12 bg-white text-black hover:bg-white/90 font-bold tracking-tight rounded-xl"
               >
-                Create Account
+                Sign Up to Pro
               </Button>
               <Button 
                 variant="ghost" 
                 onClick={confirmGuestExit}
+                className="w-full h-12 text-white/40 hover:text-white hover:bg-white/5 font-medium rounded-xl"
+              >
+                Continue as Guest
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Library limit dialog for free users */}
+      <Dialog open={showLibraryLimitModal} onOpenChange={setShowLibraryLimitModal}>
+        <DialogContent className="sm:max-w-[425px] bg-black/90 border-white/10 backdrop-blur-xl text-white">
+          <DialogTitle className="text-xl font-display tracking-tight text-center pt-4">
+            1 TXT at a Time
+          </DialogTitle>
+          <div className="space-y-6 py-4">
+            <p className="text-sm text-white/60 text-center leading-relaxed px-4">
+              Only 1 TXT at a time is allowed in your library. For unlimited library slots and to read as much as you want — sign up to KiN-Pro.
+            </p>
+            <div className="flex flex-col gap-3 px-4 pb-4">
+              <Button
+                onClick={() => { setShowLibraryLimitModal(false); navigate(isNative ? '/login?signup=true' : '/pricing'); }}
+                className="w-full h-12 bg-white text-black hover:bg-white/90 font-bold tracking-tight rounded-xl"
+              >
+                Sign Up to Pro
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={() => setShowLibraryLimitModal(false)}
+                className="w-full h-12 text-white/40 hover:text-white hover:bg-white/5 font-medium rounded-xl"
+              >
+                Maybe Later
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* KiN-Profile info dialog for free users */}
+      <Dialog open={showKinProfileModal} onOpenChange={setShowKinProfileModal}>
+        <DialogContent className="sm:max-w-[425px] bg-black/90 border-white/10 backdrop-blur-xl text-white">
+          <DialogTitle className="text-xl font-display tracking-tight text-center pt-4">
+            KiN-Profile
+          </DialogTitle>
+          <div className="space-y-6 py-4">
+            <p className="text-sm text-white/60 text-center leading-relaxed px-4">
+              Your KiN-Profile is your reading identity — track your reading streak, earn lapels, see your stats, and share your profile with friends. Sign up to Pro to unlock your KiN-Profile.
+            </p>
+            <div className="flex flex-col gap-3 px-4 pb-4">
+              <Button
+                onClick={() => { setShowKinProfileModal(false); navigate(isNative ? '/login?signup=true' : '/pricing'); }}
+                className="w-full h-12 bg-white text-black hover:bg-white/90 font-bold tracking-tight rounded-xl"
+              >
+                Sign Up to Pro
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={() => setShowKinProfileModal(false)}
+                className="w-full h-12 text-white/40 hover:text-white hover:bg-white/5 font-medium rounded-xl"
+              >
+                Continue as Guest
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* KiN-Club info dialog for free users */}
+      <Dialog open={showKinClubModal} onOpenChange={setShowKinClubModal}>
+        <DialogContent className="sm:max-w-[425px] bg-black/90 border-white/10 backdrop-blur-xl text-white">
+          <DialogTitle className="text-xl font-display tracking-tight text-center pt-4">
+            KiN-Network
+          </DialogTitle>
+          <div className="space-y-6 py-4">
+            <p className="text-sm text-white/60 text-center leading-relaxed px-4">
+              Find and add friends, browse their reading lists and profiles, share TXTs, and start or join KiN-Clubs to recommend books and follow each other's progress live. Sign up to Pro to unlock the KiN-Network.
+            </p>
+            <div className="flex flex-col gap-3 px-4 pb-4">
+              <Button
+                onClick={() => { setShowKinClubModal(false); navigate(isNative ? '/login?signup=true' : '/pricing'); }}
+                className="w-full h-12 bg-white text-black hover:bg-white/90 font-bold tracking-tight rounded-xl"
+              >
+                Sign Up to Pro
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={() => setShowKinClubModal(false)}
                 className="w-full h-12 text-white/40 hover:text-white hover:bg-white/5 font-medium rounded-xl"
               >
                 Continue as Guest

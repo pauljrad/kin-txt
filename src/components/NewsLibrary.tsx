@@ -1,6 +1,8 @@
 import { useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Newspaper, Loader2, RefreshCw } from 'lucide-react';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { ParsedText, parseTextContent } from '@/lib/textParser';
 import { toast } from 'sonner';
@@ -23,17 +25,63 @@ interface Category {
 }
 
 interface NewsLibraryProps {
-  // onSelectArticle now might receive author in meta
   onSelectArticle: (parsed: ParsedText, title: string, meta: { link: string; source: string; author?: string }) => void;
+  isPro?: boolean;
+  onUpgrade?: () => void;
 }
 
-export function NewsLibrary({ onSelectArticle }: NewsLibraryProps) {
+const FREE_DAILY_NEWS_LIMIT = 1;
+
+function getNewsReadsToday(): string[] {
+  const today = new Date().toISOString().slice(0, 10);
+  const raw = localStorage.getItem('kinxt-news-reads');
+  if (!raw) return [];
+  try {
+    const data = JSON.parse(raw);
+    if (data.date !== today) return [];
+    return data.ids || [];
+  } catch { return []; }
+}
+
+const NEWS_CACHE_PREFIX = 'kinxt-news-cache-';
+
+function readCachedNews(category: string): NewsItem[] {
+  try {
+    const raw = localStorage.getItem(NEWS_CACHE_PREFIX + category);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed?.items) ? parsed.items : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeCachedNews(category: string, items: NewsItem[]) {
+  try {
+    localStorage.setItem(
+      NEWS_CACHE_PREFIX + category,
+      JSON.stringify({ items, at: Date.now() }),
+    );
+  } catch {
+    // Storage full or unavailable — caching is best-effort.
+  }
+}
+
+function recordNewsRead(articleId: string) {
+  const today = new Date().toISOString().slice(0, 10);
+  const existing = getNewsReadsToday();
+  if (!existing.includes(articleId)) existing.push(articleId);
+  localStorage.setItem('kinxt-news-reads', JSON.stringify({ date: today, ids: existing }));
+}
+
+export function NewsLibrary({ onSelectArticle, isPro = false, onUpgrade }: NewsLibraryProps) {
   const [news, setNews] = useState<NewsItem[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [activeCategory, setActiveCategory] = useState<string>('top');
+  const [showLimitDialog, setShowLimitDialog] = useState(false);
 
   // NOTE: filtering by source removed as we only have source="conversation" now mostly.
   // Keeping activeSource state structure if needed later but removing UI filters for now.
@@ -42,35 +90,49 @@ export function NewsLibrary({ onSelectArticle }: NewsLibraryProps) {
     setIsLoading(true);
     setError(null);
 
-    try {
-      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-      if (sessionError) throw sessionError;
-
-      const accessToken = sessionData.session?.access_token;
-      if (!accessToken) {
-        throw new Error('Please sign in to load news');
-      }
-
+    // The Global Voices feed is often very slow, so the server sometimes comes
+    // back with an empty list. Try once more, then fall back to the last set of
+    // articles we saw, so the page never ends up blank.
+    const load = async () => {
       const { data, error: fnError } = await supabase.functions.invoke('fetch-news', {
         body: { category },
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
       });
-
       if (fnError) throw fnError;
+      if (!data?.success) throw new Error(data?.error || 'Failed to fetch news');
+      return data;
+    };
 
-      if (data?.success && data?.news) {
+    try {
+      let data = await load();
+
+      if (!data.news?.length) {
+        data = await load();
+      }
+
+      if (data.categories && categories.length === 0) {
+        setCategories(data.categories);
+      }
+
+      if (data.news?.length) {
         setNews(data.news);
-        if (data.categories && categories.length === 0) {
-          setCategories(data.categories);
-        }
+        writeCachedNews(category, data.news);
       } else {
-        throw new Error(data?.error || 'Failed to fetch news');
+        const cached = readCachedNews(category);
+        if (cached.length) {
+          console.warn('news: feed returned nothing, showing cached articles');
+          setNews(cached);
+        } else {
+          setNews([]);
+        }
       }
     } catch (err) {
       console.error('Error fetching news:', err);
-      setError(err instanceof Error ? err.message : 'Failed to fetch news');
+      const cached = readCachedNews(category);
+      if (cached.length) {
+        setNews(cached);
+      } else {
+        setError(err instanceof Error ? err.message : 'Failed to fetch news');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -81,29 +143,43 @@ export function NewsLibrary({ onSelectArticle }: NewsLibraryProps) {
   }, [activeCategory]);
 
   const handleSelectArticle = useCallback(async (article: NewsItem) => {
+    if (!isPro) {
+      const reads = getNewsReadsToday();
+      if (reads.length >= FREE_DAILY_NEWS_LIMIT && !reads.includes(article.id)) {
+        setShowLimitDialog(true);
+        return;
+      }
+    }
+
     setLoadingId(article.id);
 
     try {
       // THE CONVERSATION provided content is often a summary/atom entry.
       // User requested "whole article", so we FORCE a scrape of the link even if content exists.
 
-      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-      if (sessionError) throw sessionError;
+      // Global Voices puts the whole article in the feed's content:encoded
+      // (typically 5–10k characters), so when that text is already substantial
+      // there is nothing to gain from scraping the page — and scraping it is
+      // actively worse, since their server's unstable HTTP/2 makes the request
+      // fail and the reader wait. Only scrape when the feed copy looks partial.
+      const feedText = (article.content || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+      const feedHasFullArticle = feedText.length >= 1200;
 
-      const accessToken = sessionData.session?.access_token;
-      if (!accessToken) {
-        throw new Error('Please sign in to load articles');
+      let data: { success?: boolean; text?: string; error?: string } | null = null;
+      if (!feedHasFullArticle) {
+        try {
+          const res = await supabase.functions.invoke('scrape-url', {
+            body: { url: article.link },
+          });
+          if (res.error) {
+            console.warn('scrape-url failed, using feed content:', res.error);
+          } else {
+            data = res.data;
+          }
+        } catch (scrapeErr) {
+          console.warn('scrape-url threw, using feed content:', scrapeErr);
+        }
       }
-
-      // Use the scrape-url edge function to get FULL article content
-      const { data, error: scrapeError } = await supabase.functions.invoke('scrape-url', {
-        body: { url: article.link },
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      });
-
-      if (scrapeError) throw scrapeError;
 
       if (!data?.success || !data?.text) {
         // Fallback to existing content if scraping fails but content exists
@@ -114,6 +190,7 @@ export function NewsLibrary({ onSelectArticle }: NewsLibraryProps) {
             .replace(/<br\s*\/?>/gi, '\n')
             .replace(/<[^>]+>/g, ' ');
           const parsed = parseTextContent(cleanText);
+          recordNewsRead(article.id);
           onSelectArticle(parsed, article.title, {
             link: article.link,
             source: article.source,
@@ -128,6 +205,7 @@ export function NewsLibrary({ onSelectArticle }: NewsLibraryProps) {
 
       // Parse the scraped text (Full Article)
       const parsed = parseTextContent(data.text);
+      recordNewsRead(article.id);
       onSelectArticle(parsed, article.title, {
         link: article.link,
         source: article.source,
@@ -142,7 +220,7 @@ export function NewsLibrary({ onSelectArticle }: NewsLibraryProps) {
     } finally {
       setLoadingId(null);
     }
-  }, [onSelectArticle, supabase.auth, supabase.functions]);
+  }, [onSelectArticle, isPro, supabase.auth, supabase.functions]);
 
   const handleCategoryChange = useCallback((categoryId: string) => {
     setActiveCategory(categoryId);
@@ -294,6 +372,36 @@ export function NewsLibrary({ onSelectArticle }: NewsLibraryProps) {
           <p className="text-muted-foreground">No news articles available</p>
         </div>
       )}
+      {/* Daily limit dialog for free users */}
+      <Dialog open={showLimitDialog} onOpenChange={setShowLimitDialog}>
+        <DialogContent className="sm:max-w-[400px] bg-background border-border">
+          <DialogTitle className="text-lg font-display tracking-tight text-center pt-2">
+            Daily News Limit Reached
+          </DialogTitle>
+          <div className="space-y-4 py-2">
+            <p className="text-sm text-muted-foreground text-center leading-relaxed px-4">
+              Free users can read {FREE_DAILY_NEWS_LIMIT} news article per day. Sign up to Pro for unlimited access to news and many more KiN-Pro features.
+            </p>
+            <div className="flex flex-col gap-3 px-4 pb-2">
+              {onUpgrade && (
+                <Button
+                  onClick={() => { setShowLimitDialog(false); onUpgrade(); }}
+                  className="w-full h-11 font-bold tracking-tight rounded-xl"
+                >
+                  Sign Up to Pro
+                </Button>
+              )}
+              <Button
+                variant="ghost"
+                onClick={() => setShowLimitDialog(false)}
+                className="w-full h-11 text-muted-foreground hover:text-foreground font-medium rounded-xl"
+              >
+                Maybe Later
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </motion.div>
   );
 }

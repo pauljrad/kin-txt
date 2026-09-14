@@ -34,12 +34,6 @@ const BOOKS = [
         isDark: true
     },
     {
-        id: 'siddhartha',
-        title: 'Siddhartha',
-        author: 'Hermann Hesse',
-        isDark: false
-    },
-    {
         id: 'great-gatsby',
         title: 'The Great Gatsby',
         author: 'F. Scott Fitzgerald',
@@ -58,22 +52,10 @@ const BOOKS = [
         isDark: true
     },
     {
-        id: 'room-view',
-        title: 'A Room with a View',
-        author: 'E. M. Forster',
-        isDark: false
-    },
-    {
         id: 'tale-two-cities',
         title: 'A Tale of Two Cities',
         author: 'Charles Dickens',
         isDark: true
-    },
-    {
-        id: 'metamorphosis',
-        title: 'Metamorphosis',
-        author: 'Franz Kafka',
-        isDark: false
     },
     {
         id: 'sherlock-holmes',
