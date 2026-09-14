@@ -1,6 +1,6 @@
 import { useState, useEffect, forwardRef } from 'react';
 import { motion } from 'framer-motion';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { AnimatedTitle } from '@/components/AnimatedTitle';
 import { ThemeToggle } from '@/components/ThemeToggle';
@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import { usePullGesture } from '@/hooks/usePullGesture';
 import { supabase } from '@/integrations/supabase/client';
+import { Capacitor } from '@capacitor/core';
 import { z } from 'zod';
 
 const emailSchema = z.string().email('Please enter a valid email address');
@@ -19,14 +20,18 @@ const Login = forwardRef<HTMLDivElement>((_, ref) => {
   const navigate = useNavigate();
   const { user, isLoading: authLoading, signIn, signUp } = useAuth();
   const [email, setEmail] = useState('');
+  const [confirmEmail, setConfirmEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [isSignUp, setIsSignUp] = useState(false);
-  const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
+  const [searchParams] = useSearchParams();
+  const [isSignUp, setIsSignUp] = useState(searchParams.get('signup') === 'true');
+  const [errors, setErrors] = useState<{ email?: string; confirmEmail?: string; password?: string; confirmPassword?: string }>({});
   const [isPongGameActive, setIsPongGameActive] = useState(false);
   const [isResetMode, setIsResetMode] = useState(false);
   const { resetPassword } = useAuth();
+  const isNative = Capacitor.isNativePlatform();
 
   // Redirect if already logged in
   useEffect(() => {
@@ -49,7 +54,7 @@ const Login = forwardRef<HTMLDivElement>((_, ref) => {
   }, []);
 
   const validateForm = () => {
-    const newErrors: { email?: string; password?: string } = {};
+    const newErrors: { email?: string; confirmEmail?: string; password?: string; confirmPassword?: string } = {};
 
     const emailResult = emailSchema.safeParse(email);
     if (!emailResult.success) {
@@ -59,6 +64,17 @@ const Login = forwardRef<HTMLDivElement>((_, ref) => {
     const passwordResult = passwordSchema.safeParse(password);
     if (!passwordResult.success) {
       newErrors.password = passwordResult.error.errors[0].message;
+    }
+
+    // Sign-up collects both twice. There is no confirmation email to catch a
+    // mistyped address, so a typo would lock the user out of their own account.
+    if (isSignUp && !isResetMode) {
+      if (confirmEmail !== email) {
+        newErrors.confirmEmail = 'Email addresses do not match';
+      }
+      if (confirmPassword !== password) {
+        newErrors.confirmPassword = 'Passwords do not match';
+      }
     }
 
     setErrors(newErrors);
@@ -130,15 +146,34 @@ const Login = forwardRef<HTMLDivElement>((_, ref) => {
           }).catch(err => console.error('Admin notification failed:', err));
         }
 
-        toast.success('Account created! Please check your email to verify your account.');
+        if (isNative) {
+          // Native: registration comes first, then the paywall. Email confirmation
+          // is off in Supabase, so signUp returns a session; sign in explicitly
+          // only as a fallback if it somehow didn't.
+          const { data: { session } } = await supabase.auth.getSession();
+          if (!session) {
+            const { error: signInError } = await signIn(email, password);
+            if (signInError) {
+              toast.error(signInError.message);
+              setIsLoading(false);
+              return;
+            }
+          }
+          toast.success('Account created!');
+          navigate('/home?showPaywall=true');
+        } else {
+          toast.success('Account created! Please check your email to verify your account.');
 
-        // Force sign out to ensure they verify email first
-        await supabase.auth.signOut();
+          // Force sign out to ensure they verify email first
+          await supabase.auth.signOut();
 
-        // Reset form or show specific UI
-        setIsSignUp(false);
-        setPassword('');
-        // navigate('/home') removed to prevent auto-login
+          // Reset form or show specific UI
+          setIsSignUp(false);
+          setPassword('');
+          setConfirmEmail('');
+          setConfirmPassword('');
+          // navigate('/home') removed to prevent auto-login
+        }
       } else {
         const { error } = await signIn(email, password);
         if (error) {
@@ -276,6 +311,26 @@ const Login = forwardRef<HTMLDivElement>((_, ref) => {
             )}
           </div>
 
+          {isSignUp && !isResetMode && (
+            <div className="space-y-1">
+              <Input
+                type="email"
+                placeholder="Confirm Email"
+                value={confirmEmail}
+                onChange={(e) => {
+                  setConfirmEmail(e.target.value);
+                  setErrors(prev => ({ ...prev, confirmEmail: undefined }));
+                }}
+                onPaste={(e) => e.preventDefault()}
+                className={`h-12 text-center bg-card/50 border-border/50 focus:border-foreground/30 ${errors.confirmEmail ? 'border-destructive' : ''}`}
+                autoComplete="off"
+              />
+              {errors.confirmEmail && (
+                <p className="text-xs text-destructive text-center">{errors.confirmEmail}</p>
+              )}
+            </div>
+          )}
+
           {!isResetMode && (
             <div className="space-y-1">
               <Input
@@ -291,6 +346,25 @@ const Login = forwardRef<HTMLDivElement>((_, ref) => {
               />
               {errors.password && (
                 <p className="text-xs text-destructive text-center">{errors.password}</p>
+              )}
+            </div>
+          )}
+
+          {isSignUp && !isResetMode && (
+            <div className="space-y-1">
+              <Input
+                type="password"
+                placeholder="Confirm Password"
+                value={confirmPassword}
+                onChange={(e) => {
+                  setConfirmPassword(e.target.value);
+                  setErrors(prev => ({ ...prev, confirmPassword: undefined }));
+                }}
+                className={`h-12 text-center bg-card/50 border-border/50 focus:border-foreground/30 ${errors.confirmPassword ? 'border-destructive' : ''}`}
+                autoComplete="new-password"
+              />
+              {errors.confirmPassword && (
+                <p className="text-xs text-destructive text-center">{errors.confirmPassword}</p>
               )}
             </div>
           )}
@@ -313,8 +387,8 @@ const Login = forwardRef<HTMLDivElement>((_, ref) => {
             className="w-full h-12 text-base"
           >
             {isLoading 
-              ? (isResetMode ? 'Sending link...' : (isSignUp ? 'Creating account...' : 'Signing in...')) 
-              : (isResetMode ? 'Send Reset Link' : (isSignUp ? 'Create Account' : 'Sign In'))
+              ? (isResetMode ? 'Sending link...' : (isSignUp ? 'Signing up to Pro...' : 'Signing in...'))
+              : (isResetMode ? 'Send Reset Link' : (isSignUp ? 'Sign Up to Pro' : 'Sign In'))
             }
           </Button>
 
@@ -327,13 +401,39 @@ const Login = forwardRef<HTMLDivElement>((_, ref) => {
               >
                 Back to Login
               </button>
+            ) : isNative ? (
+              // Native: reveal the sign-up form in place. Sending the user to
+              // /pricing here would drop them on the paywall with no way to
+              // create the credentials they need afterwards.
+              <button
+                type="button"
+                onClick={() => {
+                  setIsSignUp((prev) => !prev);
+                  setConfirmEmail('');
+                  setConfirmPassword('');
+                  setErrors({});
+                }}
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                {isSignUp ? (
+                  <>
+                    Already have an account?{' '}
+                    <span className="underline underline-offset-2 text-foreground">Sign in →</span>
+                  </>
+                ) : (
+                  <>
+                    New to KiN-TXT?{' '}
+                    <span className="underline underline-offset-2 text-foreground">Sign Up to Pro →</span>
+                  </>
+                )}
+              </button>
             ) : (
               <Link
                 to="/pricing"
                 className="text-sm text-muted-foreground hover:text-foreground transition-colors"
               >
                 New to KiN-TXT?{' '}
-                <span className="underline underline-offset-2 text-foreground">Register here →</span>
+                <span className="underline underline-offset-2 text-foreground">Sign Up to Pro →</span>
               </Link>
             )}
           </div>

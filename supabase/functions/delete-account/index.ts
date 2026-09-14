@@ -37,28 +37,39 @@ serve(async (req) => {
       });
     }
 
-    // Identify the caller from their JWT.
+    // Identify the caller from their JWT. The token is passed to getUser()
+    // explicitly rather than relying on the global Authorization header —
+    // resolving it from headers alone is unreliable inside edge functions.
     const userClient = createClient(supabaseUrl, anonKey, {
       global: { headers: { Authorization: authHeader } },
     });
-    const { data: { user }, error: userError } = await userClient.auth.getUser();
+    const jwt = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: userError } = await userClient.auth.getUser(jwt);
     if (userError || !user) {
-      return new Response(JSON.stringify({ error: 'Invalid or expired session' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      console.error('delete-account: getUser failed', userError?.message ?? 'no user for token');
+      return new Response(
+        JSON.stringify({ error: `Invalid or expired session${userError?.message ? `: ${userError.message}` : ''}` }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
     }
+
+    console.log('delete-account: deleting user', user.id);
 
     // Delete with service-role privileges.
     const admin = createClient(supabaseUrl, serviceKey);
     const { error: deleteError } = await admin.auth.admin.deleteUser(user.id);
     if (deleteError) {
-      console.error('delete-account: deleteUser failed', deleteError);
-      return new Response(JSON.stringify({ error: deleteError.message }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      // Most related tables cascade from auth.users, but if any row blocks the
+      // delete the underlying constraint message is the useful part — pass it
+      // through rather than a bare 500.
+      console.error('delete-account: deleteUser failed', JSON.stringify(deleteError));
+      return new Response(
+        JSON.stringify({ error: `Could not delete account: ${deleteError.message}` }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
     }
+
+    console.log('delete-account: deleted', user.id);
 
     return new Response(JSON.stringify({ success: true }), {
       status: 200,

@@ -16,7 +16,7 @@ serve(async (req) => {
       apiVersion: '2024-04-10',
     });
 
-    const { priceId, email } = await req.json();
+    const { priceId, email, returnTo } = await req.json();
 
     if (!priceId) {
       return new Response(JSON.stringify({ error: 'priceId is required' }), {
@@ -26,6 +26,15 @@ serve(async (req) => {
     }
 
     const origin = req.headers.get('origin') ?? 'https://kin-txt.com';
+    // Only allow known in-app return destinations; never accept an arbitrary
+    // URL from the browser as a Stripe redirect target.
+    const returningToSubmissions = returnTo === 'submissions';
+    const successUrl = returningToSubmissions
+      ? `${origin}/submissions?upgraded=success`
+      : `${origin}/login?checkout=success`;
+    const cancelUrl = returningToSubmissions
+      ? `${origin}/submissions`
+      : `${origin}/pricing`;
 
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
@@ -35,8 +44,8 @@ serve(async (req) => {
       },
       // Pre-fill email if provided
       ...(email ? { customer_email: email } : {}),
-      success_url: `${origin}/login?checkout=success`,
-      cancel_url: `${origin}/pricing`,
+      success_url: successUrl,
+      cancel_url: cancelUrl,
       // Collect billing address for UK compliance
       billing_address_collection: 'auto',
       // Allow promo codes

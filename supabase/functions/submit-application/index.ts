@@ -84,7 +84,7 @@ serve(async (req) => {
         });
       }
 
-      await resend.emails.send({
+      const { error: resendError } = await resend.emails.send({
         from: "KiN-TXT Submissions <hello@kin-txt.com>",
         to: ["hello@kin-txt.com"],
         replyTo: email,
@@ -96,6 +96,11 @@ serve(async (req) => {
           ["Message", pitch],
         ]),
       });
+
+      if (resendError) {
+        console.error("Resend rejected submission email:", resendError);
+        throw new Error("Submission email could not be delivered.");
+      }
 
       return new Response(JSON.stringify({ success: true }), {
         status: 200,
@@ -163,7 +168,7 @@ serve(async (req) => {
         );
       }
 
-      await resend.emails.send({
+      const { error: resendError } = await resend.emails.send({
         from: "KiN-TXT Submissions <hello@kin-txt.com>",
         to: ["hello@kin-txt.com"],
         replyTo: user.email,
@@ -178,6 +183,11 @@ serve(async (req) => {
           ["Pitch", pitch],
         ]),
       });
+
+      if (resendError) {
+        console.error("Resend rejected submission email:", resendError);
+        throw new Error("Submission email could not be delivered.");
+      }
 
       return new Response(JSON.stringify({ success: true }), {
         status: 200,

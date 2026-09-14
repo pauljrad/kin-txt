@@ -30,7 +30,7 @@ async function sendFirstBookSubmissionEmail(metadata: Record<string, string>) {
     )
     .join("");
 
-  await resend.emails.send({
+  const { error: resendError } = await resend.emails.send({
     from: "KiN-TXT Submissions <hello@kin-txt.com>",
     to: ["hello@kin-txt.com"],
     replyTo: metadata.authorEmail || undefined,
@@ -51,6 +51,11 @@ async function sendFirstBookSubmissionEmail(metadata: Record<string, string>) {
       </body></html>
     `,
   });
+
+  if (resendError) {
+    console.error("Resend rejected paid submission email:", resendError);
+    throw new Error("Paid submission email could not be delivered.");
+  }
 }
 
 const corsHeaders = {

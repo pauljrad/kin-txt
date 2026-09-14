@@ -26,16 +26,24 @@ interface RSSFeed {
   category: string;
 }
 
+// Global Voices only — CC-BY licensed, so its full text may be reformatted and
+// displayed in the reader. Do not add mainstream/commercial news sources here;
+// their content is not licensed for this use.
+//
+// The former Wikinews entries were removed on 2026-08-20: Wikimedia deleted
+// Special:NewsFeed, so every one of those URLs now returns HTTP 404 ("No such
+// special page") and contributed zero articles. Global Voices publishes topic
+// feeds under /-/topics/<slug>/feed/ (the older /category/<slug>/feed/ form
+// returns HTTP 410), each verified to return 15 items.
 const RSS_FEEDS: RSSFeed[] = [
-  { name: "Top Stories", url: "https://en.wikinews.org/w/index.php?title=Special:NewsFeed&feed=rss&categories=Published&notcategories=No%20publish%7CArchived%7CAutoArchived%7Cdisputed&namespace=0&count=30", source: "Wikinews", category: "top" },
-  { name: "Global Voices", url: "https://globalvoices.org/feed/", source: "Global Voices", category: "top" },
-  { name: "Politics", url: "https://en.wikinews.org/w/index.php?title=Special:NewsFeed&feed=rss&categories=Politics_and_conflicts", source: "Wikinews", category: "politics" },
-  { name: "Science + Tech", url: "https://en.wikinews.org/w/index.php?title=Special:NewsFeed&feed=rss&categories=Science_and_technology", source: "Wikinews", category: "tech" },
-  { name: "Business", url: "https://en.wikinews.org/w/index.php?title=Special:NewsFeed&feed=rss&categories=Economy_and_business", source: "Wikinews", category: "business" },
-  { name: "Health", url: "https://en.wikinews.org/w/index.php?title=Special:NewsFeed&feed=rss&categories=Health", source: "Wikinews", category: "health" },
-  { name: "Culture", url: "https://en.wikinews.org/w/index.php?title=Special:NewsFeed&feed=rss&categories=Culture_and_entertainment", source: "Wikinews", category: "arts" },
-  { name: "Sports", url: "https://en.wikinews.org/w/index.php?title=Special:NewsFeed&feed=rss&categories=Sports", source: "Wikinews", category: "sports" },
-  { name: "Environment", url: "https://en.wikinews.org/w/index.php?title=Special:NewsFeed&feed=rss&categories=Environment", source: "Wikinews", category: "environment" },
+  { name: "Top Stories", url: "https://globalvoices.org/feed/", source: "Global Voices", category: "top" },
+  { name: "Politics", url: "https://globalvoices.org/-/topics/politics/feed/", source: "Global Voices", category: "politics" },
+  { name: "Science + Tech", url: "https://globalvoices.org/-/topics/technology/feed/", source: "Global Voices", category: "tech" },
+  { name: "Business", url: "https://globalvoices.org/-/topics/economics-business/feed/", source: "Global Voices", category: "business" },
+  { name: "Health", url: "https://globalvoices.org/-/topics/health/feed/", source: "Global Voices", category: "health" },
+  { name: "Culture", url: "https://globalvoices.org/-/topics/arts-culture/feed/", source: "Global Voices", category: "arts" },
+  { name: "Sports", url: "https://globalvoices.org/-/topics/sport/feed/", source: "Global Voices", category: "sports" },
+  { name: "Environment", url: "https://globalvoices.org/-/topics/environment/feed/", source: "Global Voices", category: "environment" },
 ];
 
 const CATEGORIES = [
@@ -161,10 +169,102 @@ function extractAuthor(xml: string, source: string, content?: string): string {
   return "";
 }
 
-async function fetchRSSFeed(feed: RSSFeed): Promise<NewsItem[]> {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 8000);
+// Global Voices is intermittently slow — it regularly needs well over 8s to
+// respond. Aborting early was returning an empty list and rendering the news
+// page blank, so allow a much more generous window.
+const FEED_TIMEOUT_MS = 25000;
 
+// Cached results per category.
+//
+// Two layers. The in-memory map is fast but only helps within one warm isolate,
+// and Supabase spreads requests across many — a category cached on isolate A is
+// a miss on isolate B, which is why earlier attempts still left readers waiting
+// on the feed. Storage is genuinely shared, so it is the layer that makes the
+// news page reliably fast.
+const lastGood = new Map<string, { items: NewsItem[]; at: number }>();
+const FRESH_MS = 15 * 60 * 1000;        // serve without refetching
+const STALE_OK_MS = 24 * 60 * 60 * 1000; // serve stale rather than show nothing
+const CACHE_BUCKET = "news-cache";
+
+function admin() {
+  return createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    { auth: { persistSession: false } },
+  );
+}
+
+let bucketReady = false;
+async function ensureBucket(): Promise<void> {
+  if (bucketReady) return;
+  try {
+    const { error } = await admin().storage.createBucket(CACHE_BUCKET, { public: false });
+    // "already exists" is the normal case after the first ever run.
+    if (error && !/exist/i.test(error.message)) console.error("bucket create:", error.message);
+  } catch (err) {
+    console.error("bucket create threw:", err);
+  }
+  bucketReady = true;
+}
+
+type Cached = { items: NewsItem[]; at: number };
+
+async function readCache(category: string): Promise<Cached | null> {
+  const mem = lastGood.get(category);
+  if (mem) return mem;
+
+  try {
+    await ensureBucket();
+    const { data, error } = await admin().storage.from(CACHE_BUCKET).download(`${category}.json`);
+    if (error || !data) return null;
+    const body = JSON.parse(await data.text());
+    if (!Array.isArray(body?.items) || body.items.length === 0 || !body?.at) return null;
+    const hit: Cached = { items: body.items, at: body.at };
+    lastGood.set(category, hit);
+    return hit;
+  } catch (err) {
+    console.error("cache read failed:", err);
+    return null;
+  }
+}
+
+async function writeCache(category: string, items: NewsItem[]): Promise<void> {
+  const at = Date.now();
+  lastGood.set(category, { items, at });
+  try {
+    await ensureBucket();
+    const body = new Blob([JSON.stringify({ items, at })], { type: "application/json" });
+    const { error } = await admin().storage
+      .from(CACHE_BUCKET)
+      .upload(`${category}.json`, body, { upsert: true, contentType: "application/json" });
+    if (error) console.error("cache write failed:", error.message);
+  } catch (err) {
+    console.error("cache write threw:", err);
+  }
+}
+
+// Refresh a category from the feed and store the result. Used both inline (on a
+// cold cache) and in the background (stale-while-revalidate).
+async function refreshCategory(category: string): Promise<NewsItem[]> {
+  const feeds = RSS_FEEDS.filter((f) => f.category === category);
+  const results = await Promise.all(feeds.map(fetchRSSFeed));
+  const seen = new Set<string>();
+  const items = results.flat()
+    .filter((item) => {
+      if (seen.has(item.link)) return false;
+      seen.add(item.link);
+      return true;
+    })
+    .sort((a, b) => (new Date(b.pubDate).getTime() || 0) - (new Date(a.pubDate).getTime() || 0));
+
+  if (items.length > 0) await writeCache(category, items);
+  return items;
+}
+
+// One attempt at the feed, aborted after `timeoutMs`.
+async function fetchFeedText(feed: RSSFeed, timeoutMs: number): Promise<string> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const response = await fetch(feed.url, {
       signal: controller.signal,
@@ -173,15 +273,30 @@ async function fetchRSSFeed(feed: RSSFeed): Promise<NewsItem[]> {
         "Accept": "application/atom+xml, application/xml, text/xml, */*",
       },
     });
-
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return await response.text();
+  } finally {
     clearTimeout(timeout);
+  }
+}
 
-    if (!response.ok) {
-      console.error(`${feed.source}: HTTP ${response.status}`);
-      return [];
-    }
+// Global Voices response time swings wildly — the same feed can answer in 0.4s
+// or hang past 25s. Rather than ride out a slow connection, start a second
+// attempt after HEDGE_DELAY_MS and take whichever finishes first. This costs at
+// most one extra request and collapses the slow tail.
+const HEDGE_DELAY_MS = 4000;
 
-    const xml = await response.text();
+async function fetchRSSFeed(feed: RSSFeed): Promise<NewsItem[]> {
+  try {
+    const primary = fetchFeedText(feed, FEED_TIMEOUT_MS);
+    const hedged = (async () => {
+      await new Promise((r) => setTimeout(r, HEDGE_DELAY_MS));
+      return await fetchFeedText(feed, FEED_TIMEOUT_MS - HEDGE_DELAY_MS);
+    })();
+
+    // Promise.any resolves with the first attempt to succeed, and only rejects
+    // if both fail.
+    const xml = await Promise.any([primary, hedged]);
     const items: NewsItem[] = [];
 
     // Split by <entry> (Atom) or <item> (RSS)
@@ -221,8 +336,11 @@ async function fetchRSSFeed(feed: RSSFeed): Promise<NewsItem[]> {
     return items;
 
   } catch (err) {
-    clearTimeout(timeout);
-    console.error(`${feed.source} error:`, err instanceof Error ? err.message : err);
+    // Promise.any throws AggregateError when both attempts fail.
+    const detail = err instanceof AggregateError
+      ? err.errors.map((e) => (e instanceof Error ? e.message : String(e))).join('; ')
+      : err instanceof Error ? err.message : String(err);
+    console.error(`${feed.source} (${feed.category}) error:`, detail);
     return [];
   }
 }
@@ -233,35 +351,18 @@ serve(async (req) => {
   }
 
   try {
-    // Authenticate user
+    // Auth is optional — news is available on the free tier too.
     const authHeader = req.headers.get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      console.error('Auth error: No authorization header');
-      return new Response(
-        JSON.stringify({ success: false, error: 'Unauthorized' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    if (authHeader?.startsWith('Bearer ')) {
+      const supabase = createClient(
+        Deno.env.get('SUPABASE_URL')!,
+        Deno.env.get('SUPABASE_ANON_KEY')!,
+        { global: { headers: { Authorization: authHeader } } }
       );
+      const jwt = authHeader.replace('Bearer ', '');
+      const { data: { user } } = await supabase.auth.getUser(jwt);
+      console.log('Fetching news for:', user?.id ?? 'guest');
     }
-
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_ANON_KEY')!,
-      { global: { headers: { Authorization: authHeader } } }
-    );
-
-    // Pass the JWT explicitly (more reliable than relying on global headers)
-    const jwt = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: userError } = await supabase.auth.getUser(jwt);
-
-    if (userError || !user) {
-      console.error('Auth error (getUser):', userError);
-      return new Response(
-        JSON.stringify({ success: false, error: 'Unauthorized' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    console.log('Authenticated user:', user.id);
 
     // Parse optional category filter from request body
     let categoryFilter: string | null = null;
@@ -280,38 +381,44 @@ serve(async (req) => {
       // No body or invalid JSON, fetch all
     }
 
-    // Filter feeds by category if specified
-    const feedsToFetch = categoryFilter
-      ? RSS_FEEDS.filter(f => f.category === categoryFilter)
-      : RSS_FEEDS.filter(f => f.category === "top"); // Default to top stories only
+    const category = categoryFilter || 'top';
 
-    const results = await Promise.all(feedsToFetch.map(fetchRSSFeed));
+    const respond = (items: NewsItem[], how: string) => {
+      console.log(`Category: ${category}, ${items.length} items (${how})`);
+      return new Response(
+        JSON.stringify({
+          success: true,
+          news: items,
+          categories: CATEGORIES,
+          sources: RSS_FEEDS.map(f => ({ name: f.name, source: f.source }))
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    };
 
-    // Dedupe by link to avoid duplicate articles across feeds
-    const seen = new Set<string>();
-    const allNews = results.flat()
-      .filter(item => {
-        if (seen.has(item.link)) return false;
-        seen.add(item.link);
-        return true;
-      })
-      .sort((a, b) => {
-        const dateA = new Date(a.pubDate).getTime() || 0;
-        const dateB = new Date(b.pubDate).getTime() || 0;
-        return dateB - dateA;
-      });
+    // Stale-while-revalidate. Global Voices routinely needs 15–25s, so waiting
+    // on it per request is what made the page feel broken. Anything cached is
+    // returned straight away; if it has aged past FRESH_MS the refresh happens
+    // in the background so the next reader gets newer articles without this one
+    // paying for it.
+    const cached = await readCache(category);
+    if (cached) {
+      const age = Date.now() - cached.at;
+      if (age > FRESH_MS && age < STALE_OK_MS) {
+        const bg = refreshCategory(category).catch((err) => console.error("bg refresh:", err));
+        // deno-lint-ignore no-explicit-any
+        const rt = (globalThis as any).EdgeRuntime;
+        if (rt?.waitUntil) rt.waitUntil(bg);
+      }
+      return respond(cached.items, age > FRESH_MS ? "cached, refreshing" : "cached");
+    }
 
-    console.log(`Category: ${categoryFilter || 'top'}, Total: ${allNews.length} news items`);
+    // Nothing cached for this category yet — this is the only path that waits.
+    const items = await refreshCategory(category);
+    if (items.length > 0) return respond(items, "live");
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        news: allNews,
-        categories: CATEGORIES,
-        sources: RSS_FEEDS.map(f => ({ name: f.name, source: f.source }))
-      }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    const stale = await readCache(category);
+    return respond(stale?.items ?? [], stale ? "stale fallback" : "empty");
   } catch (error) {
     console.error("fetch-news error:", error);
     return new Response(

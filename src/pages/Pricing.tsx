@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Check, ArrowLeft, LogOut, ExternalLink } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { useAuth } from '@/hooks/useAuth';
 import { Capacitor } from '@capacitor/core';
 import { Paywall } from '@/components/Paywall';
+import { useSubscription } from '@/hooks/useSubscription';
+import { supabase } from '@/integrations/supabase/client';
 
 // Animated KiN logo — same as splash screen, scaled down
 const KinLogo = ({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) => {
@@ -77,8 +79,12 @@ const PLANS = [
 
 export default function Pricing() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user, signOut } = useAuth();
+  const { isSubscribed, loading: subscriptionLoading } = useSubscription();
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+  const [checkoutError, setCheckoutError] = useState('');
+  const returnTo = searchParams.get('returnTo') === 'submissions' ? 'submissions' : null;
   const isNative = Capacitor.isNativePlatform();
 
   // On the native iOS app, subscriptions are sold through Apple In-App Purchase.
@@ -98,8 +104,39 @@ export default function Pricing() {
     navigate('/login');
   };
 
-  const handleStartTrial = (plan: typeof PLANS[0]) => {
-    navigate(`/register?plan=${plan.id}`);
+  const handleStartTrial = async (plan: typeof PLANS[0]) => {
+    // No account yet: keep the existing create-account flow. An existing
+    // account is an inactive Pro account, so reactivate it directly instead
+    // of asking the person to create a second account.
+    if (!user) {
+      navigate(`/register?plan=${plan.id}`);
+      return;
+    }
+
+    if (isSubscribed || subscriptionLoading) return;
+
+    setCheckoutError('');
+    setLoadingPlan(plan.id);
+    try {
+      const { data, error } = await supabase.functions.invoke('create-checkout-session', {
+        body: {
+          priceId: plan.priceId,
+          email: user.email,
+          returnTo,
+        },
+      });
+
+      if (error || !data?.url) {
+        setCheckoutError('Could not start Pro checkout — please try again in a moment.');
+        setLoadingPlan(null);
+        return;
+      }
+
+      window.location.href = data.url;
+    } catch {
+      setCheckoutError('Could not start Pro checkout — please try again in a moment.');
+      setLoadingPlan(null);
+    }
   };
 
   return (
@@ -216,19 +253,31 @@ export default function Pricing() {
                 <button
                   id={`start-trial-${plan.id}`}
                   onClick={() => handleStartTrial(plan)}
-                  disabled={loadingPlan !== null}
+                  disabled={loadingPlan !== null || (Boolean(user) && subscriptionLoading) || isSubscribed}
                   className={`w-full h-12 rounded-xl font-display tracking-widest uppercase text-sm transition-all ${
                     plan.id === 'annual'
                       ? 'bg-foreground text-background hover:bg-foreground/90'
                       : 'border border-foreground/40 text-foreground hover:bg-foreground/10'
                   } disabled:opacity-50 disabled:cursor-not-allowed`}
                 >
-                  {loadingPlan === plan.id ? 'Redirecting...' : 'Start Free Trial'}
+                  {user && subscriptionLoading
+                    ? 'Checking Pro…'
+                    : isSubscribed
+                      ? 'Pro Active'
+                      : loadingPlan === plan.id
+                        ? 'Redirecting…'
+                        : user
+                          ? 'Reactivate Pro'
+                          : 'Start Free Trial'}
                 </button>
               )}
             </motion.div>
           ))}
         </div>
+
+        {checkoutError && (
+          <p className="mt-4 text-sm text-destructive text-center max-w-md mx-auto">{checkoutError}</p>
+        )}
 
         {/* Legal footer */}
         <motion.div

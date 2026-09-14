@@ -58,14 +58,6 @@ export const AVAILABLE_EBOOKS: Ebook[] = [
     synopsis: "Oscar Wilde's chilling philosophical novel about a young man who barters his soul for eternal youth and beauty, while a hidden portrait bears the horrific burden of his sins and aging."
   },
   {
-    id: 'siddhartha',
-    title: 'Siddhartha',
-    author: 'Hermann Hesse',
-    filePath: '/ebooks/siddhartha.epub',
-    wordCount: 39000,
-    synopsis: "Hermann Hesse's deeply spiritual journey of a young Indian man's lifelong quest for enlightenment and self-discovery during the time of the Gautama Buddha."
-  },
-  {
     id: 'dubliners',
     title: 'Dubliners',
     author: 'James Joyce',
@@ -82,28 +74,12 @@ export const AVAILABLE_EBOOKS: Ebook[] = [
     synopsis: "Fyodor Dostoevsky's pioneering existentialist novella presenting the bitter, complex monologue of an isolated, unnamed former civil servant living in St. Petersburg."
   },
   {
-    id: 'room-view',
-    title: 'A Room with a View',
-    author: 'E. M. Forster',
-    filePath: '/ebooks/a-room-with-a-view.epub',
-    wordCount: 65000,
-    synopsis: "E. M. Forster's charming and witty social critique of Edwardian era culture, following young Lucy Honeychurch as she navigates love and societal expectations in Florence and England."
-  },
-  {
     id: 'tale-two-cities',
     title: 'A Tale of Two Cities',
     author: 'Charles Dickens',
     filePath: '/ebooks/a-tale-of-two-cities.epub',
     wordCount: 135000,
     synopsis: "Charles Dickens' iconic historical epic of love, sacrifice, and resurrection set in London and Paris before and during the bloody turmoil of the French Revolution."
-  },
-  {
-    id: 'metamorphosis',
-    title: 'Metamorphosis',
-    author: 'Franz Kafka',
-    filePath: '/ebooks/metamorphosis.epub',
-    wordCount: 22000,
-    synopsis: "Franz Kafka's surreal and tragic masterpiece following salesman Gregor Samsa, who awakens one morning to find himself inexplicably transformed into a massive, repulsive insect."
   },
   {
     id: 'sherlock-holmes',

@@ -1,6 +1,6 @@
 import { useState, useEffect, createContext, useContext } from 'react';
 import { User, Session } from '@supabase/supabase-js';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, SUPABASE_FUNCTIONS_URL, SUPABASE_ANON_KEY } from '@/integrations/supabase/client';
 import { configureRevenueCat, logoutRevenueCatUser } from '@/lib/revenuecat';
 
 interface AuthContextType {
@@ -12,10 +12,47 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: Error | null }>;
   updatePassword: (password: string) => Promise<{ error: Error | null }>;
-  deleteAccount: () => Promise<{ error: Error | null }>;
+  /** `reload` asks the caller to hard-reload, resetting all in-memory auth state. */
+  deleteAccount: () => Promise<{ error: Error | null; reload?: boolean }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+/** supabase-js stores the session under `sb-<project-ref>-auth-token`. */
+function findAuthStorageKey(): string | null {
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key && /^sb-.*-auth-token$/.test(key)) return key;
+  }
+  return null;
+}
+
+/**
+ * Read the access token from storage without going through supabase.auth.
+ * Deliberately lock-free — see the note in deleteAccount.
+ */
+function readStoredAccessToken(): string | null {
+  try {
+    const key = findAuthStorageKey();
+    if (!key) return null;
+    const raw = localStorage.getItem(key);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return parsed?.access_token ?? parsed?.currentSession?.access_token ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/** Drop the stored session without going through supabase.auth. */
+function clearStoredSession(): void {
+  try {
+    const key = findAuthStorageKey();
+    if (key) localStorage.removeItem(key);
+  } catch {
+    // Storage unavailable — the reload below still resets in-memory state.
+  }
+}
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -84,13 +121,64 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Calls a service-role edge function; related rows cascade via FK constraints.
   const deleteAccount = async () => {
     try {
-      const { error } = await supabase.functions.invoke('delete-account');
-      if (error) return { error: error as Error };
-      await logoutRevenueCatUser();
-      await supabase.auth.signOut();
-      return { error: null };
+      // Nothing here may hang: this runs behind a modal, so a promise that
+      // never settles leaves the whole app frozen with no way out.
+      const guard = <T,>(p: Promise<T>, ms: number, label: string): Promise<T> =>
+        Promise.race([
+          p,
+          new Promise<T>((_, reject) =>
+            setTimeout(() => reject(new Error(`${label} timed out. Check your connection and try again.`)), ms),
+          ),
+        ]);
+
+      // Read the token straight out of storage rather than via getSession():
+      // every supabase.auth.* call serialises on a shared lock.
+      const accessToken = readStoredAccessToken();
+      if (!accessToken) {
+        return { error: new Error('You appear to be signed out. Sign in again, then retry.') };
+      }
+
+      // Plain fetch, NOT supabase.functions.invoke. invoke() routes through
+      // SupabaseClient.fetch -> _getAccessToken() -> auth.getSession(), so it
+      // takes the auth lock even when the Authorization header is supplied by
+      // hand. onAuthStateChange calls into the RevenueCat native bridge while
+      // that lock is held, and the two together wedge this flow behind the
+      // modal with no error. A direct fetch touches none of it.
+      const res = await guard(
+        fetch(`${SUPABASE_FUNCTIONS_URL}/delete-account`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            apikey: SUPABASE_ANON_KEY,
+            Authorization: `Bearer ${accessToken}`,
+          },
+        }),
+        20000,
+        'Deleting your account',
+      );
+
+      if (!res.ok) {
+        let message = `Delete failed (HTTP ${res.status})`;
+        try {
+          const body = await res.json();
+          if (body?.error) message = body.error;
+        } catch {
+          // Body was not JSON — keep the status-based message.
+        }
+        console.error('delete-account failed:', message);
+        return { error: new Error(message) };
+      }
+
+      // Deleted server-side, so the token is dead and there is no session left
+      // to sign out of. Clear the stored session directly — calling
+      // supabase.auth.signOut() here would take the auth lock and fire the
+      // native RevenueCat call from inside it, which is exactly the hang this
+      // flow has to avoid. A hard reload then drops all in-memory auth state.
+      clearStoredSession();
+      return { error: null, reload: true };
     } catch (err) {
-      return { error: err as Error };
+      console.error('delete-account threw:', err);
+      return { error: err instanceof Error ? err : new Error(String(err)) };
     }
   };
 
