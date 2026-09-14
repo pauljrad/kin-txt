@@ -166,22 +166,36 @@ export default function Submissions() {
     setBookError('');
     saveDraft(bookForm);
     setBookStatus('redirecting');
+
+    // Persist the full submission before involving Stripe. The checkout only
+    // carries this durable row's UUID; payment and email become follow-up state.
+    const { data: pendingData, error: pendingError } = await supabase.functions.invoke('submit-application', {
+      body: { type: 'first-book-paid-pending', ...bookForm },
+    });
+    if (pendingError || !pendingData?.submissionId) {
+      setBookStatus('error');
+      setBookError('Could not save your submission before checkout — please try again in a moment.');
+      return;
+    }
+
     const { data, error } = await supabase.functions.invoke('create-submission-checkout-session', {
-      body: bookForm,
+      body: {
+        ...bookForm,
+        // Existing checkout metadata field, now used only as a durable-record pointer.
+        pitch: `submission:${pendingData.submissionId}`,
+      },
     });
     if (error || !data?.url) {
       setBookStatus('error');
-      setBookError('Could not start checkout — please try again in a moment.');
+      setBookError('Your submission is saved, but checkout could not start — please try again in a moment.');
       return;
     }
     window.location.href = data.url;
   };
 
-  // Free entry needs an active KiN-TXT Pro membership — enforced again,
-  // server-side, in submit-application. Anyone else (signed out, or signed in
-  // without Pro) pays £10, and that entry rides through Stripe metadata, which
-  // caps a value at 500 characters — hence the shorter limit below.
-  const bookPitchLimit = isSubscribed ? 6000 : 490;
+  // Both paid and Pro submissions are stored in Supabase before notification,
+  // so Stripe metadata no longer limits the pitch length.
+  const bookPitchLimit = 6000;
 
   return (
     <div className="min-h-[100svh] bg-background flex flex-col">
@@ -396,11 +410,9 @@ export default function Submissions() {
                     rows={5}
                     className={`${FIELD_CLASS} resize-none`}
                   />
-                  {!subscriptionLoading && !isSubscribed && (
-                    <p className="text-xs text-muted-foreground mt-1.5">
-                      Keep it under {bookPitchLimit} characters for a paid entry. KiN-TXT Pro members get more room.
-                    </p>
-                  )}
+                  <p className="text-xs text-muted-foreground mt-1.5">
+                    Up to {bookPitchLimit.toLocaleString()} characters.
+                  </p>
                 </div>
 
                 {bookError && <p className="text-xs text-destructive">{bookError}</p>}

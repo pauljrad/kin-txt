@@ -9,8 +9,6 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Keep every field to a sane length regardless of what the client sends —
-// this ends up in an email, not a database row.
 function clip(value: unknown, max: number): string {
   const s = typeof value === "string" ? value : "";
   return s.trim().slice(0, max);
@@ -62,6 +60,34 @@ function wrapEmail(title: string, rows: [string, string][]): string {
   `;
 }
 
+function adminClient() {
+  return createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+  );
+}
+
+async function markNotification(
+  admin: ReturnType<typeof adminClient>,
+  submissionId: string,
+  status: "sent" | "failed",
+  resendEmailId?: string,
+  errorMessage?: string,
+) {
+  const { error } = await admin
+    .from("submissions")
+    .update({
+      email_status: status,
+      resend_email_id: resendEmailId ?? null,
+      last_error: errorMessage ?? null,
+      last_notification_attempt_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", submissionId);
+
+  if (error) console.error("Could not update submission notification state:", error);
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -70,6 +96,7 @@ serve(async (req) => {
   try {
     const payload = await req.json();
     const type = payload?.type;
+    const admin = adminClient();
 
     if (type === "writer") {
       const name = clip(payload.name, 200);
@@ -84,12 +111,35 @@ serve(async (req) => {
         });
       }
 
-      const { error: resendError } = await resend.emails.send({
+      const { data: submission, error: insertError } = await admin
+        .from("submissions")
+        .insert({
+          submission_type: "writer",
+          entry_method: "writer_form",
+          payment_status: "not_required",
+          email_status: "sending",
+          author_name: name,
+          email,
+          links: links || null,
+          pitch,
+          notification_attempts: 1,
+          last_notification_attempt_at: new Date().toISOString(),
+        })
+        .select("id")
+        .single();
+
+      if (insertError || !submission) {
+        console.error("Could not persist writer application:", insertError);
+        throw new Error("Could not save the writer application.");
+      }
+
+      const { data: emailData, error: resendError } = await resend.emails.send({
         from: "KiN-TXT Submissions <hello@kin-txt.com>",
         to: ["hello@kin-txt.com"],
         replyTo: email,
         subject: `Writers Wanted — ${name}`,
         html: wrapEmail("New writer application", [
+          ["Submission ID", submission.id],
           ["Name", name],
           ["Email", email],
           ["Links / portfolio", links],
@@ -98,20 +148,64 @@ serve(async (req) => {
       });
 
       if (resendError) {
-        console.error("Resend rejected submission email:", resendError);
-        throw new Error("Submission email could not be delivered.");
+        console.error("Resend rejected writer application notification:", resendError);
+        await markNotification(admin, submission.id, "failed", undefined, JSON.stringify(resendError));
+      } else {
+        await markNotification(admin, submission.id, "sent", emailData?.id);
       }
 
-      return new Response(JSON.stringify({ success: true }), {
+      return new Response(JSON.stringify({ success: true, submissionId: submission.id }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (type === "first-book-paid-pending") {
+      const authorName = clip(payload.authorName, 200);
+      const authorEmail = clip(payload.authorEmail, 200);
+      const bookTitle = clip(payload.bookTitle, 300);
+      const genre = clip(payload.genre, 200);
+      const wordCount = clip(payload.wordCount, 30);
+      const manuscriptLink = clip(payload.manuscriptLink, 1000);
+      const pitch = clip(payload.pitch, 6000);
+
+      if (!authorName || !authorEmail || !bookTitle || !manuscriptLink || !pitch) {
+        return new Response(
+          JSON.stringify({ error: "Author name, email, book title, manuscript link, and pitch are required." }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      const { data: submission, error: insertError } = await admin
+        .from("submissions")
+        .insert({
+          submission_type: "first_book",
+          entry_method: "paid",
+          payment_status: "pending",
+          email_status: "pending",
+          author_name: authorName,
+          email: authorEmail,
+          book_title: bookTitle,
+          genre: genre || null,
+          word_count: wordCount || null,
+          manuscript_link: manuscriptLink,
+          pitch,
+        })
+        .select("id")
+        .single();
+
+      if (insertError || !submission) {
+        console.error("Could not persist pending paid submission:", insertError);
+        throw new Error("Could not save the submission before checkout.");
+      }
+
+      return new Response(JSON.stringify({ success: true, submissionId: submission.id }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     if (type === "first-book-free") {
-      // Free path is gated on a real, currently-signed-in kin-txt.com account —
-      // enforced here server-side, not just hidden client-side, so it can't be
-      // used to skip the £10 fee by simply lying in the request body.
       const authHeader = req.headers.get("Authorization");
       if (!authHeader?.startsWith("Bearer ")) {
         return new Response(JSON.stringify({ error: "Sign in to submit for free." }), {
@@ -133,14 +227,6 @@ serve(async (req) => {
         });
       }
 
-      // Free entry requires an ACTIVE KiN-TXT Pro membership — not merely an
-      // account. RLS hides the subscriptions table from a plain user token
-      // (confirmed separately — anon and user tokens both see zero rows), so
-      // this has to run with the service-role key to get a real answer.
-      const admin = createClient(
-        Deno.env.get("SUPABASE_URL")!,
-        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-      );
       const { data: subRow } = await admin
         .from("subscriptions")
         .select("status")
@@ -168,14 +254,42 @@ serve(async (req) => {
         );
       }
 
-      const { error: resendError } = await resend.emails.send({
+      const email = user.email ?? "";
+      const { data: submission, error: insertError } = await admin
+        .from("submissions")
+        .insert({
+          submission_type: "first_book",
+          entry_method: "pro_free",
+          payment_status: "not_required",
+          email_status: "sending",
+          user_id: user.id,
+          author_name: authorName,
+          email,
+          book_title: bookTitle,
+          genre: genre || null,
+          word_count: wordCount || null,
+          manuscript_link: manuscriptLink,
+          pitch,
+          notification_attempts: 1,
+          last_notification_attempt_at: new Date().toISOString(),
+        })
+        .select("id")
+        .single();
+
+      if (insertError || !submission) {
+        console.error("Could not persist free book submission:", insertError);
+        throw new Error("Could not save the book submission.");
+      }
+
+      const { data: emailData, error: resendError } = await resend.emails.send({
         from: "KiN-TXT Submissions <hello@kin-txt.com>",
         to: ["hello@kin-txt.com"],
-        replyTo: user.email,
+        replyTo: email || undefined,
         subject: `First Book Open Call — ${bookTitle} (free entry, Pro member)`,
         html: wrapEmail("First Book Open Call — free entry (Pro member)", [
+          ["Submission ID", submission.id],
           ["Author", authorName],
-          ["Account email", user.email ?? ""],
+          ["Account email", email],
           ["Book title", bookTitle],
           ["Genre / theme", genre],
           ["Word count", wordCount],
@@ -185,11 +299,13 @@ serve(async (req) => {
       });
 
       if (resendError) {
-        console.error("Resend rejected submission email:", resendError);
-        throw new Error("Submission email could not be delivered.");
+        console.error("Resend rejected free book submission notification:", resendError);
+        await markNotification(admin, submission.id, "failed", undefined, JSON.stringify(resendError));
+      } else {
+        await markNotification(admin, submission.id, "sent", emailData?.id);
       }
 
-      return new Response(JSON.stringify({ success: true }), {
+      return new Response(JSON.stringify({ success: true, submissionId: submission.id }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
