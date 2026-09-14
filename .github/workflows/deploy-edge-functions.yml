@@ -1,12 +1,9 @@
 name: Deploy Supabase Edge Functions
 
+# Edge Functions are deployed directly to the verified KiN-TXT Supabase project.
+# Keep this workflow as a manual fallback only so normal GitHub pushes do not
+# trigger a second, competing Supabase deployment.
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - 'supabase/functions/**'
-      - 'supabase/migrations/**'
   workflow_dispatch:
 
 jobs:
@@ -14,10 +11,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Install Supabase CLI
         run: npm install -g supabase
-      
+
       - name: Deploy Edge Functions
         run: supabase functions deploy --project-ref ${{ secrets.SUPABASE_PROJECT_ID }}
         env:
