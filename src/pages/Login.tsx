@@ -427,6 +427,21 @@ const Login = forwardRef<HTMLDivElement>((_, ref) => {
                   </>
                 )}
               </button>
+            ) : isSignUp ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setIsSignUp(false);
+                  setConfirmEmail('');
+                  setConfirmPassword('');
+                  setErrors({});
+                  navigate('/login', { replace: true });
+                }}
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Already have an account?{' '}
+                <span className="underline underline-offset-2 text-foreground">Sign in →</span>
+              </button>
             ) : (
               <Link
                 to="/pricing"

@@ -666,7 +666,7 @@ const Index = () => {
   };
 
   const handleLoginClick = () => {
-    navigate('/login?signup=true');
+    navigate('/login');
   };
 
   const handleEndPong = () => {
