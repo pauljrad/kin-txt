@@ -9,48 +9,45 @@ export function CreatorHomeShortcut() {
   if (loading || !isCreator) return null;
 
   return (
-    <div className="mt-2.5 flex w-full justify-center">
+    <div className="mt-3 flex w-full justify-center">
       <motion.button
         onClick={() => navigate('/create')}
-        whileTap={{ scale: 0.96 }}
-        whileHover={{ scale: 1.025 }}
+        whileTap={{ scale: 0.94 }}
+        whileHover={{ scale: 1.04 }}
         animate={{
           boxShadow: [
             '0 0 0px rgba(255,255,255,0)',
-            '0 0 14px rgba(255,255,255,0.10)',
+            '0 0 20px rgba(255,255,255,0.14)',
             '0 0 0px rgba(255,255,255,0)',
           ],
         }}
         transition={{
-          boxShadow: { duration: 3.2, repeat: Infinity, ease: 'easeInOut' },
+          boxShadow: { duration: 3, repeat: Infinity, ease: 'easeInOut' },
           scale: { duration: 0.16 },
         }}
-        className="group inline-flex h-8 items-center gap-2 rounded-full border border-foreground/20 bg-secondary/35 px-3 text-foreground backdrop-blur-sm transition-colors hover:bg-secondary/65"
+        className="inline-flex h-11 min-w-16 items-center justify-center rounded-full border border-foreground/20 bg-secondary/35 px-4 text-foreground backdrop-blur-sm transition-colors hover:bg-secondary/65"
         aria-label="Open KiN-Creator studio"
       >
-        <span className="flex h-4 items-center font-display text-[11px] leading-none tracking-[-0.04em]" aria-hidden="true">
-          <span>K</span>
-          <span className="relative mx-[1px] inline-flex h-4 w-[5px] justify-center">
+        <span className="flex h-7 items-center justify-center gap-1.5" aria-hidden="true">
+          <span className="relative inline-flex h-7 w-2.5 justify-center">
             <motion.span
-              className="absolute top-[1px] h-[2.5px] w-[2.5px] rounded-full bg-current"
-              animate={{ y: [0, -3, 0], opacity: [0.55, 1, 0.55] }}
-              transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut', repeatDelay: 0.65 }}
+              className="absolute top-0.5 h-1 w-1 rounded-full bg-current"
+              animate={{ y: [0, -5, 0], opacity: [0.6, 1, 0.6] }}
+              transition={{ duration: 1.65, repeat: Infinity, ease: 'easeInOut', repeatDelay: 0.55 }}
             />
             <motion.span
-              className="absolute bottom-[1px] h-[9px] w-[1.5px] rounded-full bg-current"
-              animate={{ scaleY: [1, 0.7, 1] }}
-              transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut', repeatDelay: 0.65 }}
+              className="absolute bottom-0.5 h-4 w-0.5 rounded-full bg-current"
+              animate={{ scaleY: [1, 0.68, 1] }}
+              transition={{ duration: 1.65, repeat: Infinity, ease: 'easeInOut', repeatDelay: 0.55 }}
               style={{ transformOrigin: 'bottom' }}
             />
           </span>
-          <span>N</span>
           <motion.span
-            className="mx-[1px] inline-block h-[1.5px] w-[4px] rounded-full bg-current"
-            animate={{ x: [0, 1.5, -1, 0] }}
-            transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut', repeatDelay: 0.8 }}
+            className="inline-block h-0.5 w-3 rounded-full bg-current"
+            animate={{ x: [0, 3, -2, 0] }}
+            transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut', repeatDelay: 0.7 }}
           />
         </span>
-        <span className="font-display text-[10px] font-medium uppercase tracking-[0.18em] leading-none">Create</span>
       </motion.button>
     </div>
   );
