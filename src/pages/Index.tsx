@@ -22,6 +22,7 @@ import { Button } from '@/components/ui/button';
 
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { AnimatedTitle } from '@/components/AnimatedTitle';
+import { CreatorHomeShortcut } from '@/components/CreatorHomeShortcut';
 import { usePullGesture } from '@/hooks/usePullGesture';
 import { ParsedText, processTextStyles, filterEmphasis } from '@/lib/textParser';
 import { SavedDocument, saveDocument, updateDocumentProgress, updateDocumentEmphasis, setFreeMode, saveLocalProgress } from '@/lib/documentDatabase';
@@ -938,40 +939,41 @@ const Index = () => {
             {/* Main Content Area */}
             <div className="w-full max-w-2xl mx-auto flex flex-col items-center">
               <AnimatedTitle enabled={hasCompletedOnboarding !== false && !showStartupSplash} />
+              <CreatorHomeShortcut />
 
-              <div className="w-full space-y-6 mt-8">
+              <div className="w-full space-y-5 mt-4">
                 {/* Tabs */}
-                <div className="flex justify-center gap-2 sm:gap-4 mb-4">
+                <div className="grid grid-cols-3 gap-2 w-full max-w-lg mx-auto mb-2">
                   <button
                     onClick={() => setActiveTab('my-texts')}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all ${activeTab === 'my-texts'
+                    className={`min-w-0 h-10 flex items-center justify-center gap-1.5 px-2 sm:px-3 rounded-xl text-[13px] sm:text-sm whitespace-nowrap transition-all ${activeTab === 'my-texts'
                       ? 'bg-foreground text-background font-medium'
                       : 'bg-secondary text-muted-foreground hover:bg-secondary/80'
                       }`}
                   >
-                    <FileText className="w-4 h-4" />
-                    <span>My TXTs</span>
+                    <FileText className="w-3.5 h-3.5 shrink-0" />
+                    <span className="whitespace-nowrap leading-none">My TXTs</span>
                   </button>
                   <button
                     onClick={() => setActiveTab('library')}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all ${activeTab === 'library'
+                    className={`min-w-0 h-10 flex items-center justify-center gap-1.5 px-2 sm:px-3 rounded-xl text-[13px] sm:text-sm whitespace-nowrap transition-all ${activeTab === 'library'
                       ? 'bg-foreground text-background font-medium'
                       : 'bg-secondary text-muted-foreground hover:bg-secondary/80'
                       }`}
                   >
-                    <Library className="w-4 h-4" />
-                    <span>Ebooks</span>
+                    <Library className="w-3.5 h-3.5 shrink-0" />
+                    <span className="whitespace-nowrap leading-none">Ebooks</span>
                   </button>
 
                   <button
                     onClick={() => setActiveTab('news')}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all ${activeTab === 'news'
+                    className={`min-w-0 h-10 flex items-center justify-center gap-1.5 px-2 sm:px-3 rounded-xl text-[13px] sm:text-sm whitespace-nowrap transition-all ${activeTab === 'news'
                       ? 'bg-foreground text-background font-medium'
                       : 'bg-secondary text-muted-foreground hover:bg-secondary/80'
                       }`}
                   >
-                    <Newspaper className="w-4 h-4" />
-                    <span>Journal</span>
+                    <Newspaper className="w-3.5 h-3.5 shrink-0" />
+                    <span className="whitespace-nowrap leading-none">Journal</span>
                   </button>
                 </div>
 

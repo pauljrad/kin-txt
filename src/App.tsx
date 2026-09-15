@@ -26,7 +26,6 @@ import CreatorReview from "./pages/CreatorReview";
 import ResetPassword from "./pages/ResetPassword";
 import { useState, useEffect } from "react";
 import { SplashScreen } from "@/components/SplashScreen";
-import { CreatorHomeShortcut } from "@/components/CreatorHomeShortcut";
 import { AnimatePresence } from "framer-motion";
 import { Capacitor } from "@capacitor/core";
 import { SplashScreen as CapSplashScreen } from "@capacitor/splash-screen";
@@ -91,12 +90,7 @@ const AppContent = () => {
 
         <Route
           path="/home"
-          element={(
-            <div className="relative min-h-[100svh]">
-              <CreatorHomeShortcut />
-              <Index />
-            </div>
-          )}
+          element={<Index />}
         />
         <Route path="*" element={<NotFound />} />
       </Routes>
