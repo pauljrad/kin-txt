@@ -4,8 +4,6 @@ on:
   push:
     branches:
       - fix/creator-home-mobile
-    paths:
-      - .github/workflows/one-time-mobile-layout-fix.yml
 
 permissions:
   contents: write
@@ -18,137 +16,12 @@ jobs:
         with:
           ref: fix/creator-home-mobile
           fetch-depth: 0
-      - name: Patch Creator home layout
-        shell: bash
+      - name: Apply layout patch
+        run: python3 scripts/one_time_mobile_layout_fix.py
+      - name: Commit patched source
         run: |
-          python3 - <<'PY'
-          from pathlib import Path
-
-          def replace_once(path, old, new):
-              p = Path(path)
-              text = p.read_text()
-              if old not in text:
-                  raise SystemExit(f'Expected snippet not found in {path}: {old[:90]!r}')
-              text = text.replace(old, new, 1)
-              p.write_text(text)
-
-          # App: stop floating the Creator button outside the home layout.
-          replace_once(
-              'src/App.tsx',
-              'import { CreatorHomeShortcut } from "@/components/CreatorHomeShortcut";\n',
-              ''
-          )
-          replace_once(
-              'src/App.tsx',
-              '''        <Route\n          path="/home"\n          element={(\n            <div className="relative min-h-[100svh]">\n              <CreatorHomeShortcut />\n              <Index />\n            </div>\n          )}\n        />''',
-              '''        <Route\n          path="/home"\n          element={<Index />}\n        />'''
-          )
-
-          # Index: Creator shortcut belongs directly under the KiN-TXT logo.
-          replace_once(
-              'src/pages/Index.tsx',
-              "import { AnimatedTitle } from '@/components/AnimatedTitle';\n",
-              "import { AnimatedTitle } from '@/components/AnimatedTitle';\nimport { CreatorHomeShortcut } from '@/components/CreatorHomeShortcut';\n"
-          )
-          replace_once(
-              'src/pages/Index.tsx',
-              '''              <AnimatedTitle enabled={hasCompletedOnboarding !== false && !showStartupSplash} />\n\n              <div className="w-full space-y-6 mt-8">''',
-              '''              <AnimatedTitle enabled={hasCompletedOnboarding !== false && !showStartupSplash} />\n              <CreatorHomeShortcut />\n\n              <div className="w-full space-y-5 mt-4">'''
-          )
-          replace_once(
-              'src/pages/Index.tsx',
-              '''                <div className="flex justify-center gap-2 sm:gap-4 mb-4">''',
-              '''                <div className="grid grid-cols-3 gap-2 w-full max-w-lg mx-auto mb-2">'''
-          )
-
-          old_button = '''className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all ${activeTab === '''
-          new_button = '''className={`min-w-0 h-10 flex items-center justify-center gap-1.5 px-2 sm:px-3 rounded-xl text-[13px] sm:text-sm whitespace-nowrap transition-all ${activeTab === '''
-          text = Path('src/pages/Index.tsx').read_text()
-          if text.count(old_button) != 3:
-              raise SystemExit(f'Expected 3 nav button class snippets, found {text.count(old_button)}')
-          text = text.replace(old_button, new_button)
-          text = text.replace('<FileText className="w-4 h-4" />\n                    <span>My TXTs</span>', '<FileText className="w-3.5 h-3.5 shrink-0" />\n                    <span className="whitespace-nowrap leading-none">My TXTs</span>', 1)
-          text = text.replace('<Library className="w-4 h-4" />\n                    <span>Ebooks</span>', '<Library className="w-3.5 h-3.5 shrink-0" />\n                    <span className="whitespace-nowrap leading-none">Ebooks</span>', 1)
-          text = text.replace('<Newspaper className="w-4 h-4" />\n                    <span>Journal</span>', '<Newspaper className="w-3.5 h-3.5 shrink-0" />\n                    <span className="whitespace-nowrap leading-none">Journal</span>', 1)
-          Path('src/pages/Index.tsx').write_text(text)
-
-          # Secondary text actions: keep all three compact and one-line on phones.
-          p = Path('src/components/TextInput.tsx')
-          text = p.read_text()
-          text = text.replace('''      <div className="flex justify-center gap-2">''', '''      <div className="grid grid-cols-3 gap-2 w-full max-w-lg mx-auto">''', 1)
-          old = '''className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-all duration-300 ${mode === '''
-          new = '''className={`min-w-0 h-9 flex items-center justify-center gap-1.5 px-2 rounded-lg text-[12px] sm:text-sm whitespace-nowrap transition-all duration-300 ${mode === '''
-          if text.count(old) != 3:
-              raise SystemExit(f'Expected 3 TextInput button classes, found {text.count(old)}')
-          text = text.replace(old, new)
-          p.write_text(text)
-
-          # Replace the old floating Creator shortcut with a small kinetic micro-logo.
-          Path('src/components/CreatorHomeShortcut.tsx').write_text(r'''import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
-import { useCreatorAccess } from '@/hooks/useCreatorAccess';
-
-export function CreatorHomeShortcut() {
-  const navigate = useNavigate();
-  const { isCreator, loading } = useCreatorAccess();
-
-  if (loading || !isCreator) return null;
-
-  return (
-    <div className="mt-2.5 flex w-full justify-center">
-      <motion.button
-        onClick={() => navigate('/create')}
-        whileTap={{ scale: 0.96 }}
-        whileHover={{ scale: 1.025 }}
-        animate={{
-          boxShadow: [
-            '0 0 0px rgba(255,255,255,0)',
-            '0 0 14px rgba(255,255,255,0.10)',
-            '0 0 0px rgba(255,255,255,0)',
-          ],
-        }}
-        transition={{
-          boxShadow: { duration: 3.2, repeat: Infinity, ease: 'easeInOut' },
-          scale: { duration: 0.16 },
-        }}
-        className="group inline-flex h-8 items-center gap-2 rounded-full border border-foreground/20 bg-secondary/35 px-3 text-foreground backdrop-blur-sm transition-colors hover:bg-secondary/65"
-        aria-label="Open KiN-Creator studio"
-      >
-        <span className="flex h-4 items-center font-display text-[11px] leading-none tracking-[-0.04em]" aria-hidden="true">
-          <span>K</span>
-          <span className="relative mx-[1px] inline-flex h-4 w-[5px] justify-center">
-            <motion.span
-              className="absolute top-[1px] h-[2.5px] w-[2.5px] rounded-full bg-current"
-              animate={{ y: [0, -3, 0], opacity: [0.55, 1, 0.55] }}
-              transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut', repeatDelay: 0.65 }}
-            />
-            <motion.span
-              className="absolute bottom-[1px] h-[9px] w-[1.5px] rounded-full bg-current"
-              animate={{ scaleY: [1, 0.7, 1] }}
-              transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut', repeatDelay: 0.65 }}
-              style={{ transformOrigin: 'bottom' }}
-            />
-          </span>
-          <span>N</span>
-          <motion.span
-            className="mx-[1px] inline-block h-[1.5px] w-[4px] rounded-full bg-current"
-            animate={{ x: [0, 1.5, -1, 0] }}
-            transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut', repeatDelay: 0.8 }}
-          />
-        </span>
-        <span className="font-display text-[10px] font-medium uppercase tracking-[0.18em] leading-none">
-          Create
-        </span>
-      </motion.button>
-    </div>
-  );
-}
-''')
-          PY
-
-          rm .github/workflows/one-time-mobile-layout-fix.yml
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add src/App.tsx src/pages/Index.tsx src/components/TextInput.tsx src/components/CreatorHomeShortcut.tsx .github/workflows/one-time-mobile-layout-fix.yml
+          git add -A
           git commit -m "Tidy Creator home layout on mobile"
           git push origin HEAD:fix/creator-home-mobile
