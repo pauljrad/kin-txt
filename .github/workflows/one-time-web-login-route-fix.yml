@@ -1,0 +1,31 @@
+name: One-time web login route fix
+
+on:
+  push:
+    branches:
+      - fix/web-login-route
+    paths:
+      - .github/workflows/one-time-web-login-route-fix.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/web-login-route
+          fetch-depth: 0
+      - name: Apply login route patch
+        run: python3 .github/scripts/fix-web-login-route.py
+      - name: Commit patched source
+        run: |
+          rm .github/scripts/fix-web-login-route.py
+          rm .github/workflows/one-time-web-login-route-fix.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/pages/Index.tsx src/pages/Login.tsx .github/scripts/fix-web-login-route.py .github/workflows/one-time-web-login-route-fix.yml
+          git commit -m "Fix web login route and sign-in escape"
+          git push origin HEAD:fix/web-login-route
