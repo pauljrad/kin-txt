@@ -118,12 +118,12 @@ export function TextInput({ onTextParsed }: TextInputProps) {
       className="w-full max-w-2xl mx-auto mt-3"
     >
       {/* Mode Toggle */}
-      <div className="flex justify-center gap-2">
+      <div className="grid grid-cols-3 gap-2 w-full max-w-lg mx-auto">
         <motion.button
           onClick={() => toggleMode('paste')}
           whileHover={{ y: -1 }}
           whileTap={{ scale: 0.98 }}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-all duration-300 ${mode === 'paste'
+          className={`min-w-0 h-9 flex items-center justify-center gap-1.5 px-2 rounded-lg text-[12px] sm:text-sm whitespace-nowrap transition-all duration-300 ${mode === 'paste'
             ? 'bg-primary text-primary-foreground'
             : 'bg-secondary/50 text-secondary-foreground hover:bg-secondary'
             }`}
@@ -135,7 +135,7 @@ export function TextInput({ onTextParsed }: TextInputProps) {
           onClick={() => toggleMode('upload')}
           whileHover={{ y: -1 }}
           whileTap={{ scale: 0.98 }}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-all duration-300 ${mode === 'upload'
+          className={`min-w-0 h-9 flex items-center justify-center gap-1.5 px-2 rounded-lg text-[12px] sm:text-sm whitespace-nowrap transition-all duration-300 ${mode === 'upload'
             ? 'bg-primary text-primary-foreground'
             : 'bg-secondary/50 text-secondary-foreground hover:bg-secondary'
             }`}
@@ -147,7 +147,7 @@ export function TextInput({ onTextParsed }: TextInputProps) {
           onClick={() => toggleMode('url')}
           whileHover={{ y: -1 }}
           whileTap={{ scale: 0.98 }}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-all duration-300 ${mode === 'url'
+          className={`min-w-0 h-9 flex items-center justify-center gap-1.5 px-2 rounded-lg text-[12px] sm:text-sm whitespace-nowrap transition-all duration-300 ${mode === 'url'
             ? 'bg-primary text-primary-foreground'
             : 'bg-secondary/50 text-secondary-foreground hover:bg-secondary'
             }`}
