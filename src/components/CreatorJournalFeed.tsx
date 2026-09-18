@@ -3,6 +3,7 @@ import { Loader2, PenLine } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { ParsedText } from '@/lib/textParser';
 import { parseCreatorMarkup } from '@/lib/creatorText';
+import { CreatorExperience, resolvePublishedCreatorExperience, withCreatorExperienceDefaults } from '@/lib/creatorExperience';
 
 interface CreatorPublication {
   id: string;
@@ -12,6 +13,7 @@ interface CreatorPublication {
   body: string;
   word_count: number;
   published_at: string;
+  experience?: CreatorExperience | null;
 }
 
 interface CreatorJournalFeedProps {
@@ -23,6 +25,7 @@ interface CreatorJournalFeedProps {
       publicationId: string;
       emphasisWords: string[];
       whisperedWords: string[];
+      creatorExperience?: CreatorExperience;
     },
   ) => void;
 }
@@ -31,6 +34,7 @@ export function CreatorJournalFeed({ onSelectArticle }: CreatorJournalFeedProps)
   const [items, setItems] = useState<CreatorPublication[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [openingId, setOpeningId] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -39,7 +43,7 @@ export function CreatorJournalFeed({ onSelectArticle }: CreatorJournalFeedProps)
       setError('');
       const { data, error: loadError } = await supabase
         .from('creator_publications' as any)
-        .select('id, creator_name, content_type, title, body, word_count, published_at')
+        .select('id, creator_name, content_type, title, body, word_count, published_at, experience')
         .order('published_at', { ascending: false });
 
       if (cancelled) return;
@@ -81,14 +85,28 @@ export function CreatorJournalFeed({ onSelectArticle }: CreatorJournalFeedProps)
       {items.map((item) => (
         <button
           key={item.id}
-          onClick={() => {
+          onClick={async () => {
+            if (openingId) return;
+            setOpeningId(item.id);
             const parsed = parseCreatorMarkup(item.body);
+            const rawExperience = withCreatorExperienceDefaults({
+              ...(item.experience || {}),
+              publicationId: item.id,
+            });
+            let creatorExperience = rawExperience;
+            try {
+              creatorExperience = await resolvePublishedCreatorExperience(item.id, rawExperience);
+            } catch (err) {
+              console.error('Could not resolve Creator media:', err);
+            }
             onSelectArticle(parsed.parsedText, item.title, {
               creatorName: item.creator_name,
               publicationId: item.id,
               emphasisWords: parsed.emphasisWords,
               whisperedWords: parsed.whisperedWords,
+              creatorExperience,
             });
+            setOpeningId(null);
           }}
           className="group glass-panel p-5 text-left transition-all duration-300 hover:ring-2 hover:ring-primary/50 flex flex-col h-full justify-between"
         >
@@ -103,6 +121,11 @@ export function CreatorJournalFeed({ onSelectArticle }: CreatorJournalFeedProps)
             <h3 className="font-display font-medium text-lg leading-snug text-foreground mb-3 group-hover:text-primary transition-colors line-clamp-4">
               {item.title}
             </h3>
+            {openingId === item.id && (
+              <div className="mb-3 flex items-center gap-2 text-[10px] uppercase tracking-widest text-muted-foreground">
+                <Loader2 className="w-3 h-3 animate-spin" /> Preparing directed TXT…
+              </div>
+            )}
             <p className="text-xs text-muted-foreground line-clamp-3">
               {item.body.replace(/[*_]/g, '').slice(0, 150)}{item.body.length > 150 ? '…' : ''}
             </p>
