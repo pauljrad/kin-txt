@@ -225,6 +225,17 @@
     flex-direction: column;
   }
 
+  /* Prevent iOS Safari from auto-zooming the whole interface when a Creator
+     focuses a form field. Keep mobile form controls at the 16px zoom threshold. */
+  @media (max-width: 767px) {
+    input,
+    select,
+    textarea,
+    [contenteditable="true"] {
+      font-size: 16px !important;
+    }
+  }
+
   h1,
   h2,
   h3,
@@ -251,14 +262,14 @@
   /* Only reading content areas should scale */
   .prose,
   .kinetic-word,
-  .reading-content,
-  .controls-panel {
+  .reading-content {
     font-size: calc(1rem * var(--text-size-multiplier));
   }
 
-  /* Ensure controls-panel children inherit scaled size */
+  /* Reader controls stay UI-sized; text-size preferences only affect reading content. */
+  .controls-panel,
   .controls-panel .glass-panel {
-    font-size: inherit;
+    font-size: 16px;
   }
 
   /* Ensure text containers handle overflow gracefully */

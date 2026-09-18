@@ -8,19 +8,11 @@ import { useCreatorAccess } from '@/hooks/useCreatorAccess';
 import { parseCreatorMarkup, plainTextToEditorHtml, richHtmlToCreatorMarkup } from '@/lib/creatorText';
 import { CreatorExperienceEditor } from '@/components/CreatorExperienceEditor';
 import { KineticPlayer } from '@/components/KineticPlayer';
-import { DEFAULT_CREATOR_EXPERIENCE, CreatorExperience, resolveOwnCreatorExperienceMedia, withCreatorExperienceDefaults } from '@/lib/creatorExperience';
+import { DEFAULT_CREATOR_EXPERIENCE, CreatorExperience, preloadCreatorImages, resolveOwnCreatorExperienceMedia, withCreatorExperienceDefaults } from '@/lib/creatorExperience';
 import { useAuth } from '@/hooks/useAuth';
 
 const FIELD = 'w-full rounded-xl border border-border bg-card/60 px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-foreground/40 transition-colors';
 
-function preloadImage(url: string): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const image = new Image();
-    image.onload = () => resolve();
-    image.onerror = () => reject(new Error('Image could not be loaded.'));
-    image.src = url;
-  });
-}
 
 export default function CreatorCreate() {
   const navigate = useNavigate();
@@ -130,12 +122,8 @@ export default function CreatorCreate() {
     }
     try {
       const resolvedExperience = await resolveOwnCreatorExperienceMedia(experience);
-      const imageUrls = resolvedExperience.images.map((image) => image.url).filter((url): url is string => !!url);
-      if (imageUrls.length !== resolvedExperience.images.length) {
-        throw new Error('One of your images could not be prepared for preview. Remove it and add it again.');
-      }
-      await Promise.all(imageUrls.map(preloadImage));
-      setPreview({ parsed: parseCreatorMarkup(draftMarkup), experience: resolvedExperience });
+      const readyExperience = await preloadCreatorImages(resolvedExperience, true);
+      setPreview({ parsed: parseCreatorMarkup(draftMarkup), experience: readyExperience });
     } catch (err) {
       setStatus('error');
       setMessage(err instanceof Error ? err.message : 'Could not prepare the preview.');

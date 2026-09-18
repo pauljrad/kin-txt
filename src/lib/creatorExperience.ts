@@ -124,3 +124,41 @@ export function stripCreatorExperienceUrls(experience: CreatorExperience): Creat
       : value.music,
   };
 }
+
+
+function preloadImageUrl(url: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve();
+    image.onerror = () => reject(new Error('Creator image could not be loaded.'));
+    image.src = url;
+  });
+}
+
+export async function preloadCreatorImages(
+  experience: CreatorExperience,
+  strict = false,
+): Promise<CreatorExperience> {
+  const value = withCreatorExperienceDefaults(experience);
+  const results = await Promise.all(
+    value.images.map(async (image) => {
+      if (!image.url) return { image, ok: false };
+      try {
+        await preloadImageUrl(image.url);
+        return { image, ok: true };
+      } catch {
+        return { image, ok: false };
+      }
+    }),
+  );
+
+  const failed = results.filter((result) => !result.ok);
+  if (strict && failed.length) {
+    throw new Error('One of your images could not be prepared for preview. Remove it and add it again.');
+  }
+
+  return {
+    ...value,
+    images: results.filter((result) => result.ok).map((result) => result.image),
+  };
+}

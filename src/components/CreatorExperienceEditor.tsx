@@ -56,43 +56,63 @@ export function CreatorExperienceEditor({
     });
   };
 
-  const uploadImage = async (file?: File) => {
-    if (!file) return;
+  const uploadImages = async (files?: FileList | File[]) => {
+    const selected = files ? Array.from(files) : [];
+    if (!selected.length) return;
+
     setError('');
-    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
-      setError('Use a JPG, PNG or WebP image.');
+    const remaining = Math.max(0, 12 - experience.images.length);
+    if (!remaining) {
+      setError('A TXT can contain up to 12 image moments.');
       return;
     }
-    if (file.size > 12 * 1024 * 1024) {
+
+    const batch = selected.slice(0, remaining);
+    if (selected.length > remaining) {
+      setError(`Only the first ${remaining} image${remaining === 1 ? '' : 's'} were added — a TXT can contain up to 12 image moments.`);
+    }
+
+    const invalid = batch.find((file) => !['image/jpeg', 'image/png', 'image/webp'].includes(file.type));
+    if (invalid) {
+      setError('Use JPG, PNG or WebP images.');
+      return;
+    }
+    const oversized = batch.find((file) => file.size > 12 * 1024 * 1024);
+    if (oversized) {
       setError('Keep each image under 12 MB.');
       return;
     }
 
     setUploadingImage(true);
+    const added: CreatorImageMoment[] = [];
     try {
-      const id = crypto.randomUUID();
-      const path = `${userId}/images/${id}-${cleanFileName(file.name)}`;
-      const { error: uploadError } = await supabase.storage.from('creator-media').upload(path, file, {
-        contentType: file.type,
-        cacheControl: '3600',
-        upsert: false,
-      });
-      if (uploadError) throw uploadError;
+      for (const file of batch) {
+        const id = crypto.randomUUID();
+        const path = `${userId}/images/${id}-${cleanFileName(file.name)}`;
+        const { error: uploadError } = await supabase.storage.from('creator-media').upload(path, file, {
+          contentType: file.type,
+          cacheControl: '3600',
+          upsert: false,
+        });
+        if (uploadError) throw uploadError;
 
-      const { data: signed, error: signError } = await supabase.storage.from('creator-media').createSignedUrl(path, 60 * 60 * 6);
-      if (signError) throw signError;
+        const { data: signed, error: signError } = await supabase.storage.from('creator-media').createSignedUrl(path, 60 * 60 * 6);
+        if (signError) throw signError;
 
-      const image: CreatorImageMoment = {
-        id,
-        storagePath: path,
-        afterParagraph: Math.max(0, paragraphs.length - 1),
-        focalX: 50,
-        alt: '',
-        url: signed?.signedUrl,
-      };
-      onChange({ ...experience, images: [...experience.images, image] });
+        added.push({
+          id,
+          storagePath: path,
+          afterParagraph: Math.max(0, paragraphs.length - 1),
+          focalX: 50,
+          alt: '',
+          url: signed?.signedUrl,
+        });
+      }
+
+      onChange({ ...experience, images: [...experience.images, ...added] });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not upload that image.');
+      if (added.length) onChange({ ...experience, images: [...experience.images, ...added] });
+      setError(err instanceof Error ? err.message : 'Could not upload one of those images.');
     } finally {
       setUploadingImage(false);
     }
@@ -168,13 +188,17 @@ export function CreatorExperienceEditor({
           </div>
           <label className="shrink-0 h-9 px-3 rounded-lg bg-secondary hover:bg-secondary/80 flex items-center gap-2 text-xs font-medium cursor-pointer">
             {uploadingImage ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImagePlus className="w-4 h-4" />}
-            Add image
+            {experience.images.length ? 'Add more' : 'Add images'}
             <input
               type="file"
               accept="image/jpeg,image/png,image/webp"
+              multiple
               className="hidden"
-              disabled={disabled || uploadingImage}
-              onChange={(e) => uploadImage(e.target.files?.[0])}
+              disabled={disabled || uploadingImage || experience.images.length >= 12}
+              onChange={(e) => {
+                void uploadImages(e.target.files || undefined);
+                e.currentTarget.value = '';
+              }}
             />
           </label>
         </div>
@@ -261,6 +285,24 @@ export function CreatorExperienceEditor({
                 </label>
               </div>
             ))}
+
+            {experience.images.length < 12 && (
+              <label className="w-full h-11 rounded-xl border border-dashed border-border hover:border-foreground/35 hover:bg-secondary/40 flex items-center justify-center gap-2 text-xs font-medium cursor-pointer transition-colors">
+                {uploadingImage ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImagePlus className="w-4 h-4" />}
+                Add another image
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  multiple
+                  className="hidden"
+                  disabled={disabled || uploadingImage}
+                  onChange={(e) => {
+                    void uploadImages(e.target.files || undefined);
+                    e.currentTarget.value = '';
+                  }}
+                />
+              </label>
+            )}
           </div>
         )}
       </section>

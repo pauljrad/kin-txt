@@ -37,7 +37,7 @@ import { useHasAccess } from '@/hooks/useHasAccess';
 import { isRevenueCatConfigured } from '@/lib/revenuecat';
 import { Capacitor } from '@capacitor/core';
 import { Settings as SettingsIcon } from 'lucide-react';
-import { CreatorExperience, resolvePublishedCreatorExperience, stripCreatorExperienceUrls } from '@/lib/creatorExperience';
+import { CreatorExperience, preloadCreatorImages, resolvePublishedCreatorExperience, stripCreatorExperienceUrls } from '@/lib/creatorExperience';
 
 type TabMode = 'my-texts' | 'library' | 'news';
 
@@ -618,6 +618,7 @@ const Index = () => {
           creatorExperience.publicationId,
           creatorExperience,
         );
+        creatorExperience = await preloadCreatorImages(creatorExperience, false);
       } catch (err) {
         console.error('Could not refresh Creator media URLs:', err);
       }

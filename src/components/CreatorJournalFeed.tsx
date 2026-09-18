@@ -3,7 +3,7 @@ import { Loader2, PenLine } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { ParsedText } from '@/lib/textParser';
 import { parseCreatorMarkup } from '@/lib/creatorText';
-import { CreatorExperience, resolvePublishedCreatorExperience, withCreatorExperienceDefaults } from '@/lib/creatorExperience';
+import { CreatorExperience, preloadCreatorImages, resolvePublishedCreatorExperience, withCreatorExperienceDefaults } from '@/lib/creatorExperience';
 
 interface CreatorPublication {
   id: string;
@@ -96,6 +96,7 @@ export function CreatorJournalFeed({ onSelectArticle }: CreatorJournalFeedProps)
             let creatorExperience = rawExperience;
             try {
               creatorExperience = await resolvePublishedCreatorExperience(item.id, rawExperience);
+              creatorExperience = await preloadCreatorImages(creatorExperience, false);
             } catch (err) {
               console.error('Could not resolve Creator media:', err);
             }
