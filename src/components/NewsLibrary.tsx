@@ -7,6 +7,7 @@ import { CreatorJournalFeed } from '@/components/CreatorJournalFeed';
 import { supabase } from '@/integrations/supabase/client';
 import { ParsedText, parseTextContent } from '@/lib/textParser';
 import { toast } from 'sonner';
+import type { CreatorExperience } from '@/lib/creatorExperience';
 
 interface NewsItem {
   id: string;
@@ -33,6 +34,7 @@ interface ArticleMeta {
   publicationId?: string;
   emphasisWords?: string[];
   whisperedWords?: string[];
+  creatorExperience?: CreatorExperience;
 }
 
 interface NewsLibraryProps {
@@ -237,6 +239,7 @@ export function NewsLibrary({ onSelectArticle, isPro = false, onUpgrade }: NewsL
             publicationId: meta.publicationId,
             emphasisWords: meta.emphasisWords,
             whisperedWords: meta.whisperedWords,
+            creatorExperience: meta.creatorExperience,
           })}
         />
       </motion.div>
