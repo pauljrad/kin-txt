@@ -37,6 +37,7 @@ import { useHasAccess } from '@/hooks/useHasAccess';
 import { isRevenueCatConfigured } from '@/lib/revenuecat';
 import { Capacitor } from '@capacitor/core';
 import { Settings as SettingsIcon } from 'lucide-react';
+import { CreatorExperience, resolvePublishedCreatorExperience, stripCreatorExperienceUrls } from '@/lib/creatorExperience';
 
 type TabMode = 'my-texts' | 'library' | 'news';
 
@@ -54,6 +55,7 @@ interface ActiveDocument {
     source?: string;
     pixelUrl?: string;
   };
+  creatorExperience?: CreatorExperience;
 }
 
 interface EmphasisAnalysis {
@@ -422,13 +424,18 @@ const Index = () => {
   const handleNewsSelect = useCallback(async (
     parsed: ParsedText,
     title: string,
-    meta?: { link: string; source: string; author?: string; rawHtml?: string; emphasisWords?: string[]; whisperedWords?: string[]; publicationId?: string }
+    meta?: { link: string; source: string; author?: string; rawHtml?: string; emphasisWords?: string[]; whisperedWords?: string[]; publicationId?: string; creatorExperience?: CreatorExperience }
   ) => {
+    const isCreatorPublication = !!meta?.publicationId;
     setIsAnalyzing(true);
-    toast.info('Analyzing article for emphasis...');
+    if (!isCreatorPublication) toast.info('Analyzing article for emphasis...');
 
-    // Process styles deterministically
-    const { cleanedText, detectedWhispered, detectedEmphasis } = processTextStyles(parsed);
+    // Creator pieces already carry explicit direction; do not layer AI/deterministic
+    // editorial choices on top of the Creator's own delivery.
+    const styled = isCreatorPublication
+      ? { cleanedText: parsed, detectedWhispered: [] as string[], detectedEmphasis: [] as string[] }
+      : processTextStyles(parsed);
+    const { cleanedText, detectedWhispered, detectedEmphasis } = styled;
 
     // Save the document to database as an article with CLEANED text
     // Free tier (guest on web, or non-Pro in the native app): a single, ephemeral
@@ -448,11 +455,41 @@ const Index = () => {
       progress: { paragraph: 0, word: 0 },
       // Ensure this never gets treated as an ebook
       fileType: undefined,
+      creatorExperience: meta?.creatorExperience ? stripCreatorExperienceUrls(meta.creatorExperience) : undefined,
     });
 
     if (!saved) {
       toast.error('Failed to save article');
       setIsAnalyzing(false);
+      return;
+    }
+
+    if (isCreatorPublication) {
+      const finalWhisperedWords = Array.from(new Set(meta?.whisperedWords || []));
+      const finalEmphasisWords = filterEmphasis(Array.from(new Set(
+        (meta?.emphasisWords || []).filter((word) => !finalWhisperedWords.includes(word))
+      )));
+
+      if (saved.id) {
+        await updateDocumentEmphasis(saved.id, finalEmphasisWords, finalWhisperedWords);
+      }
+
+      setIsAnalyzing(false);
+      setRefreshTrigger((prev) => prev + 1);
+      setActiveDocument({
+        parsedText: cleanedText,
+        title,
+        id: saved.id,
+        emphasisWords: finalEmphasisWords,
+        whisperedWords: finalWhisperedWords,
+        totalReadingTime: 0,
+        isEbook: false,
+        creatorExperience: meta?.creatorExperience,
+        attribution: {
+          author: meta?.author || 'KiN-Creator',
+          source: 'KiN-Creators',
+        },
+      });
       return;
     }
 
@@ -531,15 +568,22 @@ const Index = () => {
   };
 
   const handleSelectDocument = useCallback(async (doc: SavedDocument) => {
-    // ALWAYS re-process deterministic styles (KiN-TXT, plain italics, caps)
-    // This ensures that if we update the logic, old docs get the new rendering immediately.
-    const { cleanedText, detectedWhispered, detectedEmphasis } = processTextStyles(doc.parsedText);
+    const isCreatorSaved = !!doc.creatorExperience;
+    // Creator TXTs keep the Creator's exact parsed delivery. Ordinary documents
+    // continue to receive KiN's deterministic styling and AI analysis.
+    const styled = isCreatorSaved
+      ? { cleanedText: doc.parsedText, detectedWhispered: [] as string[], detectedEmphasis: [] as string[] }
+      : processTextStyles(doc.parsedText);
+    const { cleanedText, detectedWhispered, detectedEmphasis } = styled;
 
     let finalEmphasisWords: string[] = [];
     let finalWhisperedWords: string[] = [];
 
+    if (isCreatorSaved) {
+      finalEmphasisWords = filterEmphasis(doc.emphasisWords || []);
+      finalWhisperedWords = doc.whisperedWords || [];
     // Check if we already have saved emphasis data from AI
-    if (doc.emphasisWords && doc.emphasisWords.length > 0) {
+    } else if (doc.emphasisWords && doc.emphasisWords.length > 0) {
       // Merge new deterministic findings with EXISTING saved AI findings
       finalEmphasisWords = Array.from(new Set([...detectedEmphasis, ...doc.emphasisWords]));
       finalWhisperedWords = Array.from(new Set([...detectedWhispered, ...(doc.whisperedWords || [])]));
@@ -567,6 +611,18 @@ const Index = () => {
       setIsAnalyzing(false);
     }
 
+    let creatorExperience = doc.creatorExperience;
+    if (creatorExperience?.publicationId) {
+      try {
+        creatorExperience = await resolvePublishedCreatorExperience(
+          creatorExperience.publicationId,
+          creatorExperience,
+        );
+      } catch (err) {
+        console.error('Could not refresh Creator media URLs:', err);
+      }
+    }
+
     setActiveDocument({
       parsedText: cleanedText, // Use the CLEANED text (With KiN-TXT fixed)
       title: doc.title,
@@ -576,6 +632,7 @@ const Index = () => {
       whisperedWords: finalWhisperedWords,
       totalReadingTime: doc.totalReadingTime || 0,
       isEbook: doc.fileType === 'epub',
+      creatorExperience,
     });
   }, []);
 
@@ -1019,6 +1076,7 @@ const Index = () => {
               isEbook={activeDocument.isEbook}
               onShare={handleShareClick as any}
               attribution={activeDocument.attribution}
+              creatorExperience={activeDocument.creatorExperience}
             />
           </div>
         )}

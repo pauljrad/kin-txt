@@ -1,6 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { ParsedText } from './textParser';
 import { updateClubProgress } from './clubDatabase';
+import type { CreatorExperience } from './creatorExperience';
 
 export type DocumentCategory = 'book' | 'article' | 'document';
 
@@ -39,6 +40,7 @@ export interface DatabaseDocument {
   total_reading_time: number;
   created_at: string;
   updated_at: string;
+  creator_experience?: CreatorExperience | null;
 }
 
 export interface SavedDocument {
@@ -59,6 +61,7 @@ export interface SavedDocument {
   updatedAt: number;
   fileType?: string;
   isOffline?: boolean;
+  creatorExperience?: CreatorExperience;
 }
 
 // Detect category based on source, file type, and content characteristics
@@ -149,6 +152,7 @@ function dbToSavedDocument(doc: DatabaseDocument & { source?: string; file_type?
     updatedAt: new Date(doc.updated_at).getTime(),
     emphasisWords: doc.emphasis_words || [],
     whisperedWords: doc.whispered_words || [],
+    creatorExperience: doc.creator_experience || undefined,
   };
 }
 
@@ -252,6 +256,7 @@ export async function saveDocument(doc: {
   parsedText: ParsedText;
   progress: { paragraph: number; word: number };
   fileType?: string;
+  creatorExperience?: CreatorExperience;
 }): Promise<SavedDocument | null> {
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -273,6 +278,7 @@ export async function saveDocument(doc: {
       createdAt: Date.now(),
       updatedAt: Date.now(),
       fileType: doc.fileType,
+      creatorExperience: doc.creatorExperience,
     };
 
     sessionStorage.setItem('kinxt_guest_doc', JSON.stringify(guestDoc));
@@ -299,7 +305,8 @@ export async function saveDocument(doc: {
       total_reading_time: 0,
       source: doc.source,
       file_type: doc.fileType || null,
-    })
+      creator_experience: doc.creatorExperience || null,
+    } as any)
     .select()
     .single();
 

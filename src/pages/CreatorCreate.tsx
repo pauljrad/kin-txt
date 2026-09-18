@@ -1,17 +1,22 @@
 import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, CheckCircle2, FileUp, Italic, Loader2, Send } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, FileUp, Italic, Loader2, Play, Send } from 'lucide-react';
 import mammoth from 'mammoth';
 import { supabase } from '@/integrations/supabase/client';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { useCreatorAccess } from '@/hooks/useCreatorAccess';
-import { plainTextToEditorHtml, richHtmlToCreatorMarkup } from '@/lib/creatorText';
+import { parseCreatorMarkup, plainTextToEditorHtml, richHtmlToCreatorMarkup } from '@/lib/creatorText';
+import { CreatorExperienceEditor } from '@/components/CreatorExperienceEditor';
+import { KineticPlayer } from '@/components/KineticPlayer';
+import { DEFAULT_CREATOR_EXPERIENCE, CreatorExperience, resolveOwnCreatorExperienceMedia, withCreatorExperienceDefaults } from '@/lib/creatorExperience';
+import { useAuth } from '@/hooks/useAuth';
 
 const FIELD = 'w-full rounded-xl border border-border bg-card/60 px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-foreground/40 transition-colors';
 
 export default function CreatorCreate() {
   const navigate = useNavigate();
   const { isCreator, displayName, loading } = useCreatorAccess();
+  const { user } = useAuth();
   const editorRef = useRef<HTMLDivElement>(null);
   const [title, setTitle] = useState('');
   const [contentType, setContentType] = useState('essay');
@@ -19,6 +24,8 @@ export default function CreatorCreate() {
   const [status, setStatus] = useState<'idle' | 'submitting' | 'sent' | 'error'>('idle');
   const [message, setMessage] = useState('');
   const [loadingFile, setLoadingFile] = useState(false);
+  const [experience, setExperience] = useState<CreatorExperience>(withCreatorExperienceDefaults(DEFAULT_CREATOR_EXPERIENCE));
+  const [preview, setPreview] = useState<{ parsed: ReturnType<typeof parseCreatorMarkup>; experience: CreatorExperience } | null>(null);
 
   const setEditor = (html: string) => {
     setEditorHtml(html);
@@ -70,12 +77,19 @@ export default function CreatorCreate() {
       return;
     }
 
+    if (experience.music.kind === 'upload' && (!experience.music.storagePath || !experience.music.rightsConfirmed)) {
+      setStatus('error');
+      setMessage('Confirm the audio rights statement before submitting uploaded music.');
+      return;
+    }
+
     setStatus('submitting');
     const { data, error } = await supabase.functions.invoke('submit-creator-txt', {
       body: {
         title: title.trim(),
         contentType,
         body,
+        experience,
       },
     });
 
@@ -89,7 +103,45 @@ export default function CreatorCreate() {
     setMessage('Sent for approval. The TXT is safely stored and the review link has been sent to KiN-TXT.');
     setTitle('');
     setEditor('');
+    setExperience(withCreatorExperienceDefaults(DEFAULT_CREATOR_EXPERIENCE));
   };
+
+
+  const draftMarkup = richHtmlToCreatorMarkup(editorHtml);
+  const draftParagraphs = draftMarkup
+    ? draftMarkup.split(/\n\s*\n/).map((paragraph) => paragraph.replace(/[*_]/g, '').trim()).filter(Boolean)
+    : [];
+
+  const openPreview = async () => {
+    setMessage('');
+    if (draftMarkup.split(/\s+/).filter(Boolean).length < 20) {
+      setStatus('error');
+      setMessage('Add a little more text before previewing.');
+      return;
+    }
+    try {
+      const resolvedExperience = await resolveOwnCreatorExperienceMedia(experience);
+      setPreview({ parsed: parseCreatorMarkup(draftMarkup), experience: resolvedExperience });
+    } catch (err) {
+      setStatus('error');
+      setMessage(err instanceof Error ? err.message : 'Could not prepare the preview.');
+    }
+  };
+
+  if (preview) {
+    return (
+      <div className="fixed inset-0 z-50 bg-background">
+        <KineticPlayer
+          parsedText={preview.parsed.parsedText}
+          emphasisWords={preview.parsed.emphasisWords}
+          whisperedWords={preview.parsed.whisperedWords}
+          creatorExperience={preview.experience}
+          onBack={() => setPreview(null)}
+          attribution={{ author: displayName || 'KiN-Creator', source: 'Creator Preview' }}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-[100svh] bg-background text-foreground px-5 pb-16 pt-[calc(5.5rem+env(safe-area-inset-top,0px))]">
@@ -105,7 +157,7 @@ export default function CreatorCreate() {
         <p className="text-xs uppercase tracking-[0.24em] text-muted-foreground mb-2">KiN-Creator</p>
         <h1 className="font-display text-4xl tracking-wide mb-2">Create a TXT</h1>
         <p className="text-sm text-muted-foreground leading-relaxed mb-8">
-          {displayName ? `${displayName}, ` : ''}write it your way. Paste directly below or upload a .txt or .docx file.
+          {displayName ? `${displayName}, ` : ''}write it, then direct how it is experienced — emphasis, pace, rhythm, images and sound.
         </p>
 
         {loading ? (
@@ -176,16 +228,36 @@ export default function CreatorCreate() {
               />
             </div>
 
-            {message && <p className="text-sm text-destructive">{message}</p>}
+            {user && (
+              <CreatorExperienceEditor
+                userId={user.id}
+                paragraphs={draftParagraphs}
+                value={experience}
+                onChange={setExperience}
+                disabled={status === 'submitting'}
+              />
+            )}
 
-            <button
-              onClick={submit}
+            <div className="grid sm:grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={openPreview}
+                disabled={status === 'submitting' || loadingFile}
+                className="w-full h-12 rounded-xl border border-foreground/30 text-foreground font-display tracking-widest uppercase text-sm disabled:opacity-50 flex items-center justify-center gap-2 hover:bg-secondary"
+              >
+                <Play className="w-4 h-4" /> Preview TXT
+              </button>
+              <button
+                onClick={submit}
               disabled={status === 'submitting' || loadingFile}
               className="w-full h-12 rounded-xl bg-foreground text-background font-display tracking-widest uppercase text-sm disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {status === 'submitting' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
               {status === 'submitting' ? 'Submitting…' : 'Submit for approval'}
-            </button>
+              </button>
+            </div>
+
+            {message && <p className="text-sm text-destructive">{message}</p>}
 
             <p className="text-[11px] text-muted-foreground text-center leading-relaxed">
               Submitting does not publish immediately. KiN-TXT reviews the TXT first; approved pieces appear in the KiN-Creators section of the Journal.

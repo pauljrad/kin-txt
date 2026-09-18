@@ -4,6 +4,7 @@ import { KineticPlayer } from '@/components/KineticPlayer';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { supabase } from '@/integrations/supabase/client';
 import { parseCreatorMarkup } from '@/lib/creatorText';
+import type { CreatorExperience } from '@/lib/creatorExperience';
 
 interface ReviewSubmission {
   id: string;
@@ -13,6 +14,7 @@ interface ReviewSubmission {
   body: string;
   wordCount: number;
   submittedAt: string;
+  experience?: CreatorExperience;
 }
 
 export default function CreatorReview() {
@@ -75,6 +77,7 @@ export default function CreatorReview() {
           parsedText={parsed.parsedText}
           emphasisWords={parsed.emphasisWords}
           whisperedWords={parsed.whisperedWords}
+          creatorExperience={submission.experience}
           onBack={() => setPreviewing(false)}
           attribution={{ author: submission.creatorName, source: 'KiN-Creator Review' }}
         />
@@ -113,9 +116,20 @@ export default function CreatorReview() {
             </p>
 
             <div className="rounded-2xl border border-border bg-card/50 p-5 mb-5">
-              <p className="text-xs text-muted-foreground leading-relaxed mb-4">
+              <p className="text-xs text-muted-foreground leading-relaxed mb-3">
                 This link is the approval credential. It can be used once; approving or rejecting closes it permanently.
               </p>
+              {submission.experience && (
+                <p className="text-[11px] text-muted-foreground mb-4">
+                  Directed experience · {submission.experience.images?.length || 0} image moment{(submission.experience.images?.length || 0) === 1 ? '' : 's'} · {
+                    submission.experience.music?.kind === 'upload'
+                      ? 'Creator audio'
+                      : submission.experience.music?.kind === 'kin'
+                        ? `KiN ${submission.experience.music.track || 'music'}`
+                        : 'No music'
+                  } · {submission.experience.defaults?.startSpeed?.toFixed?.(2) || '0.50'}× opening speed
+                </p>
+              )}
               <button
                 onClick={() => setPreviewing(true)}
                 className="w-full h-12 rounded-xl border border-foreground/30 hover:bg-secondary transition-colors flex items-center justify-center gap-2 font-medium"
