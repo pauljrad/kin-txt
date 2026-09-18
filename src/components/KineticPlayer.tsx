@@ -57,7 +57,7 @@ export function KineticPlayer({
 
   // Settings Persistence Logic
   const STORAGE_KEY = 'kin_reader_settings';
-  const directedExperience = creatorExperience ? withCreatorExperienceDefaults(creatorExperience) : null;
+  const directedExperience = useMemo(() => creatorExperience ? withCreatorExperienceDefaults(creatorExperience) : null, [creatorExperience]);
   const creatorDefaults = directedExperience?.defaults;
   type AtmosphereId = 'none' | 'noir' | 'fret' | 'fret2' | 'custom';
 
