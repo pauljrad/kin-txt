@@ -13,6 +13,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { useTextSize } from '@/hooks/useTextSize';
 import { Capacitor } from '@capacitor/core';
 import { StatusBar } from '@capacitor/status-bar';
+import { CreatorExperience, CreatorImageMoment, withCreatorExperienceDefaults } from '@/lib/creatorExperience';
 
 interface WordSpeed {
   word: string;
@@ -35,6 +36,7 @@ interface KineticPlayerProps {
     source?: string;
     pixelUrl?: string;
   };
+  creatorExperience?: CreatorExperience | null;
 }
 
 export function KineticPlayer({
@@ -48,12 +50,16 @@ export function KineticPlayer({
   onProgressChange,
   isEbook = false,
   onShare,
-  attribution
+  attribution,
+  creatorExperience
 }: KineticPlayerProps) {
   const { textSize, setTextSize } = useTextSize();
 
   // Settings Persistence Logic
   const STORAGE_KEY = 'kin_reader_settings';
+  const directedExperience = creatorExperience ? withCreatorExperienceDefaults(creatorExperience) : null;
+  const creatorDefaults = directedExperience?.defaults;
+  type AtmosphereId = 'none' | 'noir' | 'fret' | 'fret2' | 'custom';
 
   interface ReaderSettings {
     startSpeed: number;
@@ -100,13 +106,13 @@ export function KineticPlayer({
   }, [position]);
 
   // Persisted Stats
-  const [startSpeed, setStartSpeed] = useState(initialSettings.startSpeed ?? 0.5);
-  const [endSpeed, setEndSpeed] = useState(initialSettings.endSpeed ?? 1.4);
-  const [rhythmMode, setRhythmMode] = useState(initialSettings.rhythmMode ?? true);
-  const [rhythmPreset, setRhythmPreset] = useState<'slower' | 'normal' | 'faster'>(initialSettings.rhythmPreset ?? 'normal');
-  const [accelerationMode, setAccelerationMode] = useState(initialSettings.accelerationMode ?? false);
-  const [adaptiveSpeed, setAdaptiveSpeed] = useState(initialSettings.adaptiveSpeed ?? true);
-  const [resetInterval, setResetInterval] = useState<'1' | '2' | '3' | '4' | 'end' | 'paragraph'>(initialSettings.resetInterval && (initialSettings.resetInterval as string) !== 'start' ? (initialSettings.resetInterval as any) : '3');
+  const [startSpeed, setStartSpeed] = useState(creatorDefaults?.startSpeed ?? initialSettings.startSpeed ?? 0.5);
+  const [endSpeed, setEndSpeed] = useState(creatorDefaults?.endSpeed ?? initialSettings.endSpeed ?? 1.4);
+  const [rhythmMode, setRhythmMode] = useState(creatorDefaults?.rhythmMode ?? initialSettings.rhythmMode ?? true);
+  const [rhythmPreset, setRhythmPreset] = useState<'slower' | 'normal' | 'faster'>(creatorDefaults?.rhythmPreset ?? initialSettings.rhythmPreset ?? 'normal');
+  const [accelerationMode, setAccelerationMode] = useState(creatorDefaults?.accelerationMode ?? initialSettings.accelerationMode ?? false);
+  const [adaptiveSpeed, setAdaptiveSpeed] = useState(creatorDefaults?.adaptiveSpeed ?? initialSettings.adaptiveSpeed ?? true);
+  const [resetInterval, setResetInterval] = useState<'1' | '2' | '3' | '4' | 'end' | 'paragraph'>(creatorDefaults?.resetInterval ?? (initialSettings.resetInterval && (initialSettings.resetInterval as string) !== 'start' ? (initialSettings.resetInterval as any) : '3'));
   const [focusMode, setFocusMode] = useState(initialSettings.focusMode ?? false);
   const [targetMode, setTargetMode] = useState(initialSettings.targetMode ?? false);
   const [targetColor, setTargetColor] = useState(initialSettings.targetColor ?? '#FFD600');
@@ -126,8 +132,15 @@ export function KineticPlayer({
   const [showingChapterTitle, setShowingChapterTitle] = useState<string | null>(null);
   const [showingAttribution, setShowingAttribution] = useState<boolean>(!!attribution);
   const [lastChapterIndex, setLastChapterIndex] = useState(-1);
-  const [activeAtmosphere, setActiveAtmosphere] = useState<'none' | 'noir' | 'fret' | 'fret2'>(initialSettings.activeAtmosphere ?? 'none');
+  const creatorInitialAtmosphere: AtmosphereId = directedExperience?.music.kind === 'upload' && directedExperience.music.url
+    ? 'custom'
+    : directedExperience?.music.kind === 'kin'
+      ? (directedExperience.music.track || 'noir')
+      : 'none';
+  const [activeAtmosphere, setActiveAtmosphere] = useState<AtmosphereId>(directedExperience ? creatorInitialAtmosphere : (initialSettings.activeAtmosphere ?? 'none'));
   const [musicMenuOpen, setMusicMenuOpen] = useState(false);
+  const [activeCreatorImage, setActiveCreatorImage] = useState<CreatorImageMoment | null>(null);
+  const shownCreatorImagesRef = useRef<Set<string>>(new Set());
 
   // Chapter Summary state
   const [showChapterSummary, setShowChapterSummary] = useState(false);
@@ -145,10 +158,18 @@ export function KineticPlayer({
     if (activeAtmosphere === 'none') {
       audio.pause();
     } else {
-      const src = 
-        activeAtmosphere === 'noir' ? "/atmosphere-jazz.mp3" : 
-        activeAtmosphere === 'fret' ? "/atmosphere-guitar.mp3" :
-        "/atmosphere-guitar-2.mp3";
+      const src =
+        activeAtmosphere === 'custom'
+          ? directedExperience?.music.url
+          : activeAtmosphere === 'noir'
+            ? "/atmosphere-jazz.mp3"
+            : activeAtmosphere === 'fret'
+              ? "/atmosphere-guitar.mp3"
+              : "/atmosphere-guitar-2.mp3";
+      if (!src) {
+        audio.pause();
+        return;
+      }
       
       // Only update src if it's different to prevent restart on re-render
 
@@ -165,7 +186,7 @@ export function KineticPlayer({
         }
       });
     }
-  }, [activeAtmosphere]);
+  }, [activeAtmosphere, directedExperience?.music.url]);
   
   // Persist settings whenever they change
   useEffect(() => {
@@ -180,7 +201,7 @@ export function KineticPlayer({
       focusMode,
       targetMode,
       targetColor,
-      activeAtmosphere
+      activeAtmosphere: activeAtmosphere === 'custom' ? 'none' : activeAtmosphere
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
   }, [
@@ -790,6 +811,22 @@ export function KineticPlayer({
       resetCount = parseInt(resetInterval);
     }
 
+    if (currentW === currentParagraphWords.length - 1 && directedExperience?.images?.length) {
+      const imageMoment = directedExperience.images.find(
+        (image) =>
+          image.afterParagraph === currentPara &&
+          !!image.url &&
+          !shownCreatorImagesRef.current.has(image.id),
+      );
+      if (imageMoment) {
+        shownCreatorImagesRef.current.add(imageMoment.id);
+        setIsPlaying(false);
+        setShowControls(false);
+        setActiveCreatorImage(imageMoment);
+        return;
+      }
+    }
+
     if (currentW < currentParagraphWords.length - 1) {
       // Reset speed after configured number of sentences
       if (accelerationMode && sentenceCountRef.current >= resetCount && isSentenceEnd(word)) {
@@ -988,7 +1025,7 @@ export function KineticPlayer({
       setIsPlaying(false);
       setIsComplete(true);
     }
-  }, [parsedText, resetInterval, accelerationMode, isEbook, chapters, lastChapterIndex]);
+  }, [parsedText, resetInterval, accelerationMode, isEbook, chapters, lastChapterIndex, directedExperience]);
 
   useEffect(() => {
     // Clear any existing timeout first
@@ -998,7 +1035,7 @@ export function KineticPlayer({
     }
 
     // Only play if playing, not complete, and no overlays are showing
-    if (!isPlaying || isComplete || showFullText || isNavOpen || showingChapterTitle || showChapterSummary) return;
+    if (!isPlaying || isComplete || showFullText || isNavOpen || showingChapterTitle || showChapterSummary || activeCreatorImage) return;
 
     // FORCE SYNC ground truth whenever the loop runs/re-runs
     // This ensures that hitting PLAY after a seek always uses the correct state
@@ -1063,7 +1100,50 @@ export function KineticPlayer({
         timeoutRef.current = null;
       }
     };
-  }, [isPlaying, currentParagraph, currentWord, getCurrentSpeed, advanceWord, parsedText.paragraphs, isComplete, emphasisSet, whisperedSet, showFullText, isNavOpen, rhythmMode, showingChapterTitle]);
+  }, [isPlaying, currentParagraph, currentWord, getCurrentSpeed, advanceWord, parsedText.paragraphs, isComplete, emphasisSet, whisperedSet, showFullText, isNavOpen, rhythmMode, showingChapterTitle, showChapterSummary, activeCreatorImage]);
+
+  useEffect(() => {
+    if (!directedExperience?.images?.length || activeCreatorImage) return;
+    const openingImage = directedExperience.images.find(
+      (image) => image.afterParagraph === -1 && !!image.url && !shownCreatorImagesRef.current.has(image.id),
+    );
+    if (!openingImage) return;
+    shownCreatorImagesRef.current.add(openingImage.id);
+    setIsPlaying(false);
+    setShowControls(false);
+    setActiveCreatorImage(openingImage);
+  }, [directedExperience, activeCreatorImage]);
+
+  const handleCreatorImageContinue = useCallback((e: React.PointerEvent) => {
+    e.stopPropagation();
+    if (!activeCreatorImage) return;
+
+    const boundary = activeCreatorImage.afterParagraph;
+    const nextAtSameBoundary = directedExperience?.images?.find(
+      (image) =>
+        image.afterParagraph === boundary &&
+        !!image.url &&
+        !shownCreatorImagesRef.current.has(image.id),
+    );
+
+    if (nextAtSameBoundary) {
+      shownCreatorImagesRef.current.add(nextAtSameBoundary.id);
+      setActiveCreatorImage(nextAtSameBoundary);
+      setIsPlaying(false);
+      return;
+    }
+
+    setActiveCreatorImage(null);
+    setShowControls(false);
+
+    if (boundary < 0) {
+      setIsPlaying(true);
+      return;
+    }
+
+    advanceWord();
+    setIsPlaying(true);
+  }, [activeCreatorImage, directedExperience, advanceWord]);
 
   const handleMouseMove = useCallback(() => {
     setShowControls(true);
@@ -1133,13 +1213,13 @@ export function KineticPlayer({
   // Toggle native status bar based on playing state
   useEffect(() => {
     if (Capacitor.isNativePlatform()) {
-      if (isPlaying) {
+      if (isPlaying || activeCreatorImage) {
         void StatusBar.hide().catch(err => console.log('Could not hide status bar', err));
       } else {
         void StatusBar.show().catch(err => console.log('Could not show status bar', err));
       }
     }
-  }, [isPlaying]);
+  }, [isPlaying, activeCreatorImage]);
 
   // Ensure status bar is shown on unmount
   useEffect(() => {
@@ -1159,7 +1239,7 @@ export function KineticPlayer({
   // after a menu closes even if paused — so menus no longer "stick".
   useEffect(() => {
     const anyMenuOpen =
-      showSettingsPopover || showFullText || isNavOpen || musicMenuOpen || !!showingChapterTitle;
+      showSettingsPopover || showFullText || isNavOpen || musicMenuOpen || !!showingChapterTitle || !!activeCreatorImage;
     const menuJustClosed = prevMenuOpenRef.current && !anyMenuOpen;
     prevMenuOpenRef.current = anyMenuOpen;
 
@@ -1183,11 +1263,11 @@ export function KineticPlayer({
         clearTimeout(controlsTimeoutRef.current);
       }
     };
-  }, [isPlaying, showSettingsPopover, showFullText, isNavOpen, musicMenuOpen, showingChapterTitle]);
+  }, [isPlaying, showSettingsPopover, showFullText, isNavOpen, musicMenuOpen, showingChapterTitle, activeCreatorImage]);
 
   // Tap to toggle play/pause
   const handleScreenTap = useCallback(async (e: React.MouseEvent) => {
-    if (showingChapterTitle) return;
+    if (showingChapterTitle || activeCreatorImage) return;
 
     // Don't toggle if clicking on controls or progress bar
     const target = e.target as HTMLElement;
@@ -1224,7 +1304,7 @@ export function KineticPlayer({
     if (newPlaying && !isFullscreen) {
       await enterFullscreen();
     }
-  }, [isComplete, isPlaying, isFullscreen, enterFullscreen, showingChapterTitle, showSettingsPopover, musicMenuOpen]);
+  }, [isComplete, isPlaying, isFullscreen, enterFullscreen, showingChapterTitle, showSettingsPopover, musicMenuOpen, activeCreatorImage]);
 
   const handlePlayPause = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -1309,7 +1389,7 @@ export function KineticPlayer({
     // Start playing automatically after a short delay (rhythm is already analyzed synchronously)
     let isMounted = true;
     const timer = setTimeout(() => {
-      if (isMounted) {
+      if (isMounted && !activeCreatorImage) {
         setIsPlaying(true);
       }
     }, 300); // Faster start since rhythm is instant now
@@ -1367,6 +1447,50 @@ export function KineticPlayer({
       onMouseMove={handleMouseMove}
       onPointerUp={handleScreenTap}
     >
+      {/* Creator image moment — edge-to-edge, ORBIT-style cover crop */}
+      <AnimatePresence>
+        {activeCreatorImage && (
+          <motion.div
+            key={activeCreatorImage.id}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.35, ease: 'easeOut' }}
+            className="absolute inset-0 z-[90] bg-black overflow-hidden touch-manipulation"
+            onPointerUp={handleCreatorImageContinue}
+          >
+            <motion.img
+              src={activeCreatorImage.url}
+              alt={activeCreatorImage.alt || ''}
+              initial={{ scale: 1.02 }}
+              animate={{ scale: 1 }}
+              transition={{ duration: 0.6, ease: 'easeOut' }}
+              draggable={false}
+              className="absolute inset-0 h-full w-full object-cover select-none pointer-events-none"
+              style={{ objectPosition: `${activeCreatorImage.focalX}% 50%` }}
+            />
+            <div className="absolute inset-x-0 bottom-[max(2.2rem,env(safe-area-inset-bottom,0px))] flex flex-col items-center justify-center text-white pointer-events-none">
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.35, duration: 0.45 }}
+                className="flex flex-col items-center gap-2 drop-shadow-[0_2px_12px_rgba(0,0,0,0.75)]"
+              >
+                <span className="text-[9px] font-mono tracking-[0.3em] uppercase text-white/75">Tap to continue TXT</span>
+                <div className="relative flex h-9 w-4 justify-center">
+                  <span className="h-8 w-[2px] rounded-full bg-white/25" />
+                  <motion.span
+                    className="absolute top-0 h-[4px] w-[4px] rounded-full bg-white shadow-[0_0_12px_white]"
+                    animate={{ y: [0, 18, 0] }}
+                    transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }}
+                  />
+                </div>
+              </motion.div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Attribution Splash Overlay */}
       <AnimatePresence>
         {showingAttribution && (
@@ -2153,6 +2277,17 @@ export function KineticPlayer({
                         >
                           <span className="text-sm font-medium">Silent</span>
                         </button>
+                        {directedExperience?.music.kind === 'upload' && directedExperience.music.url && (
+                          <button
+                            onClick={() => {
+                              setActiveAtmosphere('custom');
+                              setMusicMenuOpen(false);
+                            }}
+                            className={`flex items-center justify-between w-full px-3 py-2 rounded-lg transition-colors ${activeAtmosphere === 'custom' ? 'bg-primary/10 text-primary' : 'hover:bg-secondary text-muted-foreground'}`}
+                          >
+                            <span className="text-sm font-medium">Creator track</span>
+                          </button>
+                        )}
                         <button
                           onClick={() => {
                             setActiveAtmosphere('noir');
@@ -2160,7 +2295,7 @@ export function KineticPlayer({
                           }}
                           className={`flex items-center justify-between w-full px-3 py-2 rounded-lg transition-colors ${activeAtmosphere === 'noir' ? 'bg-primary/10 text-primary' : 'hover:bg-secondary text-muted-foreground'}`}
                         >
-                          <span className="text-sm font-medium">Preset 1</span>
+                          <span className="text-sm font-medium">Noir</span>
                         </button>
                         <button
                           onClick={() => {
@@ -2169,7 +2304,7 @@ export function KineticPlayer({
                           }}
                           className={`flex items-center justify-between w-full px-3 py-2 rounded-lg transition-colors ${activeAtmosphere === 'fret' ? 'bg-primary/10 text-primary' : 'hover:bg-secondary text-muted-foreground'}`}
                         >
-                          <span className="text-sm font-medium">Preset 2</span>
+                          <span className="text-sm font-medium">Fret</span>
                         </button>
                         <button
                           onClick={() => {
@@ -2178,7 +2313,7 @@ export function KineticPlayer({
                           }}
                           className={`flex items-center justify-between w-full px-3 py-2 rounded-lg transition-colors ${activeAtmosphere === 'fret2' ? 'bg-primary/10 text-primary' : 'hover:bg-secondary text-muted-foreground'}`}
                         >
-                          <span className="text-sm font-medium">Preset 3</span>
+                          <span className="text-sm font-medium">Fret II</span>
                         </button>
 
 
