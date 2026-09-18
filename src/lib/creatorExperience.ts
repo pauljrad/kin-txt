@@ -109,3 +109,18 @@ export async function resolvePublishedCreatorExperience(
   }
   return withCreatorExperienceDefaults({ ...(data.experience as CreatorExperience), publicationId });
 }
+
+
+export function stripCreatorExperienceUrls(experience: CreatorExperience): CreatorExperience {
+  const value = withCreatorExperienceDefaults(experience);
+  return {
+    ...value,
+    images: value.images.map(({ url: _url, ...image }) => image),
+    music: value.music.kind === 'upload'
+      ? (() => {
+          const { url: _url, ...music } = value.music;
+          return music;
+        })()
+      : value.music,
+  };
+}
