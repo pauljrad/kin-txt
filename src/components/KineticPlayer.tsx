@@ -140,7 +140,6 @@ export function KineticPlayer({
   const [activeAtmosphere, setActiveAtmosphere] = useState<AtmosphereId>(directedExperience ? creatorInitialAtmosphere : (initialSettings.activeAtmosphere ?? 'none'));
   const [musicMenuOpen, setMusicMenuOpen] = useState(false);
   const [activeCreatorImage, setActiveCreatorImage] = useState<CreatorImageMoment | null>(null);
-  const [activeCreatorImageStatus, setActiveCreatorImageStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const shownCreatorImagesRef = useRef<Set<string>>(new Set());
 
   // Chapter Summary state
@@ -174,7 +173,7 @@ export function KineticPlayer({
       
       // Only update src if it's different to prevent restart on re-render
 
-      const fullSrc = window.location.origin + src;
+      const fullSrc = src.startsWith('http://') || src.startsWith('https://') ? src : window.location.origin + src;
       if (audio.src !== fullSrc) {
         audio.src = src;
         audio.load();
@@ -823,7 +822,6 @@ export function KineticPlayer({
         shownCreatorImagesRef.current.add(imageMoment.id);
         setIsPlaying(false);
         setShowControls(false);
-        setActiveCreatorImageStatus('loading');
         setActiveCreatorImage(imageMoment);
         return;
       }
@@ -1113,7 +1111,6 @@ export function KineticPlayer({
     shownCreatorImagesRef.current.add(openingImage.id);
     setIsPlaying(false);
     setShowControls(false);
-    setActiveCreatorImageStatus('loading');
     setActiveCreatorImage(openingImage);
   }, [directedExperience, activeCreatorImage]);
 
@@ -1131,14 +1128,12 @@ export function KineticPlayer({
 
     if (nextAtSameBoundary) {
       shownCreatorImagesRef.current.add(nextAtSameBoundary.id);
-      setActiveCreatorImageStatus('loading');
       setActiveCreatorImage(nextAtSameBoundary);
       setIsPlaying(false);
       return;
     }
 
     setActiveCreatorImage(null);
-    setActiveCreatorImageStatus('loading');
     setShowControls(false);
 
     if (boundary < 0) {
@@ -1467,51 +1462,23 @@ export function KineticPlayer({
             <motion.img
               src={activeCreatorImage.url}
               alt={activeCreatorImage.alt || ''}
-              initial={{ scale: 1.02, opacity: 0 }}
-              animate={{ scale: 1, opacity: activeCreatorImageStatus === 'ready' ? 1 : 0 }}
-              transition={{ duration: 0.45, ease: 'easeOut' }}
+              initial={{ scale: 1.015, opacity: 0.98 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ duration: 0.32, ease: 'easeOut' }}
               draggable={false}
-              onLoad={() => setActiveCreatorImageStatus('ready')}
-              onError={() => setActiveCreatorImageStatus('error')}
               className="absolute inset-0 h-full w-full object-cover select-none pointer-events-none"
               style={{ objectPosition: `${activeCreatorImage.focalX}% 50%` }}
             />
 
-            {activeCreatorImageStatus === 'loading' && (
-              <div className="absolute inset-0 grid place-items-center pointer-events-none">
-                <div className="flex flex-col items-center gap-3 text-white/70">
-                  <div className="h-5 w-5 rounded-full border border-white/25 border-t-white animate-spin" />
-                  <span className="text-[9px] font-mono tracking-[0.24em] uppercase">Loading image</span>
-                </div>
-              </div>
-            )}
-
-            {activeCreatorImageStatus === 'error' && (
-              <div className="absolute inset-0 grid place-items-center px-8 text-center pointer-events-none">
-                <div>
-                  <p className="text-sm text-white/85 font-medium">This image couldn't be loaded.</p>
-                  <p className="mt-2 text-[10px] uppercase tracking-[0.2em] text-white/45">Tap to continue the TXT</p>
-                </div>
-              </div>
-            )}
-
-            <div className="absolute inset-x-0 bottom-[max(2.2rem,env(safe-area-inset-bottom,0px))] flex flex-col items-center justify-center text-white pointer-events-none">
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.35, duration: 0.45 }}
-                className="flex flex-col items-center gap-2 drop-shadow-[0_2px_12px_rgba(0,0,0,0.75)]"
+            <div className="absolute inset-x-0 bottom-[max(2.6rem,env(safe-area-inset-bottom,0px))] flex items-center justify-center text-white pointer-events-none">
+              <motion.span
+                initial={{ opacity: 0 }}
+                animate={{ opacity: [0.18, 0.82, 0.18] }}
+                transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut' }}
+                className="text-[9px] font-mono tracking-[0.28em] uppercase text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.75)]"
               >
-                <span className="text-[9px] font-mono tracking-[0.3em] uppercase text-white/75">Tap to continue TXT</span>
-                <div className="relative flex h-9 w-4 justify-center">
-                  <span className="h-8 w-[2px] rounded-full bg-white/25" />
-                  <motion.span
-                    className="absolute top-0 h-[4px] w-[4px] rounded-full bg-white shadow-[0_0_12px_white]"
-                    animate={{ y: [0, 18, 0] }}
-                    transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }}
-                  />
-                </div>
-              </motion.div>
+                Tap to continue TXT
+              </motion.span>
             </div>
           </motion.div>
         )}
@@ -1939,7 +1906,7 @@ export function KineticPlayer({
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 20 }}
-              className="controls-panel pointer-events-auto absolute bottom-24 sm:bottom-14 left-4 right-4 sm:left-1/2 sm:-translate-x-1/2 sm:w-auto"
+              className="controls-panel pointer-events-auto absolute left-4 right-4 sm:left-1/2 sm:-translate-x-1/2 sm:w-auto" style={{ bottom: 'calc(3.5rem + env(safe-area-inset-bottom, 0px))' }}
             >
               <div className="glass-panel p-2 sm:p-4 flex flex-col gap-2 sm:gap-4">
                 {/* Playback Controls */}
