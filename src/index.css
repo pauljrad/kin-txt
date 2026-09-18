@@ -251,14 +251,14 @@
   /* Only reading content areas should scale */
   .prose,
   .kinetic-word,
-  .reading-content,
-  .controls-panel {
+  .reading-content {
     font-size: calc(1rem * var(--text-size-multiplier));
   }
 
-  /* Ensure controls-panel children inherit scaled size */
+  /* Reader controls stay UI-sized; text-size preferences only affect reading content. */
+  .controls-panel,
   .controls-panel .glass-panel {
-    font-size: inherit;
+    font-size: 16px;
   }
 
   /* Ensure text containers handle overflow gracefully */
