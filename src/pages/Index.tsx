@@ -568,15 +568,22 @@ const Index = () => {
   };
 
   const handleSelectDocument = useCallback(async (doc: SavedDocument) => {
-    // ALWAYS re-process deterministic styles (KiN-TXT, plain italics, caps)
-    // This ensures that if we update the logic, old docs get the new rendering immediately.
-    const { cleanedText, detectedWhispered, detectedEmphasis } = processTextStyles(doc.parsedText);
+    const isCreatorSaved = !!doc.creatorExperience;
+    // Creator TXTs keep the Creator's exact parsed delivery. Ordinary documents
+    // continue to receive KiN's deterministic styling and AI analysis.
+    const styled = isCreatorSaved
+      ? { cleanedText: doc.parsedText, detectedWhispered: [] as string[], detectedEmphasis: [] as string[] }
+      : processTextStyles(doc.parsedText);
+    const { cleanedText, detectedWhispered, detectedEmphasis } = styled;
 
     let finalEmphasisWords: string[] = [];
     let finalWhisperedWords: string[] = [];
 
+    if (isCreatorSaved) {
+      finalEmphasisWords = filterEmphasis(doc.emphasisWords || []);
+      finalWhisperedWords = doc.whisperedWords || [];
     // Check if we already have saved emphasis data from AI
-    if (doc.emphasisWords && doc.emphasisWords.length > 0) {
+    } else if (doc.emphasisWords && doc.emphasisWords.length > 0) {
       // Merge new deterministic findings with EXISTING saved AI findings
       finalEmphasisWords = Array.from(new Set([...detectedEmphasis, ...doc.emphasisWords]));
       finalWhisperedWords = Array.from(new Set([...detectedWhispered, ...(doc.whisperedWords || [])]));
