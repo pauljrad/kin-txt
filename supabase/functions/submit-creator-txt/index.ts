@@ -10,6 +10,67 @@ function clip(value: unknown, max: number): string {
   return (typeof value === "string" ? value : "").trim().slice(0, max);
 }
 
+
+function numberInRange(value: unknown, fallback: number, min: number, max: number): number {
+  const parsed = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(parsed) ? Math.min(max, Math.max(min, parsed)) : fallback;
+}
+
+function sanitizeExperience(raw: any, userId: string, paragraphCount: number) {
+  const defaults = raw?.defaults ?? {};
+  const images = Array.isArray(raw?.images)
+    ? raw.images.slice(0, 12).flatMap((image: any) => {
+        const storagePath = clip(image?.storagePath, 500);
+        if (!storagePath.startsWith(`${userId}/images/`)) return [];
+        return [{
+          id: clip(image?.id, 100) || crypto.randomUUID(),
+          storagePath,
+          afterParagraph: Math.min(
+            Math.max(0, paragraphCount - 1),
+            Math.max(0, Math.trunc(numberInRange(image?.afterParagraph, 0, 0, 100000))),
+          ),
+          focalX: numberInRange(image?.focalX, 50, 0, 100),
+          alt: clip(image?.alt, 300),
+        }];
+      })
+    : [];
+
+  const kind = raw?.music?.kind === "kin" || raw?.music?.kind === "upload" ? raw.music.kind : "none";
+  let music: Record<string, unknown> = { kind: "none" };
+
+  if (kind === "kin") {
+    const track = new Set(["noir", "fret", "fret2"]).has(raw?.music?.track) ? raw.music.track : "noir";
+    music = { kind: "kin", track };
+  } else if (kind === "upload") {
+    const storagePath = clip(raw?.music?.storagePath, 500);
+    const rightsConfirmed = raw?.music?.rightsConfirmed === true;
+    if (!storagePath.startsWith(`${userId}/audio/`) || !rightsConfirmed) {
+      throw new Error("Uploaded audio needs a valid Creator file and the rights confirmation.");
+    }
+    music = {
+      kind: "upload",
+      storagePath,
+      filename: clip(raw?.music?.filename, 180),
+      rightsConfirmed: true,
+    };
+  }
+
+  return {
+    version: 1,
+    images,
+    music,
+    defaults: {
+      startSpeed: numberInRange(defaults?.startSpeed, 0.5, 0.35, 2.5),
+      endSpeed: numberInRange(defaults?.endSpeed, 1.4, 0.35, 3),
+      rhythmMode: defaults?.rhythmMode !== false,
+      rhythmPreset: new Set(["slower", "normal", "faster"]).has(defaults?.rhythmPreset) ? defaults.rhythmPreset : "normal",
+      accelerationMode: defaults?.accelerationMode === true,
+      adaptiveSpeed: defaults?.adaptiveSpeed !== false,
+      resetInterval: new Set(["1", "2", "3", "4", "end", "paragraph"]).has(defaults?.resetInterval) ? defaults.resetInterval : "3",
+    },
+  };
+}
+
 function escapeHtml(value: string): string {
   return value
     .replace(/&/g, "&amp;")
@@ -100,6 +161,7 @@ serve(async (req) => {
         status: "pending",
         approval_token_hash: tokenHash,
         notification_status: "pending",
+        experience,
       })
       .select("id")
       .single();
