@@ -13,6 +13,15 @@ import { useAuth } from '@/hooks/useAuth';
 
 const FIELD = 'w-full rounded-xl border border-border bg-card/60 px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-foreground/40 transition-colors';
 
+function preloadImage(url: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve();
+    image.onerror = () => reject(new Error('Image could not be loaded.'));
+    image.src = url;
+  });
+}
+
 export default function CreatorCreate() {
   const navigate = useNavigate();
   const { isCreator, displayName, loading } = useCreatorAccess();
@@ -121,6 +130,11 @@ export default function CreatorCreate() {
     }
     try {
       const resolvedExperience = await resolveOwnCreatorExperienceMedia(experience);
+      const imageUrls = resolvedExperience.images.map((image) => image.url).filter((url): url is string => !!url);
+      if (imageUrls.length !== resolvedExperience.images.length) {
+        throw new Error('One of your images could not be prepared for preview. Remove it and add it again.');
+      }
+      await Promise.all(imageUrls.map(preloadImage));
       setPreview({ parsed: parseCreatorMarkup(draftMarkup), experience: resolvedExperience });
     } catch (err) {
       setStatus('error');
@@ -137,7 +151,6 @@ export default function CreatorCreate() {
           whisperedWords={preview.parsed.whisperedWords}
           creatorExperience={preview.experience}
           onBack={() => setPreview(null)}
-          attribution={{ author: displayName || 'KiN-Creator', source: 'Creator Preview' }}
         />
       </div>
     );

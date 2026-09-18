@@ -88,10 +88,10 @@ export async function resolveOwnCreatorExperienceMedia(experience: CreatorExperi
     ...value,
     images: value.images.map((image) => ({
       ...image,
-      url: image.url || byPath.get(image.storagePath),
+      url: byPath.get(image.storagePath) || image.url,
     })),
     music: value.music.kind === 'upload'
-      ? { ...value.music, url: value.music.url || (value.music.storagePath ? byPath.get(value.music.storagePath) : undefined) }
+      ? { ...value.music, url: (value.music.storagePath ? byPath.get(value.music.storagePath) : undefined) || value.music.url }
       : value.music,
   };
 }
