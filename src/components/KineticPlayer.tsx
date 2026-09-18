@@ -140,6 +140,7 @@ export function KineticPlayer({
   const [activeAtmosphere, setActiveAtmosphere] = useState<AtmosphereId>(directedExperience ? creatorInitialAtmosphere : (initialSettings.activeAtmosphere ?? 'none'));
   const [musicMenuOpen, setMusicMenuOpen] = useState(false);
   const [activeCreatorImage, setActiveCreatorImage] = useState<CreatorImageMoment | null>(null);
+  const [activeCreatorImageStatus, setActiveCreatorImageStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const shownCreatorImagesRef = useRef<Set<string>>(new Set());
 
   // Chapter Summary state
@@ -822,6 +823,7 @@ export function KineticPlayer({
         shownCreatorImagesRef.current.add(imageMoment.id);
         setIsPlaying(false);
         setShowControls(false);
+        setActiveCreatorImageStatus('loading');
         setActiveCreatorImage(imageMoment);
         return;
       }
@@ -1111,6 +1113,7 @@ export function KineticPlayer({
     shownCreatorImagesRef.current.add(openingImage.id);
     setIsPlaying(false);
     setShowControls(false);
+    setActiveCreatorImageStatus('loading');
     setActiveCreatorImage(openingImage);
   }, [directedExperience, activeCreatorImage]);
 
@@ -1128,12 +1131,14 @@ export function KineticPlayer({
 
     if (nextAtSameBoundary) {
       shownCreatorImagesRef.current.add(nextAtSameBoundary.id);
+      setActiveCreatorImageStatus('loading');
       setActiveCreatorImage(nextAtSameBoundary);
       setIsPlaying(false);
       return;
     }
 
     setActiveCreatorImage(null);
+    setActiveCreatorImageStatus('loading');
     setShowControls(false);
 
     if (boundary < 0) {
@@ -1462,13 +1467,34 @@ export function KineticPlayer({
             <motion.img
               src={activeCreatorImage.url}
               alt={activeCreatorImage.alt || ''}
-              initial={{ scale: 1.02 }}
-              animate={{ scale: 1 }}
-              transition={{ duration: 0.6, ease: 'easeOut' }}
+              initial={{ scale: 1.02, opacity: 0 }}
+              animate={{ scale: 1, opacity: activeCreatorImageStatus === 'ready' ? 1 : 0 }}
+              transition={{ duration: 0.45, ease: 'easeOut' }}
               draggable={false}
+              onLoad={() => setActiveCreatorImageStatus('ready')}
+              onError={() => setActiveCreatorImageStatus('error')}
               className="absolute inset-0 h-full w-full object-cover select-none pointer-events-none"
               style={{ objectPosition: `${activeCreatorImage.focalX}% 50%` }}
             />
+
+            {activeCreatorImageStatus === 'loading' && (
+              <div className="absolute inset-0 grid place-items-center pointer-events-none">
+                <div className="flex flex-col items-center gap-3 text-white/70">
+                  <div className="h-5 w-5 rounded-full border border-white/25 border-t-white animate-spin" />
+                  <span className="text-[9px] font-mono tracking-[0.24em] uppercase">Loading image</span>
+                </div>
+              </div>
+            )}
+
+            {activeCreatorImageStatus === 'error' && (
+              <div className="absolute inset-0 grid place-items-center px-8 text-center pointer-events-none">
+                <div>
+                  <p className="text-sm text-white/85 font-medium">This image couldn't be loaded.</p>
+                  <p className="mt-2 text-[10px] uppercase tracking-[0.2em] text-white/45">Tap to continue the TXT</p>
+                </div>
+              </div>
+            )}
+
             <div className="absolute inset-x-0 bottom-[max(2.2rem,env(safe-area-inset-bottom,0px))] flex flex-col items-center justify-center text-white pointer-events-none">
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
