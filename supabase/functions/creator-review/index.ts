@@ -11,6 +11,38 @@ async function sha256Hex(value: string): Promise<string> {
   return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
+
+async function resolveExperienceMedia(admin: any, experience: any) {
+  const value = experience && typeof experience === "object" ? experience : {};
+  const images = Array.isArray(value.images) ? value.images : [];
+  const music = value.music && typeof value.music === "object" ? value.music : { kind: "none" };
+  const paths = [
+    ...images.map((image: any) => typeof image?.storagePath === "string" ? image.storagePath : "").filter(Boolean),
+    ...(music.kind === "upload" && typeof music.storagePath === "string" ? [music.storagePath] : []),
+  ];
+
+  if (!paths.length) return { ...value, images, music };
+
+  const { data, error } = await admin.storage.from("creator-media").createSignedUrls(paths, 60 * 60 * 6);
+  if (error) throw error;
+
+  const urls = new Map<string, string>();
+  (data ?? []).forEach((entry: any, index: number) => {
+    if (entry?.signedUrl && paths[index]) urls.set(paths[index], entry.signedUrl);
+  });
+
+  return {
+    ...value,
+    images: images.map((image: any) => ({
+      ...image,
+      url: urls.get(image.storagePath),
+    })),
+    music: music.kind === "upload"
+      ? { ...music, url: urls.get(music.storagePath) }
+      : music,
+  };
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -34,7 +66,7 @@ serve(async (req) => {
 
     const { data: submission, error: loadError } = await admin
       .from("creator_submissions")
-      .select("id, creator_user_id, creator_name, creator_email, content_type, title, body, word_count, status, submitted_at")
+      .select("id, creator_user_id, creator_name, creator_email, content_type, title, body, word_count, status, submitted_at, experience")
       .eq("approval_token_hash", tokenHash)
       .eq("status", "pending")
       .maybeSingle();
@@ -48,6 +80,7 @@ serve(async (req) => {
     }
 
     if (action === "view") {
+      const resolvedExperience = await resolveExperienceMedia(admin, submission.experience);
       return new Response(JSON.stringify({
         success: true,
         submission: {
@@ -58,6 +91,7 @@ serve(async (req) => {
           body: submission.body,
           wordCount: submission.word_count,
           submittedAt: submission.submitted_at,
+          experience: resolvedExperience,
         },
       }), {
         status: 200,
@@ -76,6 +110,7 @@ serve(async (req) => {
           title: submission.title,
           body: submission.body,
           word_count: submission.word_count,
+          experience: submission.experience ?? {},
         }, { onConflict: "submission_id" })
         .select("id")
         .single();
