@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { InteractiveSplashScreen } from '@/components/landing/SplashScreen'
 import { usePullGesture } from '@/hooks/usePullGesture'
 import { KineticScrollSection } from '@/components/landing/KineticScrollSection'
@@ -14,6 +15,33 @@ import { AppStoreBadge } from '@/components/landing/AppStoreBadge'
 const Landing = () => {
     // Enable global pull gesture
     usePullGesture(true);
+
+    // iPhone Safari can expose the document/root background and cache a light
+    // browser chrome colour while its toolbars expand/collapse. Keep the public
+    // landing canvas black for the lifetime of this page, then restore the app's
+    // normal theme as soon as the user leaves.
+    useEffect(() => {
+        const html = document.documentElement;
+        const body = document.body;
+        const previousHtmlBackground = html.style.backgroundColor;
+        const previousBodyBackground = body.style.backgroundColor;
+        const themeMetas = Array.from(document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]'));
+        const previousThemeColors = themeMetas.map((meta) => meta.content);
+
+        html.style.backgroundColor = '#000000';
+        body.style.backgroundColor = '#000000';
+        themeMetas.forEach((meta) => {
+            meta.content = '#000000';
+        });
+
+        return () => {
+            html.style.backgroundColor = previousHtmlBackground;
+            body.style.backgroundColor = previousBodyBackground;
+            themeMetas.forEach((meta, index) => {
+                meta.content = previousThemeColors[index] || '';
+            });
+        };
+    }, []);
 
     return (
         <div className="relative min-h-screen bg-black">
