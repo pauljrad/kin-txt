@@ -219,7 +219,8 @@ export default function Submissions() {
           <p className="text-sm text-muted-foreground leading-relaxed mb-10 max-w-lg">
             KiN-TXT is open to writers at any age and any stage — first-timers and career authors alike.
             Opinion or fact, fiction or memoir, news, sport, travel, a single essay or a finished manuscript.
-            If it's worth reading one word at a time, we want to see it.
+            If it's worth reading, if it's worth experiencing, and if you want to control the pace,
+            rhythm, and emphasis of it, then we want to see it.
           </p>
 
           {/* ---------------------------------------------------------- */}
@@ -229,8 +230,8 @@ export default function Submissions() {
             <p className="text-xs uppercase tracking-widest text-muted-foreground font-display mb-1">The Format</p>
             <h2 className="font-display text-xl tracking-wide text-foreground mb-2">Your Words, Delivered Differently</h2>
             <p className="text-sm text-muted-foreground leading-relaxed mb-6">
-              KiN-TXT doesn't just publish your writing — it performs it. Every piece is read one word at a
-              time, which makes the delivery part of the work. When we publish you, you have a say in how it lands:
+              KiN-TXT isn't just a place where your writing is published — it’s a place where it’s performed.
+              As the writer, you dictate how your piece is experienced, and have control of your TXT's:
             </p>
             <div className="grid sm:grid-cols-2 gap-x-6 gap-y-5">
               <FeatureItem icon={Sparkles} label="Emphasis" text="Choose which words hit harder, and where the reader's eye should catch." />
