@@ -225,6 +225,29 @@
     flex-direction: column;
   }
 
+  .landing-hero-screen {
+    height: 100vh;
+    min-height: 100vh;
+  }
+
+  @supports (height: 100lvh) {
+    .landing-hero-screen {
+      height: 100lvh;
+      min-height: 100lvh;
+    }
+  }
+
+  /* iPhone Safari's translucent bottom browser controls reveal content just
+     beyond the CSS viewport. Keep the hero artwork positioned to the viewport,
+     but extend only its black section underneath that chrome so section two
+     cannot bleed through before the user actually scrolls. */
+  @media (max-width: 767px) and (hover: none) and (pointer: coarse) {
+    .landing-hero-screen {
+      height: calc(100lvh + 112px);
+      min-height: calc(100lvh + 112px);
+    }
+  }
+
   /* Prevent iOS Safari from auto-zooming the whole interface when a Creator
      focuses a form field. Keep mobile form controls at the 16px zoom threshold. */
   @media (max-width: 767px) {
