@@ -30,7 +30,7 @@ const Landing = () => {
             <main className="relative z-10 font-body">
 
                 {/* Section 1: Intro (Black) */}
-                <section className="h-[100lvh] min-h-[100lvh] w-full bg-black flex flex-col items-center justify-start pt-12">
+                <section className="landing-hero-screen w-full bg-black flex flex-col items-center justify-start pt-12">
                 </section>
 
                 <KineticScrollSection />
