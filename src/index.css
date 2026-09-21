@@ -243,8 +243,8 @@
      cannot bleed through before the user actually scrolls. */
   @media (max-width: 767px) and (hover: none) and (pointer: coarse) {
     .landing-hero-screen {
-      height: calc(100lvh + 112px);
-      min-height: calc(100lvh + 112px);
+      height: calc(100lvh + 160px);
+      min-height: calc(100lvh + 160px);
     }
   }
 
