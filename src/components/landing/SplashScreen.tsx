@@ -410,7 +410,7 @@ export const InteractiveSplashScreen = forwardRef<HTMLDivElement, AnimatedTitleP
 
                 <div
                     ref={ref}
-                    className={`${className ?? ""} absolute top-0 left-0 w-full h-[calc(100dvh+env(safe-area-inset-bottom,0px))] flex items-center justify-center pointer-events-none z-[100]`}
+                    className={`${className ?? ""} absolute top-0 left-0 w-full h-[100lvh] flex items-center justify-center pointer-events-none z-[100]`}
                     aria-label="Kin-TXT animated title"
                     {...props}
                 >
