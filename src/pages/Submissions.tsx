@@ -235,7 +235,7 @@ export default function Submissions() {
             <h2 className="font-display text-xl tracking-wide text-foreground mb-2">Your Words, Delivered Differently</h2>
             <p className="text-sm text-muted-foreground leading-relaxed mb-6">
               <KiNTxtBrand /> isn't just a place where your writing is published — it’s a place where it’s performed.
-              As the writer, you dictate how your piece is experienced, and have control of your TXT's:
+              As the writer, you dictate how your piece is experienced, and take complete control of your TXT's:
             </p>
             <div className="grid sm:grid-cols-2 gap-x-6 gap-y-5">
               <FeatureItem icon={Sparkles} label="Emphasis" text="Choose which words hit harder, and where the reader's eye should catch." />
