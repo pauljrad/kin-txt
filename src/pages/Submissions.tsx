@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, CheckCircle2, Loader2, Sparkles, Gauge, Music2, Image as ImageIcon, type LucideIcon } from 'lucide-react';
@@ -31,9 +31,13 @@ const EMPTY_BOOK_FORM: BookForm = {
 };
 
 const FIELD_CLASS =
-  'w-full rounded-xl border border-border bg-card/50 px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-foreground/40 transition-colors';
+  'w-full rounded-xl border border-border bg-card/50 px-4 py-3 text-sm normal-case text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-foreground/40 transition-colors';
 
-function FeatureItem({ icon: Icon, label, text }: { icon: LucideIcon; label: string; text: string }) {
+function KiNTxtBrand() {
+  return <span className="normal-case">KiN-TXT</span>;
+}
+
+function FeatureItem({ icon: Icon, label, text }: { icon: LucideIcon; label: string; text: ReactNode }) {
   return (
     <div className="flex gap-3">
       <Icon className="w-4 h-4 text-foreground shrink-0 mt-0.5" />
@@ -214,10 +218,10 @@ export default function Submissions() {
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
           {/* Deliberately no text-transform here — the wordmark's lowercase
               "i" must survive, and an ancestor `uppercase` class would erase it. */}
-          <p className="text-xs tracking-widest text-muted-foreground font-display mb-2">KiN-TXT</p>
+          <p className="text-xs tracking-widest text-muted-foreground font-display mb-2"><KiNTxtBrand /></p>
           <h1 className="font-display text-4xl tracking-wide text-foreground mb-3">Writers &amp; Submissions</h1>
           <p className="text-sm text-muted-foreground leading-relaxed mb-10 max-w-lg">
-            KiN-TXT is open to writers at any age and any stage — first-timers and career authors alike.
+            <KiNTxtBrand /> is open to writers at any age and any stage — first-timers and career authors alike.
             Opinion or fact, fiction or memoir, news, sport, travel, a single essay or a finished manuscript.
             If it's worth reading, if it's worth experiencing, and if you want to control the pace,
             rhythm, and emphasis of it, then we want to see it.
@@ -230,14 +234,18 @@ export default function Submissions() {
             <p className="text-xs uppercase tracking-widest text-muted-foreground font-display mb-1">The Format</p>
             <h2 className="font-display text-xl tracking-wide text-foreground mb-2">Your Words, Delivered Differently</h2>
             <p className="text-sm text-muted-foreground leading-relaxed mb-6">
-              KiN-TXT isn't just a place where your writing is published — it’s a place where it’s performed.
+              <KiNTxtBrand /> isn't just a place where your writing is published — it’s a place where it’s performed.
               As the writer, you dictate how your piece is experienced, and have control of your TXT's:
             </p>
             <div className="grid sm:grid-cols-2 gap-x-6 gap-y-5">
               <FeatureItem icon={Sparkles} label="Emphasis" text="Choose which words hit harder, and where the reader's eye should catch." />
               <FeatureItem icon={Gauge} label="Pace" text="Set the rhythm — where it races, where it holds, where it breathes." />
               <FeatureItem icon={Music2} label="Atmosphere" text="Pick the background music that plays behind your piece as it's read." />
-              <FeatureItem icon={ImageIcon} label="Imagery — New" text="Full-screen images that appear inside the text, exactly where you place them. A KiN-TXT first, launching with our published writers." />
+              <FeatureItem
+                icon={ImageIcon}
+                label="Imagery — New"
+                text={<>Full-screen images that appear inside the text, exactly where you place them. A <KiNTxtBrand /> first, launching with our published writers.</>}
+              />
             </div>
           </div>
 
@@ -248,11 +256,11 @@ export default function Submissions() {
             <p className="text-xs uppercase tracking-widest text-muted-foreground font-display mb-1">Ongoing</p>
             <h2 className="font-display text-2xl tracking-wide text-foreground mb-2">Writers Wanted</h2>
             <p className="text-sm text-muted-foreground leading-relaxed mb-6">
-              Be one of the first names on KiN-TXT. We're building a small, ongoing roster of contributors —
+              Be one of the first names on <KiNTxtBrand />. We're building a small, ongoing roster of contributors —
               in-house writers whose work becomes part of the platform itself, not a one-off byline. Opinion or
               fact, fiction or reporting, a running column or a single short story: write with total freedom.
               Every piece you publish is instantly shareable to your own socials, presented exactly the way
-              readers experience the rest of KiN-TXT.
+              readers experience the rest of <KiNTxtBrand />.
             </p>
 
             {writerStatus === 'sent' ? (
@@ -315,17 +323,17 @@ export default function Submissions() {
           {/* ---------------------------------------------------------- */}
           <section>
             <p className="text-xs uppercase tracking-widest text-muted-foreground font-display mb-1">Open Call</p>
-            <h2 className="font-display text-2xl tracking-wide text-foreground mb-2">The KiN-TXT First Book</h2>
+            <h2 className="font-display text-2xl tracking-wide text-foreground mb-2">The <KiNTxtBrand /> First Book</h2>
             <p className="text-sm text-muted-foreground leading-relaxed mb-6">
               We're looking for the first book we will ever publish. One writer. One manuscript. The beginning
-              of KiN-TXT as a publishing house — and you could be the name it starts with.
+              of <KiNTxtBrand /> as a publishing house — and you could be the name it starts with.
             </p>
 
             <div className="rounded-xl border border-foreground/30 bg-foreground/5 p-5 mb-6">
               <p className="text-xs uppercase tracking-widest text-muted-foreground font-display mb-1">Author Royalty</p>
               <p className="font-display text-5xl text-foreground mb-2">60%</p>
               <p className="text-sm text-muted-foreground leading-relaxed">
-                Every sale goes through the KiN-TXT app, and 60% of everything it earns goes straight to you.
+                Every sale goes through the <KiNTxtBrand /> app, and 60% of everything it earns goes straight to you.
                 Traditional publishing deals typically pay authors 5–15%. This is a real book deal, not a
                 competition — and we think our first author should be treated like a partner, not a supplier.
               </p>
@@ -436,7 +444,7 @@ export default function Submissions() {
                   ) : (
                     <>
                       <p className="text-xs text-muted-foreground text-center">
-                        Free for KiN-TXT Pro members. Otherwise, submit for £10.
+                        Free for <KiNTxtBrand /> Pro members. Otherwise, submit for £10.
                       </p>
                       <button
                         onClick={goUpgradeAndSubmit}
