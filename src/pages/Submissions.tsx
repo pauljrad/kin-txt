@@ -238,7 +238,7 @@ export default function Submissions() {
               As the writer, you dictate how your piece is experienced, by controlling your TXT’s:
             </p>
             <div className="grid sm:grid-cols-2 gap-x-6 gap-y-5">
-              <FeatureItem icon={Sparkles} label="Emphasis" text="Choose which words hit harder, and where the reader's eye should catch." />
+              <FeatureItem icon={Sparkles} label="Emphasis" text="Choose which words hit harder, how large they arrive, and exactly where and when to grab the reader’s eye." />
               <FeatureItem icon={Gauge} label="Pace" text="Set the rhythm — where it races, where it holds, where it breathes." />
               <FeatureItem icon={Music2} label="Atmosphere" text="Pick the background music that plays behind your piece as it's read." />
               <FeatureItem
@@ -259,8 +259,11 @@ export default function Submissions() {
               Be one of the first names on <KiNTxtBrand />. We're building a small, ongoing roster of contributors —
               in-house writers whose work becomes part of the platform itself, not a one-off byline. Opinion or
               fact, fiction or reporting, a running column or a single short story: write with total freedom.
-              Every piece you publish is instantly shareable to your own socials, presented exactly the way
-              readers experience the rest of <KiNTxtBrand />.
+              Every piece approved for publication on <KiNTxtBrand /> is instantly shareable to your own socials,
+              presented exactly as readers experience it on the platform. Our review isn't about rewriting your
+              voice or imposing a house style — we mainly make sure your piece works as a <KiNTxtBrand /> experience:
+              that the pacing, emphasis, imagery, audio and formatting all function properly. If something needs
+              adjusting, we'll work with you to get it right while keeping the writing yours.
             </p>
 
             {writerStatus === 'sent' ? (
@@ -334,14 +337,15 @@ export default function Submissions() {
               <p className="font-display text-5xl text-foreground mb-2">60%</p>
               <p className="text-sm text-muted-foreground leading-relaxed">
                 Every sale goes through the <KiNTxtBrand /> app, and 60% of everything it earns goes straight to you.
-                Traditional publishing deals typically pay authors 5–15%. This is a real book deal, not a
-                competition — and we think our first author should be treated like a partner, not a supplier.
+                Traditional publishing deals typically pay authors 5–15%.
               </p>
             </div>
 
             <p className="text-sm text-muted-foreground leading-relaxed mb-6">
-              As our first published author, your book gets the full treatment above — emphasis, pace,
-              atmosphere, and full-screen imagery, built around your text with you.
+              As our first published author, your book will receive the full <KiNTxtBrand /> Creator treatment.
+              We'll work with you to deliver the most powerful version of your work by refining how it’s experienced —
+              fine-tuning how each chapter, paragraph and sentence lands through emphasis, pace, rhythm, atmosphere,
+              full-screen imagery and audio.
             </p>
 
             {paidParam === 'success' && (
