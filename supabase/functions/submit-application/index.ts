@@ -101,11 +101,11 @@ serve(async (req) => {
     if (type === "writer") {
       const name = clip(payload.name, 200);
       const email = clip(payload.email, 200);
-      const links = clip(payload.links, 500);
-      const pitch = clip(payload.pitch, 4000);
+      const links = clip(payload.links, 1000);
+      const pitch = clip(payload.pitch, 20000);
 
-      if (!name || !email || !pitch) {
-        return new Response(JSON.stringify({ error: "Name, email, and a note about yourself are required." }), {
+      if (!name || !email || (!links && !pitch)) {
+        return new Response(JSON.stringify({ error: "Name, email, and either a work link or writing sample are required." }), {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
@@ -142,8 +142,8 @@ serve(async (req) => {
           ["Submission ID", submission.id],
           ["Name", name],
           ["Email", email],
-          ["Links / portfolio", links],
-          ["Message", pitch],
+          ["Portfolio / published work", links],
+          ["Writing sample", pitch],
         ]),
       });
 
