@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, CheckCircle2, Loader2, Sparkles, Gauge, Music2, Image as ImageIcon, type LucideIcon } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Loader2, Sparkles, Gauge, Music2, Image as ImageIcon, UploadCloud, FileText, type LucideIcon } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { useAuth } from '@/hooks/useAuth';
@@ -9,6 +9,9 @@ import { useSubscription } from '@/hooks/useSubscription';
 import { supabase } from '@/integrations/supabase/client';
 
 const DRAFT_KEY = 'kinxt_first_book_draft';
+const MANUSCRIPT_BUCKET = 'manuscript-submissions';
+const MAX_MANUSCRIPT_BYTES = 50 * 1024 * 1024;
+const MANUSCRIPT_ACCEPT = '.pdf,.doc,.docx,.rtf,.txt,.epub,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/rtf,text/rtf,text/plain,application/epub+zip';
 
 interface BookForm {
   authorName: string;
@@ -74,6 +77,8 @@ export default function Submissions() {
   const [bookForm, setBookForm] = useState<BookForm>(EMPTY_BOOK_FORM);
   const [bookStatus, setBookStatus] = useState<'idle' | 'sending' | 'sent' | 'error' | 'redirecting'>('idle');
   const [bookError, setBookError] = useState('');
+  const [manuscriptUploading, setManuscriptUploading] = useState(false);
+  const [manuscriptUploadError, setManuscriptUploadError] = useState('');
 
   // Restore a draft saved before sending someone off to /pricing or to
   // Stripe, so leaving this page never loses their work.
@@ -101,9 +106,64 @@ export default function Submissions() {
   const validateBookForm = (): string | null => {
     if (!bookForm.authorName.trim()) return 'Enter your name.';
     if (!bookForm.bookTitle.trim()) return 'Enter your book title.';
-    if (!bookForm.manuscriptLink.trim()) return 'Add a link to your manuscript.';
+    if (!bookForm.manuscriptLink.trim()) return 'Add a manuscript link or upload your manuscript.';
     if (!bookForm.pitch.trim()) return 'Add a short pitch.';
     return null;
+  };
+
+  const uploadedManuscriptPath = bookForm.manuscriptLink.startsWith(`storage://${MANUSCRIPT_BUCKET}/`)
+    ? bookForm.manuscriptLink.slice(`storage://${MANUSCRIPT_BUCKET}/`.length)
+    : '';
+  const uploadedManuscriptName = uploadedManuscriptPath
+    ? uploadedManuscriptPath.split('/').pop()?.replace(/^[0-9a-f-]{36}-/i, '') || 'manuscript'
+    : '';
+
+  const uploadManuscript = async (file: File) => {
+    setManuscriptUploadError('');
+
+    if (file.size > MAX_MANUSCRIPT_BYTES) {
+      setManuscriptUploadError('That file is over 50 MB. Please upload a smaller file or use a share link instead.');
+      return;
+    }
+
+    const extension = file.name.split('.').pop()?.toLowerCase() || '';
+    if (!['pdf', 'doc', 'docx', 'rtf', 'txt', 'epub'].includes(extension)) {
+      setManuscriptUploadError('Use PDF, DOC, DOCX, RTF, TXT or EPUB.');
+      return;
+    }
+
+    setManuscriptUploading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('create-manuscript-upload', {
+        body: {
+          filename: file.name,
+          contentType: file.type || 'application/octet-stream',
+          size: file.size,
+        },
+      });
+
+      if (error || !data?.path || !data?.token) {
+        throw error || new Error('Could not prepare manuscript upload.');
+      }
+
+      const { error: uploadError } = await supabase.storage
+        .from(MANUSCRIPT_BUCKET)
+        .uploadToSignedUrl(data.path, data.token, file, {
+          contentType: file.type || 'application/octet-stream',
+        });
+
+      if (uploadError) throw uploadError;
+
+      setBookForm((current) => ({
+        ...current,
+        manuscriptLink: `storage://${MANUSCRIPT_BUCKET}/${data.path}`,
+      }));
+    } catch (err) {
+      console.error('Manuscript upload failed:', err);
+      setManuscriptUploadError('The manuscript could not be uploaded. Please try again or use a share link.');
+    } finally {
+      setManuscriptUploading(false);
+    }
   };
 
   const submitWriterForm = async (e: React.FormEvent) => {
@@ -359,10 +419,17 @@ export default function Submissions() {
           <section>
             <p className="text-xs uppercase tracking-widest text-muted-foreground font-display mb-1">Open Call</p>
             <h2 className="font-display text-2xl tracking-wide text-foreground mb-2">The <KiNTxtBrand /> First Book</h2>
-            <p className="text-sm text-muted-foreground leading-relaxed mb-6">
+            <p className="text-sm text-muted-foreground leading-relaxed mb-4">
               We're looking for the first book we will ever publish. One writer. One manuscript. The beginning
               of <KiNTxtBrand /> as a publishing house — and you could be the name it starts with.
             </p>
+            <div className="rounded-xl border border-border bg-card/40 p-4 mb-6">
+              <p className="text-sm font-medium text-foreground">Unsolicited submissions are welcome.</p>
+              <p className="text-xs text-muted-foreground leading-relaxed mt-1">
+                You do not need a literary agent, an existing publisher or previous publishing credits to submit.
+                We accept manuscripts directly from writers.
+              </p>
+            </div>
 
             <div className="rounded-xl border border-foreground/30 bg-foreground/5 p-5 mb-6">
               <p className="text-xs uppercase tracking-widest text-muted-foreground font-display mb-1">Author Royalty</p>
@@ -400,62 +467,150 @@ export default function Submissions() {
             ) : (
               <div className="rounded-2xl border border-border bg-card/50 p-6 space-y-4">
                 <div className="grid sm:grid-cols-2 gap-4">
+                  <label className="space-y-2">
+                    <span className="block text-xs text-muted-foreground">Author name</span>
+                    <input
+                      type="text"
+                      placeholder="Your name"
+                      value={bookForm.authorName}
+                      onChange={(e) => setBookForm((f) => ({ ...f, authorName: e.target.value }))}
+                      className={FIELD_CLASS}
+                    />
+                  </label>
+                  <label className="space-y-2">
+                    <span className="block text-xs text-muted-foreground">Email</span>
+                    <input
+                      type="email"
+                      placeholder={user?.email || 'you@example.com'}
+                      value={bookForm.authorEmail}
+                      onChange={(e) => setBookForm((f) => ({ ...f, authorEmail: e.target.value }))}
+                      className={FIELD_CLASS}
+                    />
+                  </label>
+                </div>
+
+                <label className="space-y-2 block">
+                  <span className="block text-xs text-muted-foreground">Book title</span>
                   <input
                     type="text"
-                    placeholder="Author name"
-                    value={bookForm.authorName}
-                    onChange={(e) => setBookForm((f) => ({ ...f, authorName: e.target.value }))}
+                    placeholder="Title of your manuscript"
+                    value={bookForm.bookTitle}
+                    onChange={(e) => setBookForm((f) => ({ ...f, bookTitle: e.target.value }))}
                     className={FIELD_CLASS}
                   />
-                  <input
-                    type="email"
-                    placeholder={user ? `Email (${user.email})` : 'Email'}
-                    value={bookForm.authorEmail}
-                    onChange={(e) => setBookForm((f) => ({ ...f, authorEmail: e.target.value }))}
-                    className={FIELD_CLASS}
-                  />
-                </div>
-                <input
-                  type="text"
-                  placeholder="Book title"
-                  value={bookForm.bookTitle}
-                  onChange={(e) => setBookForm((f) => ({ ...f, bookTitle: e.target.value }))}
-                  className={FIELD_CLASS}
-                />
+                </label>
+
                 <div className="grid sm:grid-cols-2 gap-4">
-                  <input
-                    type="text"
-                    placeholder="Genre / theme (fiction, poetry, essays, memoir…)"
-                    value={bookForm.genre}
-                    onChange={(e) => setBookForm((f) => ({ ...f, genre: e.target.value }))}
-                    className={FIELD_CLASS}
-                  />
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    placeholder="Word count"
-                    value={bookForm.wordCount}
-                    onChange={(e) => setBookForm((f) => ({ ...f, wordCount: e.target.value }))}
-                    className={FIELD_CLASS}
-                  />
+                  <label className="space-y-2">
+                    <span className="block text-xs text-muted-foreground">Genre / theme</span>
+                    <input
+                      type="text"
+                      placeholder="Fiction, poetry, essays, memoir…"
+                      value={bookForm.genre}
+                      onChange={(e) => setBookForm((f) => ({ ...f, genre: e.target.value }))}
+                      className={FIELD_CLASS}
+                    />
+                  </label>
+                  <label className="space-y-2">
+                    <span className="block text-xs text-muted-foreground">Approx. word count</span>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      placeholder="e.g. 72,000"
+                      value={bookForm.wordCount}
+                      onChange={(e) => setBookForm((f) => ({ ...f, wordCount: e.target.value }))}
+                      className={FIELD_CLASS}
+                    />
+                  </label>
                 </div>
-                <input
-                  type="text"
-                  placeholder="Link to your manuscript (Google Drive, Dropbox — set to 'anyone with the link')"
-                  value={bookForm.manuscriptLink}
-                  onChange={(e) => setBookForm((f) => ({ ...f, manuscriptLink: e.target.value }))}
-                  className={FIELD_CLASS}
-                />
-                <div>
+
+                <div className="rounded-xl border border-border/70 bg-background/20 p-4 space-y-4">
+                  <div>
+                    <p className="text-sm font-medium text-foreground">Your manuscript</p>
+                    <p className="text-xs text-muted-foreground leading-relaxed mt-1">
+                      Send us a viewing link or upload the file directly. Either option is fine.
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <p className="text-xs font-medium text-foreground">Link to manuscript</p>
+                    <p className="text-[11px] text-muted-foreground leading-relaxed">
+                      Google Drive, Dropbox, OneDrive or similar is fine. Make sure access is set to
+                      “Anyone with the link can view” (or equivalent) and test that it opens without requesting permission.
+                      View-only access is enough — please don't grant edit access.
+                    </p>
+                    <input
+                      type="url"
+                      inputMode="url"
+                      placeholder="https://…"
+                      value={uploadedManuscriptPath ? '' : bookForm.manuscriptLink}
+                      disabled={Boolean(uploadedManuscriptPath)}
+                      onChange={(e) => setBookForm((f) => ({ ...f, manuscriptLink: e.target.value }))}
+                      className={`${FIELD_CLASS} disabled:opacity-50`}
+                    />
+                  </div>
+
+                  <div className="flex items-center gap-3" aria-hidden="true">
+                    <div className="h-px flex-1 bg-border" />
+                    <span className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground font-display">Or upload</span>
+                    <div className="h-px flex-1 bg-border" />
+                  </div>
+
+                  {uploadedManuscriptPath ? (
+                    <div className="rounded-xl border border-foreground/20 bg-foreground/5 p-3 flex items-center gap-3">
+                      <FileText className="w-5 h-5 shrink-0 text-foreground" />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm text-foreground truncate">{uploadedManuscriptName}</p>
+                        <p className="text-[11px] text-muted-foreground">Uploaded privately and ready to submit.</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setBookForm((f) => ({ ...f, manuscriptLink: '' }))}
+                        className="text-xs text-muted-foreground hover:text-foreground"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ) : (
+                    <label className={`w-full min-h-24 rounded-xl border border-dashed border-border bg-card/30 px-4 py-4 flex flex-col items-center justify-center gap-2 text-center cursor-pointer transition-colors hover:bg-card/60 ${manuscriptUploading ? 'opacity-60 pointer-events-none' : ''}`}>
+                      {manuscriptUploading ? <Loader2 className="w-5 h-5 animate-spin" /> : <UploadCloud className="w-5 h-5" />}
+                      <span className="text-sm text-foreground">{manuscriptUploading ? 'Uploading manuscript…' : 'Choose manuscript file'}</span>
+                      <span className="text-[11px] text-muted-foreground">PDF, DOCX, DOC, RTF, TXT or EPUB · up to 50 MB</span>
+                      <input
+                        type="file"
+                        accept={MANUSCRIPT_ACCEPT}
+                        className="hidden"
+                        disabled={manuscriptUploading}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) void uploadManuscript(file);
+                          e.currentTarget.value = '';
+                        }}
+                      />
+                    </label>
+                  )}
+
+                  {manuscriptUploadError && (
+                    <p className="text-xs text-destructive">{manuscriptUploadError}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <div>
+                    <p className="text-sm font-medium text-foreground">Tell us about the book</p>
+                    <p className="text-xs text-muted-foreground leading-relaxed mt-1">
+                      What is it, who is it for, and why should it become <KiNTxtBrand />'s first published book?
+                    </p>
+                  </div>
                   <textarea
-                    placeholder="What is it, who is it for, and why does it deserve to be KiN-TXT's first book?"
+                    placeholder="Tell us about your manuscript…"
                     value={bookForm.pitch}
                     onChange={(e) => setBookForm((f) => ({ ...f, pitch: e.target.value.slice(0, bookPitchLimit) }))}
                     maxLength={bookPitchLimit}
-                    rows={5}
-                    className={`${FIELD_CLASS} resize-none`}
+                    rows={7}
+                    className={`${FIELD_CLASS} min-h-[12rem] resize-y leading-relaxed`}
                   />
-                  <p className="text-xs text-muted-foreground mt-1.5">
+                  <p className="text-xs text-muted-foreground">
                     Up to {bookPitchLimit.toLocaleString()} characters.
                   </p>
                 </div>
