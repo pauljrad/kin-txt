@@ -140,7 +140,13 @@ export function AccountSettings({ onClose, onUpgrade }: AccountSettingsProps) {
             <Row icon={RefreshCw} label={restoring ? 'Restoring…' : 'Restore Purchases'} onClick={handleRestore} />
           )}
           {isPro && (
-            <Row icon={CreditCard} label="Manage subscription" onClick={handleManageSubscription} />
+            <>
+              <p className="px-1 text-xs leading-relaxed text-muted-foreground">
+                If KiN-TXT doesn’t appear in your Apple subscriptions, you likely subscribed through the website.
+                Visit kin-txt.com in your browser and sign in to manage your account.
+              </p>
+              <Row icon={CreditCard} label="Manage subscription" onClick={handleManageSubscription} />
+            </>
           )}
           {user && <Row icon={LogOut} label="Sign out" onClick={handleSignOut} />}
         </div>
