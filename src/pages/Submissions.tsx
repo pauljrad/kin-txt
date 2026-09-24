@@ -109,8 +109,12 @@ export default function Submissions() {
   const submitWriterForm = async (e: React.FormEvent) => {
     e.preventDefault();
     setWriterError('');
-    if (!writerForm.name.trim() || !writerForm.email.trim() || !writerForm.pitch.trim()) {
-      setWriterError('Name, email, and a note about yourself are required.');
+    if (!writerForm.name.trim() || !writerForm.email.trim()) {
+      setWriterError('Name and email are required.');
+      return;
+    }
+    if (!writerForm.links.trim() && !writerForm.pitch.trim()) {
+      setWriterError('Add a link to your work, paste a writing sample, or do both.');
       return;
     }
     setWriterStatus('sending');
@@ -289,21 +293,49 @@ export default function Submissions() {
                     className={FIELD_CLASS}
                   />
                 </div>
-                <input
-                  type="text"
-                  placeholder="Portfolio, published work, or a writing sample (recommended)"
-                  value={writerForm.links}
-                  onChange={(e) => setWriterForm((f) => ({ ...f, links: e.target.value }))}
-                  className={FIELD_CLASS}
-                />
-                <textarea
-                  placeholder="Tell us who you are, what you write, and why KiN-TXT should be reading it"
-                  value={writerForm.pitch}
-                  onChange={(e) => setWriterForm((f) => ({ ...f, pitch: e.target.value }))}
-                  maxLength={4000}
-                  rows={5}
-                  className={`${FIELD_CLASS} resize-none`}
-                />
+                <div className="space-y-2">
+                  <div>
+                    <p className="text-sm font-medium text-foreground">Portfolio or published work</p>
+                    <p className="text-xs text-muted-foreground leading-relaxed mt-1">
+                      Link us to your portfolio, website, Substack, published article or anywhere else we can read your work.
+                    </p>
+                  </div>
+                  <input
+                    type="url"
+                    inputMode="url"
+                    placeholder="https://…"
+                    value={writerForm.links}
+                    onChange={(e) => setWriterForm((f) => ({ ...f, links: e.target.value }))}
+                    className={FIELD_CLASS}
+                  />
+                </div>
+
+                <div className="flex items-center gap-3 py-1" aria-hidden="true">
+                  <div className="h-px flex-1 bg-border" />
+                  <span className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground font-display">Or</span>
+                  <div className="h-px flex-1 bg-border" />
+                </div>
+
+                <div className="space-y-2">
+                  <div>
+                    <p className="text-sm font-medium text-foreground">Show us what you write</p>
+                    <p className="text-xs text-muted-foreground leading-relaxed mt-1">
+                      No portfolio? Paste something here — an excerpt, article, opening, short piece, poem or anything that gives us a feel for your voice. It doesn't need to be finished.
+                    </p>
+                  </div>
+                  <textarea
+                    placeholder="Paste your writing here…"
+                    value={writerForm.pitch}
+                    onChange={(e) => setWriterForm((f) => ({ ...f, pitch: e.target.value }))}
+                    maxLength={20000}
+                    rows={12}
+                    className={`${FIELD_CLASS} min-h-[18rem] resize-y leading-relaxed`}
+                  />
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-[11px] text-muted-foreground">You only need to provide one option above — but you're welcome to include both.</p>
+                    <p className="text-[11px] text-muted-foreground shrink-0">{writerForm.pitch.length.toLocaleString()} / 20,000</p>
+                  </div>
+                </div>
 
                 {writerError && <p className="text-xs text-destructive">{writerError}</p>}
 
