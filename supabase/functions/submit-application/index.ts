@@ -67,6 +67,32 @@ function adminClient() {
   );
 }
 
+const MANUSCRIPT_BUCKET = "manuscript-submissions";
+const MANUSCRIPT_PREFIX = `storage://${MANUSCRIPT_BUCKET}/`;
+
+async function manuscriptForReview(
+  admin: ReturnType<typeof adminClient>,
+  manuscriptRef: string,
+): Promise<string> {
+  if (!manuscriptRef.startsWith(MANUSCRIPT_PREFIX)) return manuscriptRef;
+
+  const path = manuscriptRef.slice(MANUSCRIPT_PREFIX.length);
+  if (!path || path.includes("..")) return manuscriptRef;
+
+  const { data, error } = await admin.storage
+    .from(MANUSCRIPT_BUCKET)
+    .createSignedUrl(path, 60 * 60 * 24 * 30);
+
+  if (error || !data?.signedUrl) {
+    console.error("Could not create manuscript review URL:", error);
+    return manuscriptRef;
+  }
+
+  const storedName = path.split("/").pop() || "manuscript";
+  const filename = storedName.replace(/^[0-9a-f-]{36}-/i, "");
+  return `Uploaded manuscript: ${filename}\nReview link (valid for 30 days): ${data.signedUrl}`;
+}
+
 async function markNotification(
   admin: ReturnType<typeof adminClient>,
   submissionId: string,
@@ -171,7 +197,7 @@ serve(async (req) => {
 
       if (!authorName || !authorEmail || !bookTitle || !manuscriptLink || !pitch) {
         return new Response(
-          JSON.stringify({ error: "Author name, email, book title, manuscript link, and pitch are required." }),
+          JSON.stringify({ error: "Author name, email, book title, manuscript, and pitch are required." }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
       }
@@ -249,7 +275,7 @@ serve(async (req) => {
 
       if (!authorName || !bookTitle || !manuscriptLink || !pitch) {
         return new Response(
-          JSON.stringify({ error: "Author name, book title, a link to the manuscript, and a short pitch are required." }),
+          JSON.stringify({ error: "Author name, book title, a manuscript, and a short pitch are required." }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
       }
@@ -281,6 +307,8 @@ serve(async (req) => {
         throw new Error("Could not save the book submission.");
       }
 
+      const manuscriptReview = await manuscriptForReview(admin, manuscriptLink);
+
       const { data: emailData, error: resendError } = await resend.emails.send({
         from: "KiN-TXT Submissions <hello@kin-txt.com>",
         to: ["hello@kin-txt.com"],
@@ -293,7 +321,7 @@ serve(async (req) => {
           ["Book title", bookTitle],
           ["Genre / theme", genre],
           ["Word count", wordCount],
-          ["Manuscript link", manuscriptLink],
+          ["Manuscript", manuscriptReview],
           ["Pitch", pitch],
         ]),
       });

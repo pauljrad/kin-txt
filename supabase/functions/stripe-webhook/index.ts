@@ -6,6 +6,31 @@ function escapeHtml(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
+const MANUSCRIPT_BUCKET = "manuscript-submissions";
+const MANUSCRIPT_PREFIX = `storage://${MANUSCRIPT_BUCKET}/`;
+
+async function manuscriptForReview(
+  supabase: ReturnType<typeof createClient>,
+  manuscriptRef: string,
+): Promise<string> {
+  if (!manuscriptRef.startsWith(MANUSCRIPT_PREFIX)) return manuscriptRef;
+  const path = manuscriptRef.slice(MANUSCRIPT_PREFIX.length);
+  if (!path || path.includes("..")) return manuscriptRef;
+
+  const { data, error } = await supabase.storage
+    .from(MANUSCRIPT_BUCKET)
+    .createSignedUrl(path, 60 * 60 * 24 * 30);
+
+  if (error || !data?.signedUrl) {
+    console.error("Could not create paid manuscript review URL:", error);
+    return manuscriptRef;
+  }
+
+  const storedName = path.split("/").pop() || "manuscript";
+  const filename = storedName.replace(/^[0-9a-f-]{36}-/i, "");
+  return `Uploaded manuscript: ${filename}\nReview link (valid for 30 days): ${data.signedUrl}`;
+}
+
 function renderPaidSubmissionEmail(submission: Record<string, unknown>): string {
   const rows: [string, string][] = [
     ["Submission ID", String(submission.id ?? "")],
@@ -14,7 +39,7 @@ function renderPaidSubmissionEmail(submission: Record<string, unknown>): string 
     ["Book title", String(submission.book_title ?? "")],
     ["Genre / theme", String(submission.genre ?? "")],
     ["Word count", String(submission.word_count ?? "")],
-    ["Manuscript link", String(submission.manuscript_link ?? "")],
+    ["Manuscript", String(submission.manuscript_link ?? "")],
     ["Pitch", String(submission.pitch ?? "")],
   ];
   const body = rows
@@ -210,7 +235,14 @@ serve(async (req) => {
           }
 
           try {
-            const emailResult = await sendPaidSubmissionEmail(claimed);
+            const manuscriptReview = await manuscriptForReview(
+              supabase,
+              String(claimed.manuscript_link ?? ""),
+            );
+            const emailResult = await sendPaidSubmissionEmail({
+              ...claimed,
+              manuscript_link: manuscriptReview,
+            });
             const { error: sentUpdateError } = await supabase
               .from('submissions')
               .update({
