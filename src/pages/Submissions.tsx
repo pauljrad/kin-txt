@@ -265,6 +265,64 @@ export default function Submissions() {
   // so Stripe metadata no longer limits the pitch length.
   const bookPitchLimit = 6000;
 
+  if (paidParam === 'success') {
+    return (
+      <div
+        className="min-h-[100svh] bg-background flex flex-col"
+        style={{
+          paddingTop: 'env(safe-area-inset-top, 0px)',
+          paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+        }}
+      >
+        <ThemeToggle />
+        <div className="flex-1 flex items-center justify-center px-6 py-16">
+          <motion.div
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45 }}
+            className="w-full max-w-md text-center"
+          >
+            <motion.div
+              initial={{ scale: 0.82, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ duration: 0.4, delay: 0.08 }}
+              className="mx-auto mb-7 w-20 h-20 rounded-full border border-foreground/30 flex items-center justify-center"
+            >
+              <CheckCircle2 className="w-10 h-10 text-foreground" />
+            </motion.div>
+
+            <p className="text-xs tracking-[0.22em] text-muted-foreground font-display mb-3">
+              <KiNTxtBrand /> First Book
+            </p>
+            <h1 className="font-display text-4xl sm:text-5xl tracking-wide text-foreground leading-tight">
+              Payment received.
+            </h1>
+            <p className="font-display text-2xl sm:text-3xl tracking-wide text-foreground mt-2">
+              Your submission is in.
+            </p>
+
+            <div className="mt-7 rounded-2xl border border-border bg-card/50 p-5 text-left">
+              <p className="text-sm text-foreground leading-relaxed">
+                Your £10 payment has been completed and we've received your manuscript and submission details.
+              </p>
+              <p className="text-sm text-muted-foreground leading-relaxed mt-3">
+                We read every submission. If we need anything else, we'll contact you using the email address you supplied.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => navigate('/home')}
+              className="mt-7 w-full h-14 rounded-xl bg-foreground text-background font-display tracking-widest uppercase text-sm hover:bg-foreground/90 transition-colors"
+            >
+              Return to KiN-TXT
+            </button>
+          </motion.div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-[100svh] bg-background flex flex-col">
       <ThemeToggle />
