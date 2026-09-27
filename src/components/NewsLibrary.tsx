@@ -228,7 +228,7 @@ export function NewsLibrary({ onSelectArticle, isPro = false, onUpgrade }: NewsL
     return (
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-4xl mx-auto mt-3">
         <div className="text-center mb-5">
-          <p className="text-[10px] uppercase tracking-[0.24em] text-muted-foreground">Journal</p>
+          <p className="text-[10px] uppercase tracking-[0.24em] text-muted-foreground">News</p>
         </div>
         {sectionTabs}
         <CreatorJournalFeed
@@ -249,7 +249,7 @@ export function NewsLibrary({ onSelectArticle, isPro = false, onUpgrade }: NewsL
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="w-full max-w-4xl mx-auto mt-3">
       <div className="text-center mb-5">
-        <p className="text-[10px] uppercase tracking-[0.24em] text-muted-foreground">Journal</p>
+        <p className="text-[10px] uppercase tracking-[0.24em] text-muted-foreground">News</p>
       </div>
       {sectionTabs}
 
@@ -335,7 +335,7 @@ export function NewsLibrary({ onSelectArticle, isPro = false, onUpgrade }: NewsL
 
       <Dialog open={showLimitDialog} onOpenChange={setShowLimitDialog}>
         <DialogContent className="sm:max-w-[400px] bg-background border-border">
-          <DialogTitle className="text-lg font-display tracking-tight text-center pt-2">Daily Journal Limit Reached</DialogTitle>
+          <DialogTitle className="text-lg font-display tracking-tight text-center pt-2">Daily News Limit Reached</DialogTitle>
           <div className="space-y-4 py-2">
             <p className="text-sm text-muted-foreground text-center leading-relaxed px-4">
               Free users can read {FREE_DAILY_NEWS_LIMIT} Global Voices article per day. Sign up to Pro for unlimited access.
