@@ -984,6 +984,22 @@ const Index = () => {
             exit={{ opacity: 0 }}
             className="w-full flex flex-col items-center px-4 pt-24 sm:pt-28"
           >
+            {!isNative && (
+              <motion.button
+                type="button"
+                onClick={() => navigate('/submissions')}
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.99 }}
+                className="w-full max-w-2xl mx-auto mb-5 rounded-xl border border-foreground/15 bg-foreground text-background px-4 py-3 text-center shadow-sm transition-all"
+              >
+                <span className="font-display text-sm sm:text-base tracking-[0.12em] uppercase">
+                  Writers &amp; Contributors Wanted
+                </span>
+              </motion.button>
+            )}
+
             {!isOnline && (
               <motion.div 
                 initial={{ opacity: 0, y: -20 }}
@@ -1031,7 +1047,7 @@ const Index = () => {
                       }`}
                   >
                     <Newspaper className="w-3.5 h-3.5 shrink-0" />
-                    <span className="whitespace-nowrap leading-none">Journal</span>
+                    <span className="whitespace-nowrap leading-none">News</span>
                   </button>
                 </div>
 
