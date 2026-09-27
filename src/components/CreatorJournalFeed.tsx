@@ -74,8 +74,7 @@ export function CreatorJournalFeed({ onSelectArticle }: CreatorJournalFeedProps)
     return (
       <div className="py-16 text-center">
         <PenLine className="w-10 h-10 mx-auto mb-4 text-muted-foreground/40" />
-        <p className="font-display text-lg mb-1">KiN-Creators</p>
-        <p className="text-sm text-muted-foreground">The first Creator TXTs will appear here after approval.</p>
+        <p className="font-display text-lg mb-1">KiN-Creators COMING SOON</p>
       </div>
     );
   }
