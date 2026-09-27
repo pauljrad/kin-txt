@@ -49,9 +49,9 @@ const Landing = () => {
 
             <a
                 href="/submissions"
-                className="fixed left-0 right-0 z-[80] w-full border-y border-white/25 bg-white px-4 py-3 text-center text-[10px] sm:text-xs font-bold uppercase tracking-[0.18em] text-black mix-blend-difference transition-opacity hover:opacity-90"
+                className="fixed left-0 right-0 z-[80] w-full border-b border-white/25 bg-white px-4 py-3 text-center text-[10px] sm:text-xs font-bold uppercase tracking-[0.18em] text-black mix-blend-difference transition-opacity hover:opacity-90"
                 style={{
-                    top: 'calc(4.25rem + env(safe-area-inset-top, 0px))',
+                    top: 'env(safe-area-inset-top, 0px)',
                 }}
             >
                 Writers &amp; Contributors Wanted
