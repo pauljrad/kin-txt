@@ -13,7 +13,7 @@ export function AppStoreBadge() {
       rel="noopener noreferrer"
       className="fixed z-[70] flex items-center gap-1.5 border border-white/25 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] text-white mix-blend-difference transition-colors hover:border-white/60"
       style={{
-        top: 'calc(1rem + env(safe-area-inset-top, 0px))',
+        top: 'calc(3.75rem + env(safe-area-inset-top, 0px))',
         right: 'calc(1rem + env(safe-area-inset-right, 0px))',
       }}
     >
