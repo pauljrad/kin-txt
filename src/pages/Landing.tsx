@@ -47,6 +47,17 @@ const Landing = () => {
         <div className="relative min-h-screen bg-black">
             <AppStoreBadge />
 
+            <a
+                href="/submissions"
+                className="fixed left-1/2 z-[80] -translate-x-1/2 border border-white/25 bg-black/80 px-5 py-2.5 text-center text-[10px] sm:text-xs font-bold uppercase tracking-[0.18em] text-white backdrop-blur-md transition-all hover:bg-white hover:text-black hover:border-white"
+                style={{
+                    top: 'calc(4.25rem + env(safe-area-inset-top, 0px))',
+                    width: 'min(88vw, 520px)',
+                }}
+            >
+                Writers &amp; Contributors Wanted
+            </a>
+
             {/*
         The Fixed/Sticky Title Overlay.
         It uses mix-blend-difference (defined in SplashScreen) 
