@@ -234,7 +234,7 @@ export function NewsLibrary({ onSelectArticle, isPro = false, onUpgrade }: NewsL
         {sectionTabs}
         <Link
           to="/submissions"
-          className="block w-full mb-5 rounded-xl border border-foreground/15 bg-foreground text-background px-4 py-3 text-center font-display text-sm sm:text-base tracking-wide shadow-sm transition-opacity hover:opacity-90"
+          className="block w-full mb-5 rounded-xl border border-foreground/15 bg-foreground text-background px-4 py-0.5 text-center font-display text-sm sm:text-base leading-5 sm:leading-5 tracking-wide shadow-sm transition-opacity hover:opacity-90"
         >
           Apply to be a KiN-Creator
         </Link>
