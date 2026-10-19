@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Newspaper, Loader2, RefreshCw, Users } from 'lucide-react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
@@ -231,6 +232,12 @@ export function NewsLibrary({ onSelectArticle, isPro = false, onUpgrade }: NewsL
           <p className="text-[10px] uppercase tracking-[0.24em] text-muted-foreground">News</p>
         </div>
         {sectionTabs}
+        <Link
+          to="/submissions"
+          className="block w-full mb-5 rounded-xl border border-foreground/15 bg-foreground text-background px-4 py-3 text-center font-display text-sm sm:text-base tracking-wide shadow-sm transition-opacity hover:opacity-90"
+        >
+          Apply to be a KiN-Creator
+        </Link>
         <CreatorJournalFeed
           onSelectArticle={(parsed, title, meta) => onSelectArticle(parsed, title, {
             link: '',
