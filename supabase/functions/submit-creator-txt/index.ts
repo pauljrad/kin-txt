@@ -144,6 +144,9 @@ serve(async (req) => {
       });
     }
 
+    const paragraphCount = body.split(/\n\s*\n/).filter((p) => p.trim()).length;
+    const experience = sanitizeExperience(payload?.experience, user.id, paragraphCount);
+
     const token = randomToken();
     const tokenHash = await sha256Hex(token);
     const creatorEmail = user.email ?? "";
@@ -174,6 +177,7 @@ serve(async (req) => {
     const reviewUrl = `${Deno.env.get("KIN_TXT_SITE_URL") ?? "https://kin-txt.com"}/creator-review#${token}`;
     const excerpt = body.replace(/[*_]/g, "").replace(/\s+/g, " ").slice(0, 420);
 
+    let notificationSent = false;
     try {
       const response = await fetch("https://api.resend.com/emails", {
         method: "POST",
@@ -194,6 +198,7 @@ serve(async (req) => {
       const result = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(`Resend ${response.status}: ${JSON.stringify(result)}`);
 
+      notificationSent = true;
       await admin.from("creator_submissions").update({
         notification_status: "sent",
         resend_email_id: result.id ?? null,
@@ -207,7 +212,7 @@ serve(async (req) => {
       }).eq("id", submission.id);
     }
 
-    return new Response(JSON.stringify({ success: true, submissionId: submission.id }), {
+    return new Response(JSON.stringify({ success: true, submissionId: submission.id, notificationSent }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

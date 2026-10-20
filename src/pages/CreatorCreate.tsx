@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, CheckCircle2, FileUp, Italic, Loader2, Play, Send } from 'lucide-react';
 import mammoth from 'mammoth';
@@ -8,7 +8,7 @@ import { useCreatorAccess } from '@/hooks/useCreatorAccess';
 import { parseCreatorMarkup, plainTextToEditorHtml, richHtmlToCreatorMarkup } from '@/lib/creatorText';
 import { CreatorExperienceEditor } from '@/components/CreatorExperienceEditor';
 import { KineticPlayer } from '@/components/KineticPlayer';
-import { DEFAULT_CREATOR_EXPERIENCE, CreatorExperience, preloadCreatorImages, resolveOwnCreatorExperienceMedia, withCreatorExperienceDefaults } from '@/lib/creatorExperience';
+import { DEFAULT_CREATOR_EXPERIENCE, CreatorExperience, preloadCreatorImages, resolveOwnCreatorExperienceMedia, stripCreatorExperienceUrls, withCreatorExperienceDefaults } from '@/lib/creatorExperience';
 import { useAuth } from '@/hooks/useAuth';
 
 const FIELD = 'w-full rounded-xl border border-border bg-card/60 px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-foreground/40 transition-colors';
@@ -25,8 +25,62 @@ export default function CreatorCreate() {
   const [status, setStatus] = useState<'idle' | 'submitting' | 'sent' | 'error'>('idle');
   const [message, setMessage] = useState('');
   const [loadingFile, setLoadingFile] = useState(false);
+  const [uploadingMedia, setUploadingMedia] = useState(false);
+  const [draftOwner, setDraftOwner] = useState<string | null>(null);
+  const [draftError, setDraftError] = useState('');
   const [experience, setExperience] = useState<CreatorExperience>(withCreatorExperienceDefaults(DEFAULT_CREATOR_EXPERIENCE));
   const [preview, setPreview] = useState<{ parsed: ReturnType<typeof parseCreatorMarkup>; experience: CreatorExperience } | null>(null);
+
+  const userId = user?.id;
+  const draftKey = userId ? `kin-creator-draft-v1:${userId}` : null;
+
+  useEffect(() => {
+    if (!userId || !draftKey) return;
+    let cancelled = false;
+    setDraftOwner(null);
+    try {
+      const saved = localStorage.getItem(draftKey);
+      const draft = saved ? JSON.parse(saved) : null;
+      const restored = withCreatorExperienceDefaults(draft?.experience);
+      setTitle(typeof draft?.title === 'string' ? draft.title : '');
+      setContentType(['essay', 'story', 'news', 'article', 'other'].includes(draft?.contentType) ? draft.contentType : 'essay');
+      setEditorHtml(typeof draft?.editorHtml === 'string' ? draft.editorHtml : '');
+      setExperience(restored);
+      setDraftOwner(userId);
+      // Signed URLs expire; the durable draft keeps storage paths, not URLs.
+      void resolveOwnCreatorExperienceMedia(restored).then((resolved) => {
+        if (!cancelled) setExperience((current) => current === restored ? resolved : current);
+      }).catch(() => {
+        if (!cancelled) setDraftError('Your draft is restored, but media previews could not load. Check your connection and reopen this page.');
+      });
+    } catch {
+      setDraftError('Your saved draft could not be opened. Draft saving is unavailable in this browser.');
+      // Do not overwrite an unreadable draft.
+    }
+    return () => { cancelled = true; };
+  }, [userId, draftKey]);
+
+  useEffect(() => {
+    if (!draftKey || draftOwner !== user?.id || status === 'sent') return;
+    const save = () => {
+      try {
+        localStorage.setItem(draftKey, JSON.stringify({ title, contentType, editorHtml, experience: stripCreatorExperienceUrls(experience) }));
+      } catch {
+        setDraftError('This browser could not save your draft. Keep a copy of your text before leaving.');
+      }
+    };
+    save();
+    window.addEventListener('pagehide', save);
+    return () => window.removeEventListener('pagehide', save);
+  }, [draftKey, draftOwner, user?.id, title, contentType, editorHtml, experience, status]);
+
+  // The contentEditable is remounted after preview/access checks. Restore it
+  // without rewriting it on every keystroke (which would move the caret).
+  useLayoutEffect(() => {
+    if (editorRef.current && editorRef.current.innerHTML !== editorHtml) {
+      editorRef.current.innerHTML = editorHtml;
+    }
+  }, [preview, isCreator, loading, draftOwner, status, editorHtml]);
 
   const setEditor = (html: string) => {
     setEditorHtml(html);
@@ -84,27 +138,32 @@ export default function CreatorCreate() {
       return;
     }
 
+    if (uploadingMedia || loadingFile || status === 'submitting') return;
     setStatus('submitting');
-    const { data, error } = await supabase.functions.invoke('submit-creator-txt', {
-      body: {
-        title: title.trim(),
-        contentType,
-        body,
-        experience,
-      },
-    });
-
-    if (error || !data?.success) {
+    try {
+      const { data, error } = await supabase.functions.invoke('submit-creator-txt', {
+        body: { title: title.trim(), contentType, body, experience: stripCreatorExperienceUrls(experience) },
+      });
+      if (error || !data?.success) {
+        let detail = data?.error;
+        if (!detail && error && 'context' in error && error.context instanceof Response) {
+          detail = (await error.context.clone().json().catch(() => ({}))).error;
+        }
+        throw new Error(detail || error?.message || 'Could not submit this TXT. Please try again.');
+      }
+      // Clear only after the server confirms that the TXT is safely stored.
+      if (draftKey) { try { localStorage.removeItem(draftKey); } catch { /* keep the submitted TXT safe */ } }
+      setStatus('sent');
+      setMessage(data.notificationSent === false
+        ? 'Your TXT is safely submitted. The review email could not be sent; KiN-TXT will need to check the submission.'
+        : 'Sent for approval. The TXT is safely stored and the review link has been sent to KiN-TXT.');
+      setTitle('');
+      setEditor('');
+      setExperience(withCreatorExperienceDefaults(DEFAULT_CREATOR_EXPERIENCE));
+    } catch (err) {
       setStatus('error');
-      setMessage(data?.error || 'Could not submit this TXT. Please try again.');
-      return;
+      setMessage(err instanceof Error ? err.message : 'Could not submit this TXT. Your draft has been kept.');
     }
-
-    setStatus('sent');
-    setMessage('Sent for approval. The TXT is safely stored and the review link has been sent to KiN-TXT.');
-    setTitle('');
-    setEditor('');
-    setExperience(withCreatorExperienceDefaults(DEFAULT_CREATOR_EXPERIENCE));
   };
 
 
@@ -161,7 +220,7 @@ export default function CreatorCreate() {
           {displayName ? `${displayName}, ` : ''}write it, then direct how it is experienced — emphasis, pace, rhythm, images and sound.
         </p>
 
-        {loading ? (
+        {loading || (user && draftOwner !== user.id && !draftError) ? (
           <div className="flex items-center justify-center py-20 text-muted-foreground gap-2">
             <Loader2 className="w-5 h-5 animate-spin" /> Checking Creator access…
           </div>
@@ -180,6 +239,7 @@ export default function CreatorCreate() {
           </div>
         ) : (
           <div className="space-y-5">
+            <p role="status" className="text-xs text-muted-foreground">{draftError || 'Draft saved automatically on this device.'}</p>
             <div className="grid sm:grid-cols-[1fr_180px] gap-3">
               <input
                 value={title}
@@ -236,6 +296,7 @@ export default function CreatorCreate() {
                 value={experience}
                 onChange={setExperience}
                 disabled={status === 'submitting'}
+                onBusyChange={setUploadingMedia}
               />
             )}
 
@@ -243,18 +304,18 @@ export default function CreatorCreate() {
               <button
                 type="button"
                 onClick={openPreview}
-                disabled={status === 'submitting' || loadingFile}
+                disabled={status === 'submitting' || loadingFile || uploadingMedia}
                 className="w-full h-12 rounded-xl border border-foreground/30 text-foreground font-display tracking-widest uppercase text-sm disabled:opacity-50 flex items-center justify-center gap-2 hover:bg-secondary"
               >
                 <Play className="w-4 h-4" /> Preview TXT
               </button>
               <button
                 onClick={submit}
-              disabled={status === 'submitting' || loadingFile}
+              disabled={status === 'submitting' || loadingFile || uploadingMedia}
               className="w-full h-12 rounded-xl bg-foreground text-background font-display tracking-widest uppercase text-sm disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {status === 'submitting' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-              {status === 'submitting' ? 'Submitting…' : 'Submit for approval'}
+              {status === 'submitting' ? 'Submitting…' : uploadingMedia ? 'Uploading media…' : 'Submit for approval'}
               </button>
             </div>
 

@@ -1,10 +1,12 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ImagePlus, Loader2, Music2, Trash2, Upload } from 'lucide-react';
+import { prepareCreatorImage } from '@/lib/creatorImageUpload';
 import { supabase } from '@/integrations/supabase/client';
 import {
   CreatorExperience,
   CreatorImageMoment,
   CreatorTrack,
+  CreatorResetInterval,
   withCreatorExperienceDefaults,
 } from '@/lib/creatorExperience';
 
@@ -14,6 +16,7 @@ interface CreatorExperienceEditorProps {
   value: CreatorExperience;
   onChange: (value: CreatorExperience) => void;
   disabled?: boolean;
+  onBusyChange?: (busy: boolean) => void;
 }
 
 const BUILT_IN_TRACKS: { id: CreatorTrack; label: string; description: string }[] = [
@@ -33,12 +36,20 @@ export function CreatorExperienceEditor({
   value,
   onChange,
   disabled = false,
+  onBusyChange,
 }: CreatorExperienceEditorProps) {
   const experience = withCreatorExperienceDefaults(value);
+  const latestExperience = useRef(experience);
+  latestExperience.current = experience;
+  const uploadLock = useRef(false);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [uploadingAudio, setUploadingAudio] = useState(false);
   const [error, setError] = useState('');
   const dragRef = useRef<{ id: string; x: number; focalX: number; width: number } | null>(null);
+
+  useEffect(() => {
+    onBusyChange?.(uploadingImage || uploadingAudio);
+  }, [uploadingImage, uploadingAudio, onBusyChange]);
 
   const paragraphOptions = useMemo(
     () => paragraphs.map((paragraph, index) => ({
@@ -58,7 +69,7 @@ export function CreatorExperienceEditor({
 
   const uploadImages = async (files?: FileList | File[]) => {
     const selected = files ? Array.from(files) : [];
-    if (!selected.length) return;
+    if (!selected.length || disabled || uploadLock.current) return;
 
     setError('');
     const remaining = Math.max(0, 12 - experience.images.length);
@@ -83,10 +94,12 @@ export function CreatorExperienceEditor({
       return;
     }
 
+    uploadLock.current = true;
     setUploadingImage(true);
     const added: CreatorImageMoment[] = [];
     try {
-      for (const file of batch) {
+      for (const original of batch) {
+        const file = await prepareCreatorImage(original);
         const id = crypto.randomUUID();
         const path = `${userId}/images/${id}-${cleanFileName(file.name)}`;
         const { error: uploadError } = await supabase.storage.from('creator-media').upload(path, file, {
@@ -109,11 +122,12 @@ export function CreatorExperienceEditor({
         });
       }
 
-      onChange({ ...experience, images: [...experience.images, ...added] });
+      onChange({ ...latestExperience.current, images: [...latestExperience.current.images, ...added] });
     } catch (err) {
-      if (added.length) onChange({ ...experience, images: [...experience.images, ...added] });
+      if (added.length) onChange({ ...latestExperience.current, images: [...latestExperience.current.images, ...added] });
       setError(err instanceof Error ? err.message : 'Could not upload one of those images.');
     } finally {
+      uploadLock.current = false;
       setUploadingImage(false);
     }
   };
@@ -132,7 +146,7 @@ export function CreatorExperienceEditor({
   };
 
   const uploadAudio = async (file?: File) => {
-    if (!file) return;
+    if (!file || disabled || uploadLock.current) return;
     setError('');
     const accepted = ['audio/mpeg', 'audio/mp4', 'audio/x-m4a', 'audio/wav', 'audio/x-wav'];
     if (!accepted.includes(file.type)) {
@@ -144,6 +158,7 @@ export function CreatorExperienceEditor({
       return;
     }
 
+    uploadLock.current = true;
     setUploadingAudio(true);
     try {
       const id = crypto.randomUUID();
@@ -159,7 +174,7 @@ export function CreatorExperienceEditor({
       if (signError) throw signError;
 
       onChange({
-        ...experience,
+        ...latestExperience.current,
         music: {
           kind: 'upload',
           storagePath: path,
@@ -171,12 +186,13 @@ export function CreatorExperienceEditor({
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not upload that audio.');
     } finally {
+      uploadLock.current = false;
       setUploadingAudio(false);
     }
   };
 
   return (
-    <div className="space-y-5">
+    <fieldset disabled={disabled || uploadingImage || uploadingAudio} className="space-y-5 min-w-0">
       <section className="rounded-2xl border border-border bg-card/45 overflow-hidden">
         <div className="p-5 border-b border-border/70 flex items-start justify-between gap-4">
           <div>
@@ -194,7 +210,7 @@ export function CreatorExperienceEditor({
               accept="image/jpeg,image/png,image/webp"
               multiple
               className="hidden"
-              disabled={disabled || uploadingImage || experience.images.length >= 12}
+              disabled={disabled || uploadingAudio || uploadingImage || experience.images.length >= 12}
               onChange={(e) => {
                 void uploadImages(e.target.files || undefined);
                 e.currentTarget.value = '';
@@ -235,6 +251,8 @@ export function CreatorExperienceEditor({
                       src={image.url}
                       alt=""
                       draggable={false}
+                      decoding="async"
+                      loading="lazy"
                       className="absolute inset-0 h-full w-full object-cover pointer-events-none"
                       style={{ objectPosition: `${image.focalX}% 50%` }}
                     />
@@ -295,7 +313,7 @@ export function CreatorExperienceEditor({
                   accept="image/jpeg,image/png,image/webp"
                   multiple
                   className="hidden"
-                  disabled={disabled || uploadingImage}
+                  disabled={disabled || uploadingAudio || uploadingImage}
                   onChange={(e) => {
                     void uploadImages(e.target.files || undefined);
                     e.currentTarget.value = '';
@@ -356,7 +374,7 @@ export function CreatorExperienceEditor({
                 type="file"
                 accept=".mp3,.m4a,.wav,audio/mpeg,audio/mp4,audio/wav"
                 className="hidden"
-                disabled={disabled || uploadingAudio}
+                disabled={disabled || uploadingImage || uploadingAudio}
                 onChange={(e) => uploadAudio(e.target.files?.[0])}
               />
             </label>
@@ -480,7 +498,7 @@ export function CreatorExperienceEditor({
               <span className="block text-[10px] uppercase tracking-widest text-muted-foreground mb-2">Reset pace</span>
               <select
                 value={experience.defaults.resetInterval}
-                onChange={(e) => onChange({ ...experience, defaults: { ...experience.defaults, resetInterval: e.target.value as any } })}
+                onChange={(e) => onChange({ ...experience, defaults: { ...experience.defaults, resetInterval: e.target.value as CreatorResetInterval } })}
                 className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-sm"
               >
                 <option value="1">Every sentence</option>
@@ -496,6 +514,6 @@ export function CreatorExperienceEditor({
       </section>
 
       {error && <p className="text-sm text-destructive">{error}</p>}
-    </div>
+    </fieldset>
   );
 }

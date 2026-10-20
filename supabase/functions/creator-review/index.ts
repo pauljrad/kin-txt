@@ -66,7 +66,7 @@ serve(async (req) => {
 
     const { data: submission, error: loadError } = await admin
       .from("creator_submissions")
-      .select("id, creator_user_id, creator_name, creator_email, content_type, title, body, word_count, status, submitted_at, experience")
+      .select("id, creator_user_id, creator_name, creator_email, content_type, title, body, word_count, status, submitted_at, experience, review_notes")
       .eq("approval_token_hash", tokenHash)
       .eq("status", "pending")
       .maybeSingle();
@@ -92,10 +92,34 @@ serve(async (req) => {
           wordCount: submission.word_count,
           submittedAt: submission.submitted_at,
           experience: resolvedExperience,
+          reviewNotes: submission.review_notes || "",
         },
       }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (action === "save") {
+      const title = typeof payload?.title === "string" ? payload.title.trim() : "";
+      const body = typeof payload?.body === "string" ? payload.body.trim() : "";
+      const notes = typeof payload?.reviewNotes === "string" ? payload.reviewNotes : "";
+      const wordCount = body.replace(/[*_]/g, " ").split(/\s+/).filter(Boolean).length;
+      if (!title || title.length > 220 || body.length > 150000 || wordCount < 20 || notes.length > 10000) {
+        return new Response(JSON.stringify({ error: "Use a title of up to 220 characters, at least 20 words, and notes of up to 10,000 characters." }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      // Retain the token while reviewing: save/preview can be repeated. Only a
+      // final approve/reject consumes the private review credential.
+      const { data: saved, error: saveError } = await admin.from("creator_submissions")
+        .update({ title, body, word_count: wordCount, review_notes: notes })
+        .eq("id", submission.id).eq("approval_token_hash", tokenHash).eq("status", "pending")
+        .select("id").maybeSingle();
+      if (saveError) throw saveError;
+      if (!saved) throw new Error("This review has already been completed. Reload the page.");
+      return new Response(JSON.stringify({ success: true, status: "pending", wordCount }), {
+        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
