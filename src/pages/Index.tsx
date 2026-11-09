@@ -94,7 +94,7 @@ const Index = () => {
     setOnboardingReopened(false);
   };
   const [isOnline, setIsOnline] = useState(navigator.onLine);
-  const [activeTab, setActiveTab] = useState<TabMode>(() => searchParams.has('book') ? 'library' : 'my-texts');
+  const [activeTab, setActiveTab] = useState<TabMode>('my-texts');
   const [activeDocument, setActiveDocument] = useState<ActiveDocument | null>(null);
   const [sharingDoc, setSharingDoc] = useState<SavedDocument | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
