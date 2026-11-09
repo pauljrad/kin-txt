@@ -1,4 +1,5 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { BookOpen, Loader2, Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -337,6 +338,16 @@ export function EbookLibrary({ onSelectEbook }: EbookLibraryProps) {
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedBook, setSelectedBook] = useState<Ebook | null>(null);
+
+  const [params, setParams] = useSearchParams();
+  useEffect(() => {
+    const id = params.get('book');
+    if (!id) return;
+    setSelectedBook(AVAILABLE_EBOOKS.find(book => book.id === id) ?? null);
+    const remaining = new URLSearchParams(params);
+    remaining.delete('book');
+    setParams(remaining, { replace: true });
+  }, [params, setParams]);
 
   const filteredEbooks = useMemo(() => {
     if (!searchQuery.trim()) return AVAILABLE_EBOOKS;
