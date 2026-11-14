@@ -129,7 +129,41 @@ serve(async (req) => {
         p_notes: typeof payload.reviewNotes === "string" ? payload.reviewNotes : "",
       });
       if (error) throw error;
-      return new Response(JSON.stringify(data), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      let emailSent: boolean | undefined;
+      if (action === "approve") {
+        emailSent = false;
+        try {
+          const { data: account, error: accountError } = await admin.auth.admin.getUserById(submission.creator_user_id);
+          if (accountError || !account.user?.email) throw new Error("The creator account has no deliverable email address.");
+          const email = account.user.email;
+          for (let attempt = 0; attempt < 3; attempt++) {
+            try {
+              const response = await fetch("https://api.resend.com/emails", {
+                method: "POST",
+                headers: { Authorization: `Bearer ${Deno.env.get("RESEND_API_KEY") ?? ""}`, "Content-Type": "application/json",
+                  "Idempotency-Key": `creator-published/${data.publicationId}` },
+                body: JSON.stringify({
+                  from: "KiN-TXT Creators <hello@kin-txt.com>", to: [email],
+                  subject: "Your TXT has been published",
+                  text: `Your TXT, “${submission.title}”, has been published on KiN-TXT.\n\nYou can find it in News → KiN-Creators.\n\nhttps://kin-txt.com/home\n\nThank you for sharing your writing.\nKiN-TXT`,
+                }),
+                signal: AbortSignal.timeout(10000),
+              });
+              if (!response.ok) throw new Error(`Email provider returned ${response.status}`);
+              emailSent = true;
+              break;
+            } catch (err) {
+              if (attempt === 2) throw err;
+              await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+          }
+          await admin.from("creator_submissions").update({ publication_email_status: "sent", publication_email_error: null }).eq("id", submission.id);
+        } catch (err) {
+          console.error("Publication email failed:", err);
+          await admin.from("creator_submissions").update({ publication_email_status: "failed", publication_email_error: (err as Error).message }).eq("id", submission.id);
+        }
+      }
+      return new Response(JSON.stringify({ ...data, emailSent }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     return new Response(JSON.stringify({ error: "Unknown review action." }), {

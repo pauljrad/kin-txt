@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -8,11 +8,27 @@ export interface CreatorSubmission {
   id: string; title: string; body: string; content_type: string; status: string;
   submitted_at: string; feedback: { notes: string; decision: string; sentAt: string }[];
 }
-const labels: Record<string,string> = {pending:'Under review', approved:'Published', rejected:'Rejected', revision_required:'Resubmission requested'};
+const labels: Record<string,string> = {pending:'Under review', approved:'Published', rejected:'Rejected', revision_required:'Resubmission requested', deleted:'Deleted'};
 export function CreatorSubmissions() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [params] = useSearchParams();
+  const queryClient = useQueryClient();
+  const [deleting,setDeleting] = useState<string | null>(null);
+  const [confirming,setConfirming] = useState<string | null>(null);
+  const [deleteError,setDeleteError] = useState('');
+  const remove = async (id: string) => {
+    if (deleting) return;
+    setDeleting(id); setDeleteError('');
+    try {
+      const {data,error} = await supabase.functions.invoke('delete-creator-publication',{body:{submissionId:id}});
+      if(error || !data?.success) throw new Error(data?.error || 'Could not delete this TXT. Please try again.');
+      setConfirming(null);
+      await queryClient.invalidateQueries({queryKey:['creator-submissions',user?.id]});
+      await refetch();
+    } catch(err) { setDeleteError(err instanceof Error ? err.message : 'Could not delete this TXT.'); }
+    finally {setDeleting(null);}
+  };
   const [filter,setFilter] = useState('all');
   const {data=[],isPending,error,refetch} = useQuery({
     queryKey:['creator-submissions',user?.id], enabled:!!user,
@@ -28,6 +44,7 @@ export function CreatorSubmissions() {
   if(isPending) return <p role="status">Loading your submissions…</p>;
   if(error) return <div role="alert">Could not load your submissions. <button onClick={()=>refetch()}>Try again</button></div>;
   return <section aria-label="My submissions" className="space-y-4">
+    {deleteError && <p role="alert" className="text-sm text-destructive">{deleteError}</p>}
     <label className="block text-sm">Show <select className="ml-2 bg-background border border-border rounded-lg p-2" value={filter} onChange={e=>setFilter(e.target.value)}>
       <option value="all">All submissions</option>{Object.entries(labels).map(([value,label])=><option key={value} value={value}>{label}</option>)}
     </select></label>
@@ -45,6 +62,13 @@ export function CreatorSubmissions() {
         </div>)}
         <p className="whitespace-pre-wrap text-sm leading-7 mt-4">{s.body}</p>
       </details>
+      {s.status==='approved' && (confirming===s.id ? <div role="alertdialog" aria-label="Delete published TXT" aria-describedby={`delete-description-${s.id}`} className="rounded-xl border border-border p-4 space-y-3">
+        <p id={`delete-description-${s.id}`} className="text-sm">Delete “{s.title}” from KiN-Creators? It will no longer be available in the public feed. Your private submission history will remain.</p>
+        <div className="flex gap-3">
+          <button disabled={!!deleting} onClick={()=>remove(s.id)} className="rounded-lg bg-destructive text-destructive-foreground px-4 py-2 text-sm disabled:opacity-50">{deleting===s.id ? 'Deleting…' : 'Delete published TXT'}</button>
+          <button disabled={!!deleting} onClick={()=>setConfirming(null)} className="rounded-lg border border-border px-4 py-2 text-sm">Cancel</button>
+        </div>
+      </div> : <button onClick={()=>{setConfirming(s.id);setDeleteError('');}} className="rounded-xl border border-border px-4 py-2 text-sm text-destructive">Delete published TXT</button>)}
       {s.status==='revision_required' && <button className="rounded-xl bg-foreground text-background px-4 py-2 text-sm" onClick={()=>navigate(`/create?revision=${s.id}`)}>Revise & resubmit</button>}
     </article>)}
   </section>;

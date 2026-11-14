@@ -54,6 +54,7 @@ serve(async (req) => {
       .from("creator_publications")
       .select("id, experience, published_at")
       .eq("id", publicationId)
+      .is("deleted_at", null)
       .not("published_at", "is", null)
       .maybeSingle();
 

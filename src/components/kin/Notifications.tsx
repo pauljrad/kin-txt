@@ -341,14 +341,14 @@ export const Notifications = ({ onOpenDocument, onStartPongGame }: {
                         >
                             <div className="flex w-full justify-between items-start mb-1">
                                 <span className="font-medium text-[10px] uppercase tracking-wider text-muted-foreground">
-                                    {notification.type === 'creator_feedback' ? 'Notes from editor' : notification.type.replace('_', ' ')}
+                                    {notification.type === 'creator_feedback' ? (notification.payload.decision === 'approved' ? 'Your TXT has been published' : 'Notes from editor') : notification.type.replace('_', ' ')}
                                 </span>
                                 <span className="text-[10px] text-muted-foreground opacity-70">
                                     {new Date(notification.created_at).toLocaleDateString()}
                                 </span>
                             </div>
                             <p className="text-sm mb-2 text-foreground">
-                                {notification.type === 'creator_feedback' && `${notification.payload.title} — ${notification.payload.decision === 'rejected' ? 'Rejected' : 'Resubmission requested'}`}
+                                {notification.type === 'creator_feedback' && `${notification.payload.title} — ${notification.payload.decision === 'approved' ? 'Published' : notification.payload.decision === 'rejected' ? 'Rejected' : 'Resubmission requested'}`}
                                 {notification.type === 'kin_request' && (
                                     <>
                                         <span className="font-bold text-foreground">{notification.senderProfile?.display_name || 'Someone'}</span> wants to connect.
@@ -382,7 +382,7 @@ export const Notifications = ({ onOpenDocument, onStartPongGame }: {
                                 )}
                             </p>
 
-                            {notification.type === 'creator_feedback' && <Button size="sm" variant="outline" onClick={() => navigate(`/create?tab=submissions&submission=${notification.payload.submission_id}`)}>Read editor notes</Button>}
+                            {notification.type === 'creator_feedback' && <Button size="sm" variant="outline" onClick={() => navigate(`/create?tab=submissions&submission=${notification.payload.submission_id}`)}>{notification.payload.decision === 'approved' ? 'View submission' : 'Read editor notes'}</Button>}
                             {/* Actions for Request & Share & Club */}
                             {['kin_request', 'shared_item', 'club_invitation', 'book_suggestion'].includes(notification.type) && (
                                 <div className="flex gap-2 w-full mt-1">

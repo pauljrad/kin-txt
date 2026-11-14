@@ -40,3 +40,6 @@ verify_jwt = false
 # delete-account requires an authenticated caller — keep JWT verification on.
 [functions.delete-account]
 verify_jwt = true
+
+[functions.delete-creator-publication]
+verify_jwt = false # Function validates the caller with auth.getUser before deleting.

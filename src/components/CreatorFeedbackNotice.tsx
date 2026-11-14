@@ -16,8 +16,8 @@ export function CreatorFeedbackNotice() {
       if(shown.current.has(n.id)) continue;
       shown.current.add(n.id);
       const p=n.payload as {title:string;submission_id:string;decision:string};
-      toast('Notes from editor',{id:n.id,description:`${p.title} — ${p.decision==='rejected'?'Rejected':'Resubmission requested'}`,duration:12000,
-        action:{label:'Read notes',onClick:()=>{
+      toast(p.decision === 'approved' ? 'Your TXT has been published' : 'Notes from editor',{id:n.id,description:`${p.title} — ${p.decision==='approved'?'Published':p.decision==='rejected'?'Rejected':'Resubmission requested'}`,duration:12000,
+        action:{label:p.decision==='approved'?'View submission':'Read notes',onClick:()=>{
           navigate(`/create?tab=submissions&submission=${p.submission_id}`);
           void supabase.from('notifications').update({is_read:true}).eq('id',n.id);
         }}});

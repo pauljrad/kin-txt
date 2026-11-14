@@ -25,6 +25,7 @@ export default function CreatorReview() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [result, setResult] = useState<'approved' | 'rejected' | 'revision_required' | null>(null);
+  const [publicationEmailSent, setPublicationEmailSent] = useState<boolean | undefined>();
   const [previewing, setPreviewing] = useState(false);
   const [saveMessage, setSaveMessage] = useState('');
 
@@ -73,6 +74,7 @@ export default function CreatorReview() {
       }
       const { data, error: fnError } = await supabase.functions.invoke('creator-review', { body: { token, action, reviewNotes: submission.reviewNotes || '' } });
       if (fnError || !data?.success) throw new Error(data?.error || 'Could not complete the review.');
+      setPublicationEmailSent(data.emailSent);
       setResult(data.status);
       window.history.replaceState({}, '', `${window.location.pathname}${window.location.search}`);
     } catch (err) {
@@ -114,6 +116,9 @@ export default function CreatorReview() {
             <p className="text-sm text-muted-foreground">
               {result === 'approved' ? 'This TXT is now live in Journal → KiN-Creators.' : result === 'revision_required' ? 'The creator has been notified and can revise this TXT in My submissions.' : 'The creator has been notified of the rejection and can read your notes in My submissions.'}
             </p>
+            {result === 'approved' && <p role="status" className="mt-3 text-sm text-muted-foreground">
+              {publicationEmailSent === false ? 'The TXT is published and the creator has an in-site notification, but the email could not be sent.' : 'The creator has been notified and emailed at their account address.'}
+            </p>}
           </div>
         ) : !submission ? (
           <div className="rounded-2xl border border-border bg-card/60 p-8">
