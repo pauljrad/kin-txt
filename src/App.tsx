@@ -1,3 +1,4 @@
+import { CreatorFeedbackNotice } from '@/components/CreatorFeedbackNotice';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -107,6 +108,7 @@ const App = () => (
             <AuthProvider>
               <Toaster />
               <Sonner />
+              <CreatorFeedbackNotice />
               <AppContent />
             </AuthProvider>
           </BrowserRouter>

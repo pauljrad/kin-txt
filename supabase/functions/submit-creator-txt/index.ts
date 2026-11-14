@@ -151,23 +151,18 @@ serve(async (req) => {
     const tokenHash = await sha256Hex(token);
     const creatorEmail = user.email ?? "";
 
-    const { data: submission, error: insertError } = await admin
-      .from("creator_submissions")
-      .insert({
-        creator_user_id: user.id,
-        creator_name: creator.display_name,
-        creator_email: creatorEmail,
-        content_type: contentType,
-        title,
-        body,
-        word_count: wordCount,
-        status: "pending",
-        approval_token_hash: tokenHash,
-        notification_status: "pending",
-        experience,
-      })
-      .select("id")
-      .single();
+    const submissionId = typeof payload.submissionId === "string" ? payload.submissionId : null;
+    const values = {
+      creator_user_id: user.id, creator_name: creator.display_name, creator_email: creatorEmail,
+      content_type: contentType, title, body, word_count: wordCount, status: "pending",
+      approval_token_hash: tokenHash, notification_status: "pending", experience,
+      submitted_at: new Date().toISOString(), reviewed_at: null, review_notes: "",
+    };
+    // Conditional update preserves the history and prevents duplicate resubmits.
+    const { data: submission, error: insertError } = submissionId
+      ? await admin.from("creator_submissions").update(values).eq("id", submissionId)
+          .eq("creator_user_id", user.id).eq("status", "revision_required").select("id").maybeSingle()
+      : await admin.from("creator_submissions").insert(values).select("id").single();
 
     if (insertError || !submission) {
       console.error("Could not store Creator TXT:", insertError);
@@ -184,7 +179,7 @@ serve(async (req) => {
         headers: {
           Authorization: `Bearer ${Deno.env.get("RESEND_API_KEY") ?? ""}`,
           "Content-Type": "application/json",
-          "Idempotency-Key": `creator-submission/${submission.id}`,
+          "Idempotency-Key": `creator-submission/${submission.id}/${tokenHash}`,
         },
         body: JSON.stringify({
           from: "KiN-TXT Creators <hello@kin-txt.com>",

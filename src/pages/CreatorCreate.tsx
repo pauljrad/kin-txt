@@ -1,5 +1,7 @@
+import { CreatorSubmissions } from '@/components/CreatorSubmissions';
+import { Notifications } from '@/components/kin/Notifications';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, CheckCircle2, FileUp, Italic, Loader2, Play, Send } from 'lucide-react';
 import mammoth from 'mammoth';
 import { supabase } from '@/integrations/supabase/client';
@@ -16,6 +18,9 @@ const FIELD = 'w-full rounded-xl border border-border bg-card/60 px-4 py-3 text-
 
 export default function CreatorCreate() {
   const navigate = useNavigate();
+  const [params, setParams] = useSearchParams();
+  const revisionId = params.get('revision');
+  const submissionsTab = params.get('tab') === 'submissions';
   const { isCreator, displayName, loading } = useCreatorAccess();
   const { user } = useAuth();
   const editorRef = useRef<HTMLDivElement>(null);
@@ -32,36 +37,50 @@ export default function CreatorCreate() {
   const [preview, setPreview] = useState<{ parsed: ReturnType<typeof parseCreatorMarkup>; experience: CreatorExperience } | null>(null);
 
   const userId = user?.id;
-  const draftKey = userId ? `kin-creator-draft-v1:${userId}` : null;
+  const draftKey = userId ? `kin-creator-draft-v1:${userId}${revisionId ? ':' + revisionId : ''}` : null;
 
   useEffect(() => {
     if (!userId || !draftKey) return;
     let cancelled = false;
     setDraftOwner(null);
-    try {
+    setStatus('idle');
+    setMessage('');
+    setDraftError('');
+    const restore = async () => { try {
       const saved = localStorage.getItem(draftKey);
-      const draft = saved ? JSON.parse(saved) : null;
+      let draft = saved ? JSON.parse(saved) : null;
+      if (revisionId) {
+        const { data, error } = await supabase.from('creator_submissions' as any)
+          .select('id,title,body,content_type,status,experience').eq('id', revisionId).eq('creator_user_id',userId).maybeSingle();
+        const original = data as any;
+        if (error || !original || original.status !== 'revision_required') throw new Error('This TXT is not available for resubmission. Open My submissions to check its status.');
+        if (!draft) draft = { title:original.title, contentType:original.content_type, editorHtml:plainTextToEditorHtml(original.body), experience:original.experience };
+      }
+      if (cancelled) return;
       const restored = withCreatorExperienceDefaults(draft?.experience);
       setTitle(typeof draft?.title === 'string' ? draft.title : '');
       setContentType(['essay', 'story', 'news', 'article', 'other'].includes(draft?.contentType) ? draft.contentType : 'essay');
       setEditorHtml(typeof draft?.editorHtml === 'string' ? draft.editorHtml : '');
       setExperience(restored);
-      setDraftOwner(userId);
+      setDraftOwner(draftKey);
       // Signed URLs expire; the durable draft keeps storage paths, not URLs.
       void resolveOwnCreatorExperienceMedia(restored).then((resolved) => {
         if (!cancelled) setExperience((current) => current === restored ? resolved : current);
       }).catch(() => {
         if (!cancelled) setDraftError('Your draft is restored, but media previews could not load. Check your connection and reopen this page.');
       });
-    } catch {
-      setDraftError('Your saved draft could not be opened. Draft saving is unavailable in this browser.');
+    } catch (err) {
+      if (cancelled) return;
+      setDraftError(err instanceof Error ? err.message : 'Your saved draft could not be opened.');
       // Do not overwrite an unreadable draft.
     }
+    };
+    void restore();
     return () => { cancelled = true; };
-  }, [userId, draftKey]);
+  }, [userId, draftKey, revisionId]);
 
   useEffect(() => {
-    if (!draftKey || draftOwner !== user?.id || status === 'sent') return;
+    if (!draftKey || draftOwner !== draftKey || status === 'sent') return;
     const save = () => {
       try {
         localStorage.setItem(draftKey, JSON.stringify({ title, contentType, editorHtml, experience: stripCreatorExperienceUrls(experience) }));
@@ -80,7 +99,7 @@ export default function CreatorCreate() {
     if (editorRef.current && editorRef.current.innerHTML !== editorHtml) {
       editorRef.current.innerHTML = editorHtml;
     }
-  }, [preview, isCreator, loading, draftOwner, status, editorHtml]);
+  }, [preview, isCreator, loading, draftOwner, status, editorHtml, submissionsTab]);
 
   const setEditor = (html: string) => {
     setEditorHtml(html);
@@ -138,11 +157,12 @@ export default function CreatorCreate() {
       return;
     }
 
+    if (draftOwner !== draftKey) return;
     if (uploadingMedia || loadingFile || status === 'submitting') return;
     setStatus('submitting');
     try {
       const { data, error } = await supabase.functions.invoke('submit-creator-txt', {
-        body: { title: title.trim(), contentType, body, experience: stripCreatorExperienceUrls(experience) },
+        body: { submissionId: revisionId, title: title.trim(), contentType, body, experience: stripCreatorExperienceUrls(experience) },
       });
       if (error || !data?.success) {
         let detail = data?.error;
@@ -215,12 +235,16 @@ export default function CreatorCreate() {
 
       <main className="max-w-2xl mx-auto">
         <p className="text-xs uppercase tracking-[0.24em] text-muted-foreground mb-2">KiN-Creator</p>
-        <h1 className="font-display text-4xl tracking-wide mb-2">Create a TXT</h1>
+        <div className="flex justify-between items-center"><h1 className="font-display text-4xl tracking-wide mb-2">{submissionsTab ? 'My submissions' : revisionId ? 'Revise your TXT' : 'Create a TXT'}</h1><Notifications /></div>
         <p className="text-sm text-muted-foreground leading-relaxed mb-8">
           {displayName ? `${displayName}, ` : ''}write it, then direct how it is experienced — emphasis, pace, rhythm, images and sound.
         </p>
 
-        {loading || (user && draftOwner !== user.id && !draftError) ? (
+        {user && <nav aria-label="Creator pages" className="flex gap-2 mb-6">
+          <button aria-current={!submissionsTab ? 'page' : undefined} onClick={() => { setParams({}); setStatus('idle'); }} className={`rounded-xl px-4 py-2 text-sm ${!submissionsTab ? 'bg-foreground text-background' : 'border border-border'}`}>Create a TXT</button>
+          <button aria-current={submissionsTab ? 'page' : undefined} onClick={() => setParams({tab:'submissions'})} className={`rounded-xl px-4 py-2 text-sm ${submissionsTab ? 'bg-foreground text-background' : 'border border-border'}`}>My submissions</button>
+        </nav>}
+        {user && submissionsTab ? <CreatorSubmissions /> : loading || (user && draftOwner !== draftKey && !draftError) ? (
           <div className="flex items-center justify-center py-20 text-muted-foreground gap-2">
             <Loader2 className="w-5 h-5 animate-spin" /> Checking Creator access…
           </div>
@@ -233,7 +257,7 @@ export default function CreatorCreate() {
             <CheckCircle2 className="w-8 h-8 mx-auto mb-3" />
             <h2 className="font-display text-2xl mb-2">TXT submitted</h2>
             <p className="text-sm text-muted-foreground leading-relaxed mb-6">{message}</p>
-            <button onClick={() => { setStatus('idle'); setMessage(''); }} className="px-5 py-2.5 rounded-xl bg-foreground text-background font-medium">
+            <button onClick={() => { setParams({}); setStatus('idle'); setMessage(''); }} className="px-5 py-2.5 rounded-xl bg-foreground text-background font-medium">
               Create another
             </button>
           </div>
@@ -304,14 +328,14 @@ export default function CreatorCreate() {
               <button
                 type="button"
                 onClick={openPreview}
-                disabled={status === 'submitting' || loadingFile || uploadingMedia}
+                disabled={status === 'submitting' || loadingFile || uploadingMedia || draftOwner !== draftKey}
                 className="w-full h-12 rounded-xl border border-foreground/30 text-foreground font-display tracking-widest uppercase text-sm disabled:opacity-50 flex items-center justify-center gap-2 hover:bg-secondary"
               >
                 <Play className="w-4 h-4" /> Preview TXT
               </button>
               <button
                 onClick={submit}
-              disabled={status === 'submitting' || loadingFile || uploadingMedia}
+              disabled={status === 'submitting' || loadingFile || uploadingMedia || draftOwner !== draftKey}
               className="w-full h-12 rounded-xl bg-foreground text-background font-display tracking-widest uppercase text-sm disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {status === 'submitting' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}

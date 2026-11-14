@@ -192,7 +192,7 @@ export type Database = {
         Row: {
           id: string
           user_id: string
-          type: 'kin_request' | 'kin_accepted' | 'shared_item' | 'pong_challenge'
+          type: 'kin_request' | 'kin_accepted' | 'shared_item' | 'pong_challenge' | 'pong_accept' | 'pong_ready' | 'club_invitation' | 'book_suggestion' | 'creator_feedback'
           payload: Json | null
           is_read: boolean
           created_at: string
@@ -200,7 +200,7 @@ export type Database = {
         Insert: {
           id?: string
           user_id: string
-          type: 'kin_request' | 'kin_accepted' | 'shared_item' | 'pong_challenge'
+          type: 'kin_request' | 'kin_accepted' | 'shared_item' | 'pong_challenge' | 'pong_accept' | 'pong_ready' | 'club_invitation' | 'book_suggestion' | 'creator_feedback'
           payload?: Json | null
           is_read?: boolean
           created_at?: string
@@ -208,7 +208,7 @@ export type Database = {
         Update: {
           id?: string
           user_id?: string
-          type?: 'kin_request' | 'kin_accepted' | 'shared_item' | 'pong_challenge'
+          type?: 'kin_request' | 'kin_accepted' | 'shared_item' | 'pong_challenge' | 'pong_accept' | 'pong_ready' | 'club_invitation' | 'book_suggestion' | 'creator_feedback'
           payload?: Json | null
           is_read?: boolean
           created_at?: string

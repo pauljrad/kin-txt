@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -16,7 +17,7 @@ import { useToast } from "@/components/ui/use-toast";
 
 interface Notification {
     id: string;
-    type: 'kin_request' | 'kin_accepted' | 'shared_item' | 'pong_challenge' | 'pong_accept' | 'club_invitation' | 'book_suggestion';
+    type: 'creator_feedback' | 'kin_request' | 'kin_accepted' | 'shared_item' | 'pong_challenge' | 'pong_accept' | 'club_invitation' | 'book_suggestion';
     payload: any;
     is_read: boolean;
     created_at: string;
@@ -28,6 +29,7 @@ export const Notifications = ({ onOpenDocument, onStartPongGame }: {
     onOpenDocument?: (id: string) => void;
     onStartPongGame?: (sessionId: string, opponentId: string, isHost: boolean) => void;
 }) => {
+    const navigate = useNavigate();
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const { user } = useAuth();
     const { toast } = useToast();
@@ -123,7 +125,7 @@ export const Notifications = ({ onOpenDocument, onStartPongGame }: {
                 async (payload) => {
                     // Re-fetch to simpler handle enrichment logic
                     await fetchNotifications();
-                    toast({
+                    if ((payload.new as any)?.type !== 'creator_feedback') toast({
                         title: "New Notification",
                         description: "You have a new update in your KiN network.",
                     });
@@ -339,13 +341,14 @@ export const Notifications = ({ onOpenDocument, onStartPongGame }: {
                         >
                             <div className="flex w-full justify-between items-start mb-1">
                                 <span className="font-medium text-[10px] uppercase tracking-wider text-muted-foreground">
-                                    {notification.type.replace('_', ' ')}
+                                    {notification.type === 'creator_feedback' ? 'Notes from editor' : notification.type.replace('_', ' ')}
                                 </span>
                                 <span className="text-[10px] text-muted-foreground opacity-70">
                                     {new Date(notification.created_at).toLocaleDateString()}
                                 </span>
                             </div>
                             <p className="text-sm mb-2 text-foreground">
+                                {notification.type === 'creator_feedback' && `${notification.payload.title} — ${notification.payload.decision === 'rejected' ? 'Rejected' : 'Resubmission requested'}`}
                                 {notification.type === 'kin_request' && (
                                     <>
                                         <span className="font-bold text-foreground">{notification.senderProfile?.display_name || 'Someone'}</span> wants to connect.
@@ -379,6 +382,7 @@ export const Notifications = ({ onOpenDocument, onStartPongGame }: {
                                 )}
                             </p>
 
+                            {notification.type === 'creator_feedback' && <Button size="sm" variant="outline" onClick={() => navigate(`/create?tab=submissions&submission=${notification.payload.submission_id}`)}>Read editor notes</Button>}
                             {/* Actions for Request & Share & Club */}
                             {['kin_request', 'shared_item', 'club_invitation', 'book_suggestion'].includes(notification.type) && (
                                 <div className="flex gap-2 w-full mt-1">

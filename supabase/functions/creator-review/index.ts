@@ -123,61 +123,13 @@ serve(async (req) => {
       });
     }
 
-    if (action === "approve") {
-      const { data: publication, error: publishError } = await admin
-        .from("creator_publications")
-        .upsert({
-          submission_id: submission.id,
-          creator_user_id: submission.creator_user_id,
-          creator_name: submission.creator_name,
-          content_type: submission.content_type,
-          title: submission.title,
-          body: submission.body,
-          word_count: submission.word_count,
-          experience: submission.experience ?? {},
-        }, { onConflict: "submission_id" })
-        .select("id")
-        .single();
-
-      if (publishError || !publication) throw publishError ?? new Error("Could not publish this TXT.");
-
-      const { error: reviewError } = await admin
-        .from("creator_submissions")
-        .update({
-          status: "approved",
-          approval_token_hash: null,
-          reviewed_at: new Date().toISOString(),
-        })
-        .eq("id", submission.id)
-        .eq("approval_token_hash", tokenHash)
-        .eq("status", "pending");
-
-      if (reviewError) throw reviewError;
-
-      return new Response(JSON.stringify({ success: true, status: "approved", publicationId: publication.id }), {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+    if (["approve", "reject", "request_revision"].includes(action)) {
+      const { data, error } = await admin.rpc("complete_creator_review", {
+        p_id: submission.id, p_hash: tokenHash, p_action: action,
+        p_notes: typeof payload.reviewNotes === "string" ? payload.reviewNotes : "",
       });
-    }
-
-    if (action === "reject") {
-      const { error: rejectError } = await admin
-        .from("creator_submissions")
-        .update({
-          status: "rejected",
-          approval_token_hash: null,
-          reviewed_at: new Date().toISOString(),
-        })
-        .eq("id", submission.id)
-        .eq("approval_token_hash", tokenHash)
-        .eq("status", "pending");
-
-      if (rejectError) throw rejectError;
-
-      return new Response(JSON.stringify({ success: true, status: "rejected" }), {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      if (error) throw error;
+      return new Response(JSON.stringify(data), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     return new Response(JSON.stringify({ error: "Unknown review action." }), {

@@ -24,7 +24,7 @@ export default function CreatorReview() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const [result, setResult] = useState<'approved' | 'rejected' | null>(null);
+  const [result, setResult] = useState<'approved' | 'rejected' | 'revision_required' | null>(null);
   const [previewing, setPreviewing] = useState(false);
   const [saveMessage, setSaveMessage] = useState('');
 
@@ -52,7 +52,7 @@ export default function CreatorReview() {
     load();
   }, [token]);
 
-  const review = async (action: 'approve' | 'reject' | 'save') => {
+  const review = async (action: 'approve' | 'reject' | 'save' | 'request_revision') => {
     if (!submission || busy) return;
     setBusy(true);
     setError('');
@@ -61,7 +61,7 @@ export default function CreatorReview() {
     try {
       // Persist edits and notes before publishing; rejecting does not require
       // valid edited text and can still close an unwanted submission.
-      if (action !== 'reject') {
+      if (action === 'approve' || action === 'save') {
         const { data, error: saveError } = await supabase.functions.invoke('creator-review', {
           body: { token, action: 'save', title: submission.title, body: submission.body, reviewNotes: submission.reviewNotes || '' },
         });
@@ -71,9 +71,9 @@ export default function CreatorReview() {
           return;
         }
       }
-      const { data, error: fnError } = await supabase.functions.invoke('creator-review', { body: { token, action } });
+      const { data, error: fnError } = await supabase.functions.invoke('creator-review', { body: { token, action, reviewNotes: submission.reviewNotes || '' } });
       if (fnError || !data?.success) throw new Error(data?.error || 'Could not complete the review.');
-      setResult(action === 'approve' ? 'approved' : 'rejected');
+      setResult(data.status);
       window.history.replaceState({}, '', `${window.location.pathname}${window.location.search}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not complete the review.');
@@ -110,9 +110,9 @@ export default function CreatorReview() {
         ) : result ? (
           <div className="rounded-2xl border border-border bg-card/60 p-8 text-center">
             {result === 'approved' ? <CheckCircle2 className="w-9 h-9 mx-auto mb-4" /> : <XCircle className="w-9 h-9 mx-auto mb-4" />}
-            <h1 className="font-display text-3xl mb-2">{result === 'approved' ? 'Published' : 'Not published'}</h1>
+            <h1 className="font-display text-3xl mb-2">{result === 'approved' ? 'Published' : result === 'revision_required' ? 'Sent for resubmission' : 'Rejected'}</h1>
             <p className="text-sm text-muted-foreground">
-              {result === 'approved' ? 'This TXT is now live in Journal → KiN-Creators.' : 'This TXT has been rejected and the review link is now closed.'}
+              {result === 'approved' ? 'This TXT is now live in Journal → KiN-Creators.' : result === 'revision_required' ? 'The creator has been notified and can revise this TXT in My submissions.' : 'The creator has been notified of the rejection and can read your notes in My submissions.'}
             </p>
           </div>
         ) : !submission ? (
@@ -165,26 +165,28 @@ export default function CreatorReview() {
               </label>
               <p className="text-xs text-muted-foreground">Keep *asterisks* around soft/italic words and ALL CAPS for emphasis. Preserve paragraph breaks to keep image moments in place. Preview shows your current edits.</p>
               <label className="block text-sm">
-                Private review notes
-                <textarea aria-label="Private review notes" value={submission.reviewNotes || ''} maxLength={10000} disabled={busy}
+                Notes from editor
+                <textarea aria-label="Notes from editor" value={submission.reviewNotes || ''} maxLength={10000} disabled={busy}
                   onChange={(e) => { setSaveMessage(''); setSubmission({ ...submission, reviewNotes: e.target.value }); }}
                   className="mt-2 w-full min-h-[100px] rounded-xl border border-border bg-background px-3 py-3 text-sm" />
               </label>
-              <p className="text-xs text-muted-foreground">Notes stay with this submission. They are not published or emailed to the writer.</p>
+              <p className="text-xs text-muted-foreground">Save keeps notes as a private draft. Choose a send action below to notify the creator. Notes are never published with the TXT.</p>
               <button onClick={() => review('save')} disabled={busy}
-                className="w-full h-11 rounded-xl border border-border hover:bg-secondary disabled:opacity-50">Save edits & notes</button>
+                className="w-full h-11 rounded-xl border border-border hover:bg-secondary disabled:opacity-50">Save edits & draft notes</button>
               {saveMessage && <p role="status" className="text-sm text-muted-foreground">{saveMessage}</p>}
             </div>
 
             {error && <p className="text-sm text-destructive mb-4">{error}</p>}
 
-            <div className="grid sm:grid-cols-2 gap-3">
+            <div className="grid gap-3">
+              <button onClick={() => review('request_revision')} disabled={busy || !submission.reviewNotes?.trim()}
+                className="h-12 rounded-xl border border-border hover:bg-secondary disabled:opacity-50">Send notes for resubmission</button>
               <button
                 onClick={() => review('reject')}
-                disabled={busy}
+                disabled={busy || !submission.reviewNotes?.trim()}
                 className="h-12 rounded-xl border border-border text-muted-foreground hover:text-foreground hover:bg-secondary disabled:opacity-50"
               >
-                Reject
+                Send notes for rejection
               </button>
               <button
                 onClick={() => review('approve')}
