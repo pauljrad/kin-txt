@@ -7,6 +7,7 @@ import { updateDocumentReadingTime as updateLocalReadingTime } from '@/lib/docum
 import { updateDocumentReadingTime as updateDbReadingTime, markDocumentCompleted, logReadingSession } from '@/lib/documentDatabase';
 import { ChapterNavigation } from './ChapterNavigation';
 import { FullTextView } from './FullTextView';
+import { PageReader } from './PageReader';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -90,6 +91,7 @@ export function KineticPlayer({
   const initialSettings = loadSettings();
 
   const [isPlaying, setIsPlaying] = useState(false);
+  const [pageMode, setPageMode] = useState(false);
   const [position, setPosition] = useState({ 
     paragraph: initialProgress?.paragraph || 0, 
     word: initialProgress?.word || 0 
@@ -117,7 +119,8 @@ export function KineticPlayer({
   const [resetInterval, setResetInterval] = useState<'1' | '2' | '3' | '4' | 'end' | 'paragraph'>(creatorDefaults?.resetInterval ?? (initialSettings.resetInterval && (initialSettings.resetInterval as string) !== 'start' ? (initialSettings.resetInterval as any) : '3'));
   const [focusMode, setFocusMode] = useState(initialSettings.focusMode ?? false);
   const [targetMode, setTargetMode] = useState(initialSettings.targetMode ?? false);
-  const emphasisEnabled = emphasisMode && !targetMode;
+  const emphasisEnabled = emphasisMode && (!targetMode || pageMode);
+  const rhythmActive = rhythmMode || pageMode;
   const [targetColor, setTargetColor] = useState(initialSettings.targetColor ?? '#FFD600');
   const [showControls, setShowControls] = useState(true);
   const [isComplete, setIsComplete] = useState(false);
@@ -627,7 +630,7 @@ export function KineticPlayer({
     // Default safe speed
     const DEFAULT_SPEED = 1.0;
 
-    if (rhythmMode && rhythmSpeeds.length > 0) {
+    if (rhythmActive && rhythmSpeeds.length > 0) {
       const currentIndex = getCurrentWordIndex();
       const rhythmSpeed = rhythmSpeedMap.get(currentIndex);
       if (rhythmSpeed !== undefined && Number.isFinite(rhythmSpeed) && rhythmSpeed > 0) {
@@ -657,7 +660,7 @@ export function KineticPlayer({
 
     // Default static speed (use startSpeed as the base)
     return Number.isFinite(startSpeed) && startSpeed > 0 ? startSpeed : DEFAULT_SPEED;
-  }, [rhythmMode, rhythmSpeeds.length, rhythmSpeedMap, getCurrentWordIndex, rhythmMultiplier, accelerationMode, totalWords, chunkLength, resetInterval, startSpeed, endSpeed]);
+  }, [rhythmActive, rhythmSpeeds.length, rhythmSpeedMap, getCurrentWordIndex, rhythmMultiplier, accelerationMode, totalWords, chunkLength, resetInterval, startSpeed, endSpeed]);
 
   // Save progress when it changes
   useEffect(() => {
@@ -1055,7 +1058,7 @@ export function KineticPlayer({
     let currentSpeed = getCurrentSpeed();
 
     // Calculate delay with current speed - ensure it's valid
-    let delay = getWordDelay(word, currentSpeed, rhythmMode ? 'rhythm' : 'normal');
+    let delay = getWordDelay(word, currentSpeed, rhythmActive ? 'rhythm' : 'normal');
 
 
     // Sanity check: delay must be a positive finite number
@@ -1064,7 +1067,7 @@ export function KineticPlayer({
     }
 
     // Significantly longer pause at paragraph start (only if not rhythm mode)
-    if (currentWord === 0 && !rhythmMode) {
+    if (currentWord === 0 && !rhythmActive) {
       delay = delay * 2.5;
     }
 
@@ -1073,7 +1076,7 @@ export function KineticPlayer({
     // bigger AND linger longer — previously ALL-CAPS / "!" words were rendered
     // large but got no extra time, and quoted/bracketed emphasis words were missed
     // because the strip was weaker than the one used for display.
-    if (!rhythmMode && emphasisEnabled) {
+    if (!rhythmActive && emphasisEnabled) {
       const wordNoPunct = word.replace(/[.,!?;:'"()[\]]/g, '');
       const cleanKey = wordNoPunct.toLowerCase();
       const AUTO_WHISPER = ['whisper', 'whispers', 'mouse', 'mice', 'tiny', 'quiet', 'quietly', 'silence', 'silent', 'soft', 'softly'];
@@ -1104,7 +1107,7 @@ export function KineticPlayer({
         timeoutRef.current = null;
       }
     };
-  }, [isPlaying, currentParagraph, currentWord, getCurrentSpeed, advanceWord, parsedText.paragraphs, isComplete, emphasisSet, whisperedSet, showFullText, isNavOpen, rhythmMode, emphasisEnabled, showingChapterTitle, showChapterSummary, activeCreatorImage]);
+  }, [isPlaying, currentParagraph, currentWord, getCurrentSpeed, advanceWord, parsedText.paragraphs, isComplete, emphasisSet, whisperedSet, showFullText, isNavOpen, rhythmActive, emphasisEnabled, showingChapterTitle, showChapterSummary, activeCreatorImage]);
 
   useEffect(() => {
     if (!directedExperience?.images?.length || activeCreatorImage) return;
@@ -1447,7 +1450,7 @@ export function KineticPlayer({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 h-[100dvh] w-screen flex items-center justify-center overflow-hidden cursor-pointer transition-all duration-700 bg-background touch-none z-50"
+      className={`fixed inset-0 h-[100dvh] w-screen flex items-center justify-center overflow-hidden cursor-pointer transition-all duration-700 bg-background ${pageMode ? 'touch-auto' : 'touch-none'} z-50`}
       onMouseMove={handleMouseMove}
       onPointerUp={handleScreenTap}
     >
@@ -1638,6 +1641,7 @@ export function KineticPlayer({
 
 
 
+      {!pageMode && <>
       {/* Word Display */}
       <div className="relative z-10 flex items-center justify-center px-4 sm:px-8 h-[25vh] min-h-[160px]">
         {targetMode && (
@@ -1825,6 +1829,19 @@ export function KineticPlayer({
                 <ChevronLeft className="w-4 h-4 sm:w-6 sm:h-6" />
               </button>
 
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsPlaying(false);
+                  setPageMode(true);
+                }}
+                className="toolbar-button"
+                title="Page reading"
+                aria-label="Page reading"
+              >
+                <Type className="w-4 h-4 sm:w-6 sm:h-6" />
+              </button>
+
               {/* Full Text View Button */}
               <button
                 onClick={(e) => {
@@ -2009,7 +2026,15 @@ export function KineticPlayer({
                       container={containerRef.current}
                     >
                       <div className="space-y-4">
-                        <div className="font-medium text-sm">Speed Settings</div>
+                        <div className="font-medium text-sm">Reader Settings</div>
+                        <button
+                          className="w-full border border-border rounded-lg px-3 py-2 text-sm text-left hover:bg-muted"
+                          onClick={() => {
+                            setIsPlaying(false);
+                            setShowSettingsPopover(false);
+                            setPageMode(true);
+                          }}
+                        >Page reading · Pages / Scroll</button>
 
                         {/* Mode Toggle */}
                         <div className="space-y-2">
@@ -2445,6 +2470,32 @@ export function KineticPlayer({
           </motion.div>
         )}
       </AnimatePresence>
+
+      </>}
+
+      {pageMode && (
+        <PageReader
+          parsedText={parsedText}
+          paragraphOffsets={paragraphOffsets}
+          currentWordIndex={getCurrentWordIndex()}
+          isPlaying={isPlaying}
+          isComplete={isComplete}
+          emphasis={emphasisMode}
+          currentEmphasized={isEmphasisWord}
+          currentWhispered={isWhisperedWord}
+          rhythmPreset={rhythmPreset}
+          onRhythmPreset={setRhythmPreset}
+          onEmphasis={setEmphasisMode}
+          onPause={() => setIsPlaying(false)}
+          onPlayPause={() => {
+            if (isComplete) { handleRestart(); setIsPlaying(true); }
+            else setIsPlaying(value => !value);
+          }}
+          onNavigate={seekToIndex}
+          onClose={() => { setIsPlaying(false); setPageMode(false); setShowControls(true); }}
+          onBack={() => { void persistReadingTime(true); onBack(); }}
+        />
+      )}
 
       {/* Full Text View */}
       <AnimatePresence>
