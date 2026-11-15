@@ -34,7 +34,6 @@ const GRANTING = new Set([
 // Event types that REVOKE access immediately.
 const REVOKING = new Set([
   'EXPIRATION',
-  'SUBSCRIPTION_PAUSED',
 ]);
 
 serve(async (req) => {
@@ -84,6 +83,28 @@ serve(async (req) => {
       return new Response(JSON.stringify({ received: true, ignored: type }), {
         status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // An expiring store/promo entitlement must not overwrite a separately
+    // granted lifetime entitlement or an active Stripe subscription.
+    const { data: existing, error: existingError } = await supabase
+      .from('subscriptions')
+      .select('status, plan, stripe_subscription_id, current_period_end')
+      .eq('user_id', userId)
+      .maybeSingle();
+    if (existingError) throw existingError;
+    if (existing?.status === 'lifetime' ||
+        (existing?.stripe_subscription_id && ['active', 'trialing'].includes(existing.status))) {
+      return new Response(JSON.stringify({ received: true, skipped: 'independent_access' }), {
+        status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    // Ignore expiry of an older entitlement if a newer renewal is already stored.
+    if (REVOKING.has(type) && existing?.current_period_end &&
+        Number(event?.expiration_at_ms) < Date.parse(existing.current_period_end)) {
+      return new Response(JSON.stringify({ received: true, skipped: 'older_expiration' }), {
+        status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
