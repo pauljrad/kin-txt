@@ -1,5 +1,20 @@
 .page-reader { touch-action: auto; }
-.page-reader-content { position: absolute; inset: 0; padding: calc(env(safe-area-inset-top, 0px) + 1rem) 1rem calc(env(safe-area-inset-bottom, 0px) + 1rem); }
+.page-reader-content { position: absolute; inset: 0; z-index: 0; padding: calc(env(safe-area-inset-top, 0px) + 1rem) 1rem calc(env(safe-area-inset-bottom, 0px) + 1rem); }
+/* Frost only the background text when paused controls are shown.
+   The overlay cannot catch taps, so a playing reader still pauses on the first tap. */
+.page-reader-content::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0;
+  background: hsl(var(--background) / 0.24);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  transition: opacity 200ms ease;
+}
+.page-reader-content-glass::after { opacity: 1; }
 .page-reader-viewport { height: 100%; width: 100%; overscroll-behavior: contain; }
 .page-reader-pages { overflow: hidden; touch-action: pan-y; }
 .page-reader-scroll { overflow-y: auto; overflow-x: hidden; touch-action: pan-y; }
@@ -11,7 +26,7 @@
 .page-reader-book .page-word-current { background: hsl(var(--foreground)); color: hsl(var(--background)); outline: 2px solid hsl(var(--foreground)); }
 .page-reader-book .page-word-emphasis { transform: scale(1.14); position: relative; z-index: 1; }
 .page-reader-book .page-word-whisper { opacity: .65; }
-.page-reader-navigation { bottom: calc(11rem + env(safe-area-inset-bottom, 0px)); }
+.page-reader-navigation { z-index: 2; bottom: calc(11rem + env(safe-area-inset-bottom, 0px)); }
 .page-reader-navigation button:disabled { opacity: .35; }
 .reader-indicators { top: calc(4.25rem + env(safe-area-inset-top, 0px)); right: 1rem; flex-direction: row; }
 @media (min-width: 640px) {
