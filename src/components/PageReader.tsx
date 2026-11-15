@@ -120,9 +120,10 @@ export function PageReader({ parsedText, paragraphOffsets, currentWordIndex, isP
   const turnPage = useCallback((direction: number) => {
     const next = page + direction;
     if (next < 0 || next >= pageStarts.length) return;
-    onInteract();
     if (isPlaying) { onPause(); return; }
     onNavigate(pageStarts[next]);
+    // Seeking clears the player's controls timeout; re-arm it afterwards.
+    onInteract();
   }, [page, pageStarts, onNavigate, onPause, onInteract, isPlaying]);
 
   return (
@@ -131,11 +132,12 @@ export function PageReader({ parsedText, paragraphOffsets, currentWordIndex, isP
       onPointerDown={() => { wasPlayingOnPress.current = isPlaying; }}
       onClick={e => {
         e.stopPropagation();
-        onInteract();
-        if (suppressClick.current) { suppressClick.current = false; return; }
+        if (suppressClick.current) { suppressClick.current = false; onInteract(); return; }
         if (isPlaying || wasPlayingOnPress.current) { onPause(); return; }
         const word = (e.target as HTMLElement).closest<HTMLElement>('[data-reader-word]');
         if (word) onNavigate(Number(word.dataset.readerWord));
+        // Tap and seek both reveal controls; restart auto-hide after navigation.
+        onInteract();
       }}>
       <div className="page-reader-content">
         <div ref={viewport} className={`page-reader-viewport page-reader-${layout}`} tabIndex={0}
