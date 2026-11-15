@@ -139,7 +139,7 @@ export function PageReader({ parsedText, paragraphOffsets, currentWordIndex, isP
         // Tap and seek both reveal controls; restart auto-hide after navigation.
         onInteract();
       }}>
-      <div className="page-reader-content">
+      <div className={`page-reader-content ${!isPlaying && controlsVisible ? 'page-reader-content-glass' : ''}`}>
         <div ref={viewport} className={`page-reader-viewport page-reader-${layout}`} tabIndex={0}
           role="region" aria-label={layout === 'pages' ? 'Book pages. Use left and right arrows to turn pages.' : 'Continuous text'}
           onKeyDown={e => {
