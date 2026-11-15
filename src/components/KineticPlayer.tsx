@@ -65,6 +65,7 @@ export function KineticPlayer({
     startSpeed: number;
     endSpeed: number;
     rhythmMode: boolean;
+    emphasisMode: boolean;
     rhythmPreset: 'slower' | 'normal' | 'faster';
     accelerationMode: boolean;
     adaptiveSpeed: boolean;
@@ -109,12 +110,14 @@ export function KineticPlayer({
   const [startSpeed, setStartSpeed] = useState(creatorDefaults?.startSpeed ?? initialSettings.startSpeed ?? 0.5);
   const [endSpeed, setEndSpeed] = useState(creatorDefaults?.endSpeed ?? initialSettings.endSpeed ?? 1.4);
   const [rhythmMode, setRhythmMode] = useState(creatorDefaults?.rhythmMode ?? initialSettings.rhythmMode ?? true);
+  const [emphasisMode, setEmphasisMode] = useState(initialSettings.emphasisMode ?? true);
   const [rhythmPreset, setRhythmPreset] = useState<'slower' | 'normal' | 'faster'>(creatorDefaults?.rhythmPreset ?? initialSettings.rhythmPreset ?? 'normal');
   const [accelerationMode, setAccelerationMode] = useState(creatorDefaults?.accelerationMode ?? initialSettings.accelerationMode ?? false);
   const [adaptiveSpeed, setAdaptiveSpeed] = useState(creatorDefaults?.adaptiveSpeed ?? initialSettings.adaptiveSpeed ?? true);
   const [resetInterval, setResetInterval] = useState<'1' | '2' | '3' | '4' | 'end' | 'paragraph'>(creatorDefaults?.resetInterval ?? (initialSettings.resetInterval && (initialSettings.resetInterval as string) !== 'start' ? (initialSettings.resetInterval as any) : '3'));
   const [focusMode, setFocusMode] = useState(initialSettings.focusMode ?? false);
   const [targetMode, setTargetMode] = useState(initialSettings.targetMode ?? false);
+  const emphasisEnabled = emphasisMode && !targetMode;
   const [targetColor, setTargetColor] = useState(initialSettings.targetColor ?? '#FFD600');
   const [showControls, setShowControls] = useState(true);
   const [isComplete, setIsComplete] = useState(false);
@@ -194,6 +197,7 @@ export function KineticPlayer({
       startSpeed,
       endSpeed,
       rhythmMode,
+      emphasisMode,
       rhythmPreset,
       accelerationMode,
       adaptiveSpeed,
@@ -205,7 +209,7 @@ export function KineticPlayer({
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
   }, [
-    startSpeed, endSpeed, rhythmMode, rhythmPreset, 
+    startSpeed, endSpeed, rhythmMode, emphasisMode, rhythmPreset, 
     accelerationMode, adaptiveSpeed, resetInterval, 
     focusMode, targetMode, targetColor, activeAtmosphere
   ]);
@@ -349,7 +353,7 @@ export function KineticPlayer({
 
   // FAILSAFE: Explicitly check for known keywords even if Set data is missing
   const autoWhisper = ['whisper', 'whispers', 'mouse', 'mice', 'tiny', 'quiet', 'quietly', 'silence', 'silent', 'soft', 'softly'];
-  const isWhisperedWord = whisperedSet.has(cleanWord) || autoWhisper.includes(cleanWord);
+  const isWhisperedWord = emphasisEnabled && (whisperedSet.has(cleanWord) || autoWhisper.includes(cleanWord));
 
   // CRITICAL FIX: Whisper trumps emphasis. If it's whispered, it CANNOT be emphasized.
   // This solves the issue where "Mouse" (AI detected emphasis) stayed big instead of shrinking.
@@ -367,7 +371,7 @@ export function KineticPlayer({
   // 1. AI suggested word (already filtered by STOP_WORDS in emphasisSet)
   // 2. Word is in ALL CAPS (Intent)
   // 3. Word has an exclamation mark (Intent)
-  const isEmphasisWord = !isWhisperedWord && (
+  const isEmphasisWord = emphasisEnabled && !isWhisperedWord && (
     emphasisSet.has(cleanWord) ||
     isAllCaps ||
     hasExclamation
@@ -1069,7 +1073,7 @@ export function KineticPlayer({
     // bigger AND linger longer — previously ALL-CAPS / "!" words were rendered
     // large but got no extra time, and quoted/bracketed emphasis words were missed
     // because the strip was weaker than the one used for display.
-    if (!rhythmMode) {
+    if (!rhythmMode && emphasisEnabled) {
       const wordNoPunct = word.replace(/[.,!?;:'"()[\]]/g, '');
       const cleanKey = wordNoPunct.toLowerCase();
       const AUTO_WHISPER = ['whisper', 'whispers', 'mouse', 'mice', 'tiny', 'quiet', 'quietly', 'silence', 'silent', 'soft', 'softly'];
@@ -1100,7 +1104,7 @@ export function KineticPlayer({
         timeoutRef.current = null;
       }
     };
-  }, [isPlaying, currentParagraph, currentWord, getCurrentSpeed, advanceWord, parsedText.paragraphs, isComplete, emphasisSet, whisperedSet, showFullText, isNavOpen, rhythmMode, showingChapterTitle, showChapterSummary, activeCreatorImage]);
+  }, [isPlaying, currentParagraph, currentWord, getCurrentSpeed, advanceWord, parsedText.paragraphs, isComplete, emphasisSet, whisperedSet, showFullText, isNavOpen, rhythmMode, emphasisEnabled, showingChapterTitle, showChapterSummary, activeCreatorImage]);
 
   useEffect(() => {
     if (!directedExperience?.images?.length || activeCreatorImage) return;
@@ -1685,7 +1689,7 @@ export function KineticPlayer({
               style={{
                 fontSize: targetMode
                   ? `calc(2.9rem * var(--text-size-multiplier, 1))` // Match normal text size in Target Mode
-                  : `calc(${cleanWord.includes('kin-txt') || cleanWord === 'kin-txt' ? '6rem' :
+                  : `calc(${emphasisEnabled && (cleanWord.includes('kin-txt') || cleanWord === 'kin-txt') ? '6rem' :
                     isEmphasisWord ? '6rem' :
                       isWhisperedWord ? '2.4rem' : '2.9rem'
                   } * var(--text-size-multiplier, 1))`,
@@ -2073,6 +2077,28 @@ export function KineticPlayer({
                             </div>
                           </div>
                         )}
+
+                        {/* Emphasis preference is retained while Target overrides it. */}
+                        <div className="flex items-center justify-between gap-3 border-t border-border/50 pt-3">
+                          <div className="flex flex-col">
+                            <span id="emphasis-mode-label" className="text-sm font-medium">Emphasis Mode</span>
+                            <span id="emphasis-mode-description" className="text-xs text-muted-foreground">
+                              {targetMode ? 'Unavailable in Target Mode' : 'Expressive word sizes and softer whispered words'}
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            role="switch"
+                            aria-labelledby="emphasis-mode-label"
+                            aria-describedby="emphasis-mode-description"
+                            aria-checked={emphasisEnabled}
+                            disabled={targetMode}
+                            onClick={() => setEmphasisMode(value => !value)}
+                            className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${emphasisEnabled ? 'bg-primary' : 'bg-muted'}`}
+                          >
+                            <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${emphasisEnabled ? 'translate-x-6' : 'translate-x-1'}`} />
+                          </button>
+                        </div>
 
                         {/* Target Mode Toggle */}
                         <div className="flex items-center justify-between border-t border-border/50 pt-3">
