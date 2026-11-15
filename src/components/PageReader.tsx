@@ -129,7 +129,7 @@ export function PageReader({ parsedText, paragraphOffsets, currentWordIndex, isP
       aria-label="Page reader" onPointerUp={e => e.stopPropagation()} onClick={e => e.stopPropagation()}
       style={{ paddingTop: 'env(safe-area-inset-top, 0px)', paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
       <header className="shrink-0 border-b border-border px-4 py-3 space-y-3">
-        <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center justify-between gap-2 pr-14">
           <button className={button} onClick={onBack} aria-label="Back to library"><ArrowLeft size={16} /></button>
           <h2 className="text-sm font-medium tracking-wide">Page reading</h2>
           <button className={button} onClick={onClose}>Kinetic view</button>
