@@ -1106,8 +1106,8 @@ const Index = () => {
         </DialogContent>
       </Dialog>
 
-      {/* FIXED TOOLBAR (Always On Top) */}
-      <ThemeToggle />
+      {/* The active reader owns its auto-hiding theme control. */}
+      {!activeDocument && <ThemeToggle />}
 
       {/* Top Left Button: Sign Out (User) or Login (Guest) */}
       {!activeDocument && (

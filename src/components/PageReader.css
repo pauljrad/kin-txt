@@ -1,12 +1,22 @@
 .page-reader { touch-action: auto; }
+.page-reader-content { position: absolute; inset: 0; padding: calc(env(safe-area-inset-top, 0px) + 1rem) 1rem calc(env(safe-area-inset-bottom, 0px) + 1rem); }
 .page-reader-viewport { height: 100%; width: 100%; overscroll-behavior: contain; }
 .page-reader-pages { overflow: hidden; touch-action: pan-y; }
 .page-reader-scroll { overflow-y: auto; overflow-x: hidden; touch-action: pan-y; }
-.page-reader-book { position: relative; font-family: Georgia, 'Times New Roman', serif; line-height: 1.9; overflow-wrap: anywhere; }
+.page-reader-book { position: relative; font-family: inherit; font-size: calc(1.125rem * var(--text-size-multiplier, 1)); line-height: 1.65; text-align: justify; overflow-wrap: anywhere; }
 .page-reader-pages .page-reader-book { height: 100%; column-count: 1; column-gap: 40px; column-fill: auto; }
-.page-reader-book p { margin: 0 0 1.2em; orphans: 2; widows: 2; }
+.page-reader-book p { margin: 0 0 1em; orphans: 2; widows: 2; }
 .page-reader-book [data-reader-word] { display: inline-block; max-width: 100%; border-radius: 3px; cursor: pointer; }
+.page-reader-book .page-word-past { color: hsl(var(--muted-foreground)); }
 .page-reader-book .page-word-current { background: hsl(var(--foreground)); color: hsl(var(--background)); outline: 2px solid hsl(var(--foreground)); }
-.page-reader-book .page-word-emphasis { display: inline-block; transform: scale(1.14); position: relative; z-index: 1; }
+.page-reader-book .page-word-emphasis { transform: scale(1.14); position: relative; z-index: 1; }
 .page-reader-book .page-word-whisper { opacity: .65; }
-@media (prefers-reduced-motion: reduce) { .page-reader-book .page-word-emphasis { transform: none; font-weight: 700; } }
+.page-reader-navigation { bottom: calc(11rem + env(safe-area-inset-bottom, 0px)); }
+.page-reader-navigation button:disabled { opacity: .35; }
+.reader-indicators { top: calc(4.25rem + env(safe-area-inset-top, 0px)); right: 1rem; flex-direction: row; }
+@media (min-width: 640px) {
+  .page-reader-content { padding-left: 1.5rem; padding-right: 1.5rem; }
+  .reader-indicators { top: calc(1rem + env(safe-area-inset-top, 0px)); right: 6rem; flex-direction: column; }
+  .page-reader-navigation { bottom: calc(13rem + env(safe-area-inset-bottom, 0px)); }
+}
+@media (prefers-reduced-motion: reduce) { .page-reader-book .page-word-emphasis { transform: none; } }

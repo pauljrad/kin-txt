@@ -8,6 +8,7 @@ import { updateDocumentReadingTime as updateDbReadingTime, markDocumentCompleted
 import { ChapterNavigation } from './ChapterNavigation';
 import { FullTextView } from './FullTextView';
 import { PageReader } from './PageReader';
+import { ThemeToggle } from './ThemeToggle';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -92,6 +93,13 @@ export function KineticPlayer({
 
   const [isPlaying, setIsPlaying] = useState(false);
   const [pageMode, setPageMode] = useState(false);
+  const [pageLayout, setPageLayout] = useState<'pages' | 'scroll'>(() => {
+    try { return localStorage.getItem('kin_page_layout') === 'scroll' ? 'scroll' : 'pages'; }
+    catch { return 'pages'; }
+  });
+  useEffect(() => {
+    try { localStorage.setItem('kin_page_layout', pageLayout); } catch { /* private browsing */ }
+  }, [pageLayout]);
   const [position, setPosition] = useState({ 
     paragraph: initialProgress?.paragraph || 0, 
     word: initialProgress?.word || 0 
@@ -1159,12 +1167,12 @@ export function KineticPlayer({
       clearTimeout(controlsTimeoutRef.current);
     }
 
-    if (isPlaying) {
+    if ((isPlaying || pageMode) && !showSettingsPopover && !musicMenuOpen && !isNavOpen && !showFullText) {
       controlsTimeoutRef.current = setTimeout(() => {
         setShowControls(false);
       }, 3000);
     }
-  }, [isPlaying]);
+  }, [isPlaying, pageMode, showSettingsPopover, musicMenuOpen, isNavOpen, showFullText]);
 
   // Enter fullscreen
   const enterFullscreen = useCallback(async () => {
@@ -1259,7 +1267,7 @@ export function KineticPlayer({
     // of these transitions so the user can see what they're doing.
     setShowControls(true);
 
-    if (!anyMenuOpen && (isPlaying || menuJustClosed)) {
+    if (!anyMenuOpen && (isPlaying || menuJustClosed || pageMode)) {
       controlsTimeoutRef.current = setTimeout(() => {
         setShowControls(false);
       }, 3000);
@@ -1270,11 +1278,11 @@ export function KineticPlayer({
         clearTimeout(controlsTimeoutRef.current);
       }
     };
-  }, [isPlaying, showSettingsPopover, showFullText, isNavOpen, musicMenuOpen, showingChapterTitle, activeCreatorImage]);
+  }, [isPlaying, pageMode, showSettingsPopover, showFullText, isNavOpen, musicMenuOpen, showingChapterTitle, activeCreatorImage]);
 
   // Tap to toggle play/pause
   const handleScreenTap = useCallback(async (e: React.MouseEvent) => {
-    if (showingChapterTitle || activeCreatorImage) return;
+    if (showingChapterTitle || activeCreatorImage || pageMode) return;
 
     // Don't toggle if clicking on controls or progress bar
     const target = e.target as HTMLElement;
@@ -1311,7 +1319,7 @@ export function KineticPlayer({
     if (newPlaying && !isFullscreen) {
       await enterFullscreen();
     }
-  }, [isComplete, isPlaying, isFullscreen, enterFullscreen, showingChapterTitle, showSettingsPopover, musicMenuOpen, activeCreatorImage]);
+  }, [isComplete, isPlaying, isFullscreen, enterFullscreen, showingChapterTitle, showSettingsPopover, musicMenuOpen, activeCreatorImage, pageMode]);
 
   const handlePlayPause = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -1641,8 +1649,8 @@ export function KineticPlayer({
 
 
 
-      {!pageMode && <>
       {/* Word Display */}
+      {!pageMode && (
       <div className="relative z-10 flex items-center justify-center px-4 sm:px-8 h-[25vh] min-h-[160px]">
         {targetMode && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -1730,6 +1738,8 @@ export function KineticPlayer({
         </AnimatePresence>
       </div>
 
+      )}
+
       {/* Progress Bar - Seekable */}
       <AnimatePresence>
         {isHudVisible && (
@@ -1808,12 +1818,13 @@ export function KineticPlayer({
             transition={{ duration: 0.3 }}
             className="absolute inset-0 z-20 pointer-events-none"
           >
+            <ThemeToggle className="controls-panel pointer-events-auto absolute right-4 z-30 toolbar-button" />
             {/* Top-left Controls (aligned) */}
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
-              className="pointer-events-auto absolute left-4 flex items-center gap-2 sm:gap-3"
+              className="controls-panel pointer-events-auto absolute left-4 flex items-center gap-2 sm:gap-3"
               style={{ top: 'calc(1rem + env(safe-area-inset-top, 0px))' }}
             >
               {/* Back Button */}
@@ -1833,11 +1844,14 @@ export function KineticPlayer({
                 onClick={(e) => {
                   e.stopPropagation();
                   setIsPlaying(false);
-                  setPageMode(true);
+                  setPageMode(value => !value);
+                  setShowControls(true);
+                  void enterFullscreen();
                 }}
                 className="toolbar-button"
-                title="Page reading"
-                aria-label="Page reading"
+                title={pageMode ? "Kinetic view" : "Page reading"}
+                aria-label={pageMode ? "Kinetic view" : "Page reading"}
+                aria-pressed={pageMode}
               >
                 <Type className="w-4 h-4 sm:w-6 sm:h-6" />
               </button>
@@ -1901,13 +1915,12 @@ export function KineticPlayer({
             <motion.div
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="pointer-events-auto absolute right-16 sm:right-24 flex flex-col items-start gap-4"
-              style={{ top: 'calc(1rem + env(safe-area-inset-top, 0px))' }}
+              className="controls-panel reader-indicators pointer-events-auto absolute flex items-start gap-2 sm:gap-4"
             >
               {/* Speed Indicator */}
               <div className="glass-panel px-2 py-1 sm:px-4 sm:py-2 flex items-center justify-center min-h-[3rem] w-[140px] sm:w-[180px]">
                 <span className="text-[10px] sm:text-sm text-muted-foreground mr-1">
-                  {rhythmMode ? 'Rhythm: ' : 'Speed: '}
+                  {rhythmActive ? 'Rhythm: ' : 'Speed: '}
                 </span>
                 <span className="text-xs sm:text-sm font-medium">{Math.round(displaySpeed * 200)} WPM</span>
               </div>
@@ -1947,6 +1960,7 @@ export function KineticPlayer({
                   {/* Play/Pause */}
                   <button
                     onClick={handlePlayPause}
+                    aria-label={isPlaying ? "Pause" : "Play"}
                     className="w-9 h-9 sm:w-12 sm:h-12 rounded-full bg-foreground text-background flex items-center justify-center hover:opacity-90 transition-opacity"
                   >
                     {isPlaying ? (
@@ -2013,7 +2027,7 @@ export function KineticPlayer({
                         onClick={(e) => e.stopPropagation()}
                         className={`p-1.5 sm:p-3 rounded-xl transition-colors ${showSettingsPopover ? 'bg-secondary' : 'hover:bg-secondary'
                           }`}
-                        title="Speed settings"
+                        title="Reader settings"
                       >
                         <Settings className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
                       </button>
@@ -2027,15 +2041,34 @@ export function KineticPlayer({
                     >
                       <div className="space-y-4">
                         <div className="font-medium text-sm">Reader Settings</div>
-                        <button
-                          className="w-full border border-border rounded-lg px-3 py-2 text-sm text-left hover:bg-muted"
-                          onClick={() => {
-                            setIsPlaying(false);
-                            setShowSettingsPopover(false);
-                            setPageMode(true);
-                          }}
-                        >Page reading · Pages / Scroll</button>
+                        <div className="space-y-2">
+                          <div className="text-xs text-muted-foreground">Reading view</div>
+                          <div className="flex gap-2">
+                            {[false, true].map(isPage => (
+                              <button key={String(isPage)} aria-pressed={pageMode === isPage}
+                                onClick={() => { setIsPlaying(false); setPageMode(isPage); void enterFullscreen(); }}
+                                className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium ${pageMode === isPage ? 'bg-primary text-primary-foreground' : 'bg-secondary hover:bg-secondary/80'}`}>
+                                {isPage ? 'Page reading' : 'Kinetic'}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        {pageMode && (
+                          <div className="space-y-2">
+                            <div className="text-xs text-muted-foreground">Page layout</div>
+                            <div className="flex gap-2">
+                              {(['pages', 'scroll'] as const).map(layout => (
+                                <button key={layout} aria-pressed={pageLayout === layout}
+                                  onClick={() => setPageLayout(layout)}
+                                  className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium ${pageLayout === layout ? 'bg-primary text-primary-foreground' : 'bg-secondary hover:bg-secondary/80'}`}>
+                                  {layout === 'pages' ? 'Pages' : 'Scroll'}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
 
+                        {!pageMode && <>
                         {/* Mode Toggle */}
                         <div className="space-y-2">
                           <div className="text-xs text-muted-foreground">Mode</div>
@@ -2080,7 +2113,8 @@ export function KineticPlayer({
                         </div>
 
                         {/* Rhythm Speed Presets - Only show when rhythm mode is on */}
-                        {rhythmMode && (
+                        </>}
+                        {rhythmActive && (
                           <div className="border-t border-border/50 pt-3 space-y-2">
                             <div className="text-xs text-muted-foreground flex items-center gap-1.5">
                               <Music className="w-3 h-3" />
@@ -2108,7 +2142,7 @@ export function KineticPlayer({
                           <div className="flex flex-col">
                             <span id="emphasis-mode-label" className="text-sm font-medium">Emphasis Mode</span>
                             <span id="emphasis-mode-description" className="text-xs text-muted-foreground">
-                              {targetMode ? 'Unavailable in Target Mode' : 'Expressive word sizes and softer whispered words'}
+                              {targetMode && !pageMode ? 'Unavailable in Target Mode' : 'Expressive word sizes and softer whispered words'}
                             </span>
                           </div>
                           <button
@@ -2117,7 +2151,7 @@ export function KineticPlayer({
                             aria-labelledby="emphasis-mode-label"
                             aria-describedby="emphasis-mode-description"
                             aria-checked={emphasisEnabled}
-                            disabled={targetMode}
+                            disabled={targetMode && !pageMode}
                             onClick={() => setEmphasisMode(value => !value)}
                             className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${emphasisEnabled ? 'bg-primary' : 'bg-muted'}`}
                           >
@@ -2125,6 +2159,7 @@ export function KineticPlayer({
                           </button>
                         </div>
 
+                        {!pageMode && <>
                         {/* Target Mode Toggle */}
                         <div className="flex items-center justify-between border-t border-border/50 pt-3">
                           <div className="flex flex-col">
@@ -2175,7 +2210,8 @@ export function KineticPlayer({
                         )}
 
                         {/* Acceleration Settings - Only show when acceleration mode */}
-                        {!rhythmMode && accelerationMode && (
+                        </>}
+                        {!pageMode && !rhythmMode && accelerationMode && (
                           <>
                             {/* Speed Sliders */}
                             <div className="space-y-3">
@@ -2238,7 +2274,7 @@ export function KineticPlayer({
                         )}
 
                         {/* Static Speed - Only show when static mode */}
-                        {!rhythmMode && !accelerationMode && !targetMode && (
+                        {!pageMode && !rhythmMode && !accelerationMode && !targetMode && (
                           <div className="flex flex-col gap-1.5">
                             <div className="flex justify-between text-xs">
                               <span className="text-muted-foreground">Speed</span>
@@ -2377,10 +2413,10 @@ export function KineticPlayer({
 
                 {/* Mode indicator */}
                 <div className="text-center text-[10px] sm:text-xs text-muted-foreground">
-                  {rhythmMode ? (
+                  {rhythmActive ? (
                     <>
                       <Music className="w-3 h-3 inline mr-1" />
-                      Rhythm mode ({rhythmPreset})
+                      {pageMode ? 'Page reading · Rhythm' : 'Rhythm mode'} ({rhythmPreset})
                     </>
                   ) : accelerationMode ? (
                     <>Accelerating: {startSpeed.toFixed(1)}x → {endSpeed.toFixed(1)}x</>
@@ -2400,7 +2436,7 @@ export function KineticPlayer({
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            className="pointer-events-auto absolute left-4 z-30 flex items-center gap-2 sm:gap-3"
+            className="controls-panel pointer-events-auto absolute left-4 z-30 flex items-center gap-2 sm:gap-3"
             style={{ top: 'calc(1rem + env(safe-area-inset-top, 0px))' }}
           >
             <button
@@ -2471,29 +2507,20 @@ export function KineticPlayer({
         )}
       </AnimatePresence>
 
-      </>}
-
       {pageMode && (
         <PageReader
           parsedText={parsedText}
           paragraphOffsets={paragraphOffsets}
           currentWordIndex={getCurrentWordIndex()}
           isPlaying={isPlaying}
-          isComplete={isComplete}
+          layout={pageLayout}
+          controlsVisible={isHudVisible}
           emphasis={emphasisMode}
           currentEmphasized={isEmphasisWord}
           currentWhispered={isWhisperedWord}
-          rhythmPreset={rhythmPreset}
-          onRhythmPreset={setRhythmPreset}
-          onEmphasis={setEmphasisMode}
-          onPause={() => setIsPlaying(false)}
-          onPlayPause={() => {
-            if (isComplete) { handleRestart(); setIsPlaying(true); }
-            else setIsPlaying(value => !value);
-          }}
+          onInteract={handleMouseMove}
+          onPause={() => { setIsPlaying(false); handleMouseMove(); void persistReadingTime(true); }}
           onNavigate={seekToIndex}
-          onClose={() => { setIsPlaying(false); setPageMode(false); setShowControls(true); }}
-          onBack={() => { void persistReadingTime(true); onBack(); }}
         />
       )}
 
