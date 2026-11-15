@@ -128,12 +128,30 @@ export function PageReader({ parsedText, paragraphOffsets, currentWordIndex, isP
 
   return (
     <section className="page-reader absolute inset-0 z-10 bg-background text-foreground cursor-auto"
-      aria-label="Page reader" onPointerUp={e => e.stopPropagation()}
-      onPointerDown={() => { wasPlayingOnPress.current = isPlaying; }}
+      aria-label="Page reader"
+      onPointerDownCapture={e => {
+        // Pause on initial contact, not after pointerup/click (which can be delayed
+        // or skipped by touch scrolling on iOS). Leave actual controls alone.
+        const target = e.target as HTMLElement;
+        if (target.closest('.controls-panel, button, [role="button"]')) {
+          wasPlayingOnPress.current = false;
+          return;
+        }
+        wasPlayingOnPress.current = isPlaying;
+        if (isPlaying) onPause();
+      }}
+      onPointerUp={e => e.stopPropagation()}
       onClick={e => {
         e.stopPropagation();
+        // The contact that paused playback must never also seek to a word.
+        if (wasPlayingOnPress.current) {
+          wasPlayingOnPress.current = false;
+          suppressClick.current = false;
+          return;
+        }
         if (suppressClick.current) { suppressClick.current = false; onInteract(); return; }
-        if (isPlaying || wasPlayingOnPress.current) { onPause(); return; }
+        // Keyboard/synthetic clicks still pause even without a pointerdown.
+        if (isPlaying) { onPause(); return; }
         const word = (e.target as HTMLElement).closest<HTMLElement>('[data-reader-word]');
         if (word) onNavigate(Number(word.dataset.readerWord));
         // Tap and seek both reveal controls; restart auto-hide after navigation.
@@ -155,7 +173,10 @@ export function PageReader({ parsedText, paragraphOffsets, currentWordIndex, isP
             const dx = e.changedTouches[0].clientX - start.x;
             const dy = e.changedTouches[0].clientY - start.y;
             if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) {
-              suppressClick.current = true; turnPage(dx < 0 ? 1 : -1);
+              // A gesture that began during playback only pauses; it never turns
+              // a page as a second action from the same initial touch.
+              suppressClick.current = true;
+              if (!wasPlayingOnPress.current) turnPage(dx < 0 ? 1 : -1);
             }
           }}>
           <div ref={book} className="page-reader-book">
