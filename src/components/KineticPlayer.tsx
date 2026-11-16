@@ -1362,8 +1362,10 @@ export function KineticPlayer({
     const newPlaying = !isPlaying;
     setIsPlaying(newPlaying);
     if (pageMode) {
-      setPageGlassMode(!newPlaying);
-      setShowControls(!newPlaying);
+      // Play and pause both leave just the small ellipsis available.
+      // Only the ellipsis button can reveal the reader's control panels.
+      setPageGlassMode(false);
+      setShowControls(false);
     }
 
     // Enter fullscreen when starting to play
@@ -2660,9 +2662,18 @@ export function KineticPlayer({
           onInteract={handleMouseMove}
           onPause={() => {
             if (!pagePlaybackEnabled) return;
+            // Pause immediately, but never open glass/settings or the HUD.
+            // The next reading-area tap can play again.
             setIsPlaying(false);
-            setPageGlassMode(true);
-            handleMouseMove();
+            setPageGlassMode(false);
+            setShowSettingsPopover(false);
+            setMusicMenuOpen(false);
+            setIsNavOpen(false);
+            setShowControls(false);
+            if (controlsTimeoutRef.current) {
+              clearTimeout(controlsTimeoutRef.current);
+              controlsTimeoutRef.current = null;
+            }
             void persistReadingTime(true);
           }}
           onPlay={() => {
