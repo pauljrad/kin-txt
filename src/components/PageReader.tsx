@@ -51,9 +51,12 @@ export function PageReader({ parsedText, paragraphOffsets, currentWordIndex, isP
   const scrollProgressTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    if (isPlaying && scrollProgressTimeout.current) clearTimeout(scrollProgressTimeout.current);
+    if (isPlaying || glassVisible) {
+      manualScroll.current = false;
+      if (scrollProgressTimeout.current) clearTimeout(scrollProgressTimeout.current);
+    }
     return () => { if (scrollProgressTimeout.current) clearTimeout(scrollProgressTimeout.current); };
-  }, [isPlaying]);
+  }, [isPlaying, glassVisible]);
 
   useLayoutEffect(() => {
     const frame = viewport.current;
