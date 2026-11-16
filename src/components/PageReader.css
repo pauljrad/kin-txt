@@ -29,6 +29,11 @@
 .page-reader-book .page-word-current { background: hsl(var(--foreground)); color: hsl(var(--background)); outline: 2px solid hsl(var(--foreground)); }
 .page-reader-book .page-word-emphasis { display: inline-block; transform: scale(1.14); position: relative; z-index: 1; }
 .page-reader-book .page-word-whisper { opacity: .65; }
+/* An ordinary ebook has no moving cursor, dimmed 'past' words or emphasis. */
+.page-reader-static .page-word-past { color: inherit; }
+.page-reader-static .page-word-current { background: none; color: inherit; outline: none; }
+.page-reader-static .page-word-emphasis { display: inline; transform: none; }
+.page-reader-static .page-word-whisper { opacity: 1; }
 .page-reader-navigation { z-index: 2; bottom: calc(11rem + env(safe-area-inset-bottom, 0px)); }
 .page-reader-navigation button:disabled { opacity: .35; }
 .reader-indicators { top: calc(4.25rem + env(safe-area-inset-top, 0px)); right: 1rem; flex-direction: row; }

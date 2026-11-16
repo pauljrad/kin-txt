@@ -12,6 +12,7 @@ interface Props {
   isPlaying: boolean;
   layout: Layout;
   controlsVisible: boolean;
+  playbackEnabled: boolean;
   glassVisible: boolean;
   emphasis: boolean;
   currentEmphasized: boolean;
@@ -34,7 +35,7 @@ const BookText = memo(function BookText({ parsedText, offsets }: { parsedText: P
 });
 
 export function PageReader({ parsedText, paragraphOffsets, currentWordIndex, isPlaying, layout, controlsVisible,
-  glassVisible, emphasis, currentEmphasized, currentWhispered, onInteract, onPause, onPlay, onDismissMenus, onNavigate }: Props) {
+  playbackEnabled, glassVisible, emphasis, currentEmphasized, currentWhispered, onInteract, onPause, onPlay, onDismissMenus, onNavigate }: Props) {
   const { textSize } = useTextSize();
   const [page, setPage] = useState(0);
   const [pageStarts, setPageStarts] = useState<number[]>([0]);
@@ -187,12 +188,12 @@ export function PageReader({ parsedText, paragraphOffsets, currentWordIndex, isP
     if (next < 0 || next >= pageStarts.length || glassVisible) return;
     if (isPlaying) { onPause(); return; }
     onNavigate(pageStarts[next]);
-    // Seeking clears the player's controls timeout; re-arm it afterwards.
-    onInteract();
-  }, [page, pageStarts, onNavigate, onPause, onInteract, isPlaying, glassVisible]);
+    // Turning an ordinary ebook page must never summon the player controls.
+    if (playbackEnabled && controlsVisible) onInteract();
+  }, [page, pageStarts, onNavigate, onPause, onInteract, isPlaying, glassVisible, playbackEnabled, controlsVisible]);
 
   return (
-    <section className="page-reader absolute inset-0 z-10 bg-background text-foreground cursor-auto"
+    <section className={`page-reader absolute inset-0 z-10 bg-background text-foreground cursor-auto ${!playbackEnabled ? 'page-reader-static' : ''}`}
       aria-label="Page reader"
       onPointerDownCapture={e => {
         // Pause on initial contact, not after pointerup/click (which can be delayed
@@ -204,6 +205,7 @@ export function PageReader({ parsedText, paragraphOffsets, currentWordIndex, isP
         }
         wasPlayingOnPress.current = isPlaying;
         if (glassVisible) return; // Settings surface is non-navigable.
+        if (!playbackEnabled) return; // Static book taps do not start playback.
         if (!isPlaying && layout === 'scroll') manualScroll.current = true;
         if (isPlaying) onPause();
       }}
@@ -218,8 +220,9 @@ export function PageReader({ parsedText, paragraphOffsets, currentWordIndex, isP
         }
         // A gesture is never a tap and must never start playback.
         if (suppressClick.current) { suppressClick.current = false; return; }
-        // The reading surface has one simple interaction: tap = pause/play.
-        // Word-selection taps have intentionally been removed.
+        // In normal ebook mode, taps are inert. Following words is an option.
+        if (!playbackEnabled) return;
+        // When Play Mode is enabled, one tap pauses or resumes, never seeks.
         manualScroll.current = false;
         if (isPlaying) onPause();
         else onPlay();
@@ -231,7 +234,7 @@ export function PageReader({ parsedText, paragraphOffsets, currentWordIndex, isP
           onWheel={() => { if (layout === 'scroll' && !isPlaying && !glassVisible) manualScroll.current = true; }}
           onKeyDown={e => {
             if (layout === 'scroll' && !isPlaying && (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'PageDown' || e.key === 'PageUp')) manualScroll.current = true;
-            if (e.key === ' ' || e.key === 'Enter') {
+            if (playbackEnabled && (e.key === ' ' || e.key === 'Enter')) {
               e.preventDefault();
               if (isPlaying) onPause(); else onPlay();
               return;
