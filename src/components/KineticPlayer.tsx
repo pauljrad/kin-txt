@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, Pause, RotateCcw, ChevronLeft, Rewind, BookOpen, FastForward, Clock, Music, Settings, Focus, Eye, Type, Share2 } from 'lucide-react';
+import { Play, Pause, RotateCcw, ChevronLeft, Rewind, BookOpen, FastForward, Clock, Music, Settings, Focus, Eye, Type, Share2, Ellipsis, X } from 'lucide-react';
 import { ParsedText, getWordDelay, filterEmphasis } from '@/lib/textParser';
 import { detectChapters, findSentenceBoundaries, getRewindPosition, Chapter } from '@/lib/chapterParser';
 import { updateDocumentReadingTime as updateLocalReadingTime } from '@/lib/documentStorage';
@@ -93,6 +93,8 @@ export function KineticPlayer({
 
   const [isPlaying, setIsPlaying] = useState(false);
   const [pageMode, setPageMode] = useState(false);
+  // Static ebook first. Play Mode must be enabled explicitly.
+  const [pagePlaybackEnabled, setPagePlaybackEnabled] = useState(false);
   // Frosted text is an explicit temporary controls/settings state, not static ebook mode.
   const [pageGlassMode, setPageGlassMode] = useState(false);
   const [pageLayout, setPageLayout] = useState<'pages' | 'scroll'>(() => {
@@ -1284,15 +1286,22 @@ export function KineticPlayer({
       controlsTimeoutRef.current = null;
     }
 
-    // Always keep the controls visible while a menu is open, and reveal them on any
-    // of these transitions so the user can see what they're doing.
-    setShowControls(!pageMode || anyMenuOpen || !menuJustClosed);
-
-    if (!anyMenuOpen && (isPlaying || menuJustClosed || pageMode)) {
-      controlsTimeoutRef.current = setTimeout(() => {
-        setShowControls(false);
-        setPageGlassMode(false);
-      }, 3000);
+    // Page Reader opens with only its corner menu button, not the player HUD.
+    if (pageMode) {
+      if (anyMenuOpen) setShowControls(true);
+      if (!anyMenuOpen && isPlaying) {
+        controlsTimeoutRef.current = setTimeout(() => {
+          setShowControls(false);
+          setPageGlassMode(false);
+        }, 3000);
+      }
+    } else {
+      setShowControls(true);
+      if (!anyMenuOpen && (isPlaying || menuJustClosed)) {
+        controlsTimeoutRef.current = setTimeout(() => {
+          setShowControls(false);
+        }, 3000);
+      }
     }
 
     return () => {
@@ -1349,11 +1358,12 @@ export function KineticPlayer({
       handleRestart();
       return;
     }
+    if (pageMode && !pagePlaybackEnabled) return;
     const newPlaying = !isPlaying;
     setIsPlaying(newPlaying);
     if (pageMode) {
       setPageGlassMode(!newPlaying);
-      if (!newPlaying) setShowControls(true);
+      setShowControls(!newPlaying);
     }
 
     // Enter fullscreen when starting to play
@@ -1875,8 +1885,9 @@ export function KineticPlayer({
                   setMusicMenuOpen(false);
                   setIsNavOpen(false);
                   setFocusMode(false);
+                  setPagePlaybackEnabled(false);
                   setPageMode(value => !value);
-                  setShowControls(true);
+                  setShowControls(false);
                   void enterFullscreen();
                 }}
                 className="toolbar-button"
@@ -2113,9 +2124,10 @@ export function KineticPlayer({
                                   setIsPlaying(false);
                                   setPageGlassMode(false);
                                   setFocusMode(false);
+                                  setPagePlaybackEnabled(false);
                                   setPageMode(isPage);
                                   setShowSettingsPopover(false);
-                                  setShowControls(true);
+                                  setShowControls(!isPage);
                                   void enterFullscreen();
                                 }}
                                 className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium ${pageMode === isPage ? 'bg-primary text-primary-foreground' : 'bg-secondary hover:bg-secondary/80'}`}>
@@ -2124,6 +2136,19 @@ export function KineticPlayer({
                             ))}
                           </div>
                         </div>
+                        {pageMode && (
+                          <div className="flex items-center justify-between gap-3 border-t border-border/50 pt-3">
+                            <div>
+                              <div className="text-sm font-semibold">Play Mode</div>
+                              <div className="text-xs text-muted-foreground">Follow words with Rhythm, or read normally</div>
+                            </div>
+                            <button type="button" role="switch" aria-label="Play Mode" aria-checked={pagePlaybackEnabled}
+                              onClick={() => { setPagePlaybackEnabled(v => !v); setIsPlaying(false); }}
+                              className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${pagePlaybackEnabled ? 'bg-primary' : 'bg-muted'}`}>
+                              <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${pagePlaybackEnabled ? 'translate-x-6' : 'translate-x-1'}`} />
+                            </button>
+                          </div>
+                        )}
                         {pageMode && (
                           <div className="space-y-2">
                             <div className="text-xs text-muted-foreground">Page layout</div>
