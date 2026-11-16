@@ -1495,7 +1495,7 @@ export function KineticPlayer({
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       className={`fixed inset-0 h-[100dvh] w-screen flex items-center justify-center overflow-hidden cursor-pointer transition-all duration-700 bg-background ${pageMode ? 'touch-auto' : 'touch-none'} z-50`}
-      onMouseMove={handleMouseMove}
+      onMouseMove={pageMode ? undefined : handleMouseMove}
       onPointerUp={handleScreenTap}
     >
       {/* Creator image moment — edge-to-edge, ORBIT-style cover crop */}
@@ -1958,6 +1958,7 @@ export function KineticPlayer({
             </motion.div>
 
             {/* Combined Indicators Panel (Speed + Duration) */}
+            {(!pageMode || pagePlaybackEnabled) && (
             <motion.div
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -1980,7 +1981,7 @@ export function KineticPlayer({
                 </div>
               </div>
             </motion.div>
-
+            )}
 
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -2048,6 +2049,7 @@ export function KineticPlayer({
                   <div className="w-px h-6 sm:h-8 bg-border" />
 
                   {/* Rhythm Presets - Hidden on very small screens, use settings instead */}
+                  {(!pageMode || pagePlaybackEnabled) && (
                   <div className="hidden xs:flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
                     {(['slower', 'normal', 'faster'] as const).map((preset) => (
                       <button
@@ -2067,6 +2069,7 @@ export function KineticPlayer({
                       </button>
                     ))}
                   </div>
+                  )}
 
                   {/* Share Button */}
                   <button
