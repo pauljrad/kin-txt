@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, Pause, RotateCcw, ChevronLeft, Rewind, BookOpen, Clock, Music, Settings, Focus, Eye, Type, Share2 } from 'lucide-react';
+import { Play, Pause, RotateCcw, ChevronLeft, Rewind, BookOpen, FastForward, Clock, Music, Settings, Focus, Eye, Type, Share2 } from 'lucide-react';
 import { ParsedText, getWordDelay, filterEmphasis } from '@/lib/textParser';
 import { detectChapters, findSentenceBoundaries, getRewindPosition, Chapter } from '@/lib/chapterParser';
 import { updateDocumentReadingTime as updateLocalReadingTime } from '@/lib/documentStorage';
@@ -93,6 +93,8 @@ export function KineticPlayer({
 
   const [isPlaying, setIsPlaying] = useState(false);
   const [pageMode, setPageMode] = useState(false);
+  // Frosted text is an explicit temporary controls/settings state, not static ebook mode.
+  const [pageGlassMode, setPageGlassMode] = useState(false);
   const [pageLayout, setPageLayout] = useState<'pages' | 'scroll'>(() => {
     try { return localStorage.getItem('kin_page_layout') === 'scroll' ? 'scroll' : 'pages'; }
     catch { return 'pages'; }
@@ -153,6 +155,12 @@ export function KineticPlayer({
       : 'none';
   const [activeAtmosphere, setActiveAtmosphere] = useState<AtmosphereId>(directedExperience ? creatorInitialAtmosphere : (initialSettings.activeAtmosphere ?? 'none'));
   const [musicMenuOpen, setMusicMenuOpen] = useState(false);
+  // Closing any reader menu must restore the sharp ebook text immediately.
+  useEffect(() => {
+    if (!pageMode || (!showSettingsPopover && !musicMenuOpen && !isNavOpen)) {
+      setPageGlassMode(false);
+    }
+  }, [pageMode, showSettingsPopover, musicMenuOpen, isNavOpen]);
   const [activeCreatorImage, setActiveCreatorImage] = useState<CreatorImageMoment | null>(null);
   const shownCreatorImagesRef = useRef<Set<string>>(new Set());
 
@@ -1170,6 +1178,7 @@ export function KineticPlayer({
     if ((isPlaying || pageMode) && !showSettingsPopover && !musicMenuOpen && !isNavOpen && !showFullText) {
       controlsTimeoutRef.current = setTimeout(() => {
         setShowControls(false);
+        setPageGlassMode(false);
       }, 3000);
     }
   }, [isPlaying, pageMode, showSettingsPopover, musicMenuOpen, isNavOpen, showFullText]);
@@ -1265,11 +1274,12 @@ export function KineticPlayer({
 
     // Always keep the controls visible while a menu is open, and reveal them on any
     // of these transitions so the user can see what they're doing.
-    setShowControls(true);
+    setShowControls(!pageMode || anyMenuOpen || !menuJustClosed);
 
     if (!anyMenuOpen && (isPlaying || menuJustClosed || pageMode)) {
       controlsTimeoutRef.current = setTimeout(() => {
         setShowControls(false);
+        setPageGlassMode(false);
       }, 3000);
     }
 
@@ -1329,6 +1339,10 @@ export function KineticPlayer({
     }
     const newPlaying = !isPlaying;
     setIsPlaying(newPlaying);
+    if (pageMode) {
+      setPageGlassMode(!newPlaying);
+      if (!newPlaying) setShowControls(true);
+    }
 
     // Enter fullscreen when starting to play
     if (newPlaying && !isFullscreen) {
@@ -1429,8 +1443,8 @@ export function KineticPlayer({
 
   // In focus mode, minimal controls (Back + Eye) are ALWAYS visible
   // so user can exit focus mode any time. Full HUD only when showControls & not focus.
-  const isHudVisible = (showControls || isDragging) && !focusMode;
-  const minimalControlsVisible = focusMode;
+  const isHudVisible = (showControls || isDragging) && (!focusMode || pageMode);
+  const minimalControlsVisible = focusMode && !pageMode;
 
   // Error state: if parsedText is invalid, show error and back button
   if (!isValidText) {
@@ -1844,6 +1858,11 @@ export function KineticPlayer({
                 onClick={(e) => {
                   e.stopPropagation();
                   setIsPlaying(false);
+                  setPageGlassMode(false);
+                  setShowSettingsPopover(false);
+                  setMusicMenuOpen(false);
+                  setIsNavOpen(false);
+                  setFocusMode(false);
                   setPageMode(value => !value);
                   setShowControls(true);
                   void enterFullscreen();
@@ -1853,7 +1872,9 @@ export function KineticPlayer({
                 aria-label={pageMode ? "Kinetic view" : "Page reading"}
                 aria-pressed={pageMode}
               >
-                <Type className="w-4 h-4 sm:w-6 sm:h-6" />
+                {pageMode
+                  ? <FastForward className="w-4 h-4 sm:w-6 sm:h-6" />
+                  : <BookOpen className="w-4 h-4 sm:w-6 sm:h-6" />}
               </button>
 
               {/* Full Text View Button */}
@@ -1865,8 +1886,9 @@ export function KineticPlayer({
                 }}
                 className="toolbar-button"
                 title="View full text"
+                aria-label="Full text view"
               >
-                <BookOpen className="w-4 h-4 sm:w-6 sm:h-6" />
+                <Type className="w-4 h-4 sm:w-6 sm:h-6" />
               </button>
 
               {/* Chapter Navigation Button */}
@@ -1874,6 +1896,7 @@ export function KineticPlayer({
                 onClick={(e) => {
                   e.stopPropagation();
                   setIsPlaying(false);
+                  if (pageMode) setPageGlassMode(true);
                   setIsNavOpen((v) => !v);
                 }}
                 className="toolbar-button"
@@ -2019,7 +2042,13 @@ export function KineticPlayer({
 
                   {/* Settings Button */}
                   <Popover open={showSettingsPopover} onOpenChange={(open) => {
-                    if (!open) justClosedMenuRef.current = true;
+                    if (!open) {
+                      justClosedMenuRef.current = true;
+                      setPageGlassMode(false);
+                    } else if (pageMode) {
+                      setIsPlaying(false);
+                      setPageGlassMode(true);
+                    }
                     setShowSettingsPopover(open);
                   }}>
                     <PopoverTrigger asChild>
@@ -2033,20 +2062,40 @@ export function KineticPlayer({
                       </button>
                     </PopoverTrigger>
                     <PopoverContent
-                      className="w-72 sm:w-80"
+                      className="w-72 sm:w-80 max-h-[75dvh] overflow-y-auto overscroll-contain touch-pan-y"
                       side="top"
                       align="end"
                       onClick={(e) => e.stopPropagation()}
+                      onPointerDownOutside={e => {
+                        // Swipes across the backdrop should not dismiss the settings panel.
+                        if (pageMode) e.preventDefault();
+                      }}
                       container={containerRef.current}
                     >
                       <div className="space-y-4">
-                        <div className="font-medium text-sm">Reader Settings</div>
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="font-medium text-sm">Reader Settings</div>
+                          {pageMode && (
+                            <button type="button" className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-secondary hover:bg-secondary/80"
+                              onClick={() => { setShowSettingsPopover(false); setPageGlassMode(false); }}>
+                              Done
+                            </button>
+                          )}
+                        </div>
                         <div className="space-y-2">
                           <div className="text-xs text-muted-foreground">Reading view</div>
                           <div className="flex gap-2">
                             {[false, true].map(isPage => (
                               <button key={String(isPage)} aria-pressed={pageMode === isPage}
-                                onClick={() => { setIsPlaying(false); setPageMode(isPage); void enterFullscreen(); }}
+                                onClick={() => {
+                                  setIsPlaying(false);
+                                  setPageGlassMode(false);
+                                  setFocusMode(false);
+                                  setPageMode(isPage);
+                                  setShowSettingsPopover(false);
+                                  setShowControls(true);
+                                  void enterFullscreen();
+                                }}
                                 className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium ${pageMode === isPage ? 'bg-primary text-primary-foreground' : 'bg-secondary hover:bg-secondary/80'}`}>
                                 {isPage ? 'Page reading' : 'Kinetic'}
                               </button>
@@ -2323,7 +2372,13 @@ export function KineticPlayer({
                   <Popover 
                     open={musicMenuOpen}
                     onOpenChange={(open) => {
-                      if (!open) justClosedMenuRef.current = true;
+                      if (!open) {
+                        justClosedMenuRef.current = true;
+                        setPageGlassMode(false);
+                      } else if (pageMode) {
+                        setIsPlaying(false);
+                        setPageGlassMode(true);
+                      }
                       if (open && activeAtmosphere !== 'none') {
                         // If music is on, turn it off and don't open the menu
                         setActiveAtmosphere('none');
@@ -2346,8 +2401,11 @@ export function KineticPlayer({
                       </button>
                     </PopoverTrigger>
 
-                    <PopoverContent className="w-48 bg-card border-border p-2 mb-2" side="top" align="center">
+                    <PopoverContent className="w-48 bg-card border-border p-2 mb-2" side="top" align="center"
+                      onPointerDownOutside={e => { if (pageMode) e.preventDefault(); }}>
                       <div className="flex flex-col gap-1">
+                        {pageMode && <button type="button" className="text-right text-xs font-semibold p-2"
+                          onClick={() => { setMusicMenuOpen(false); setPageGlassMode(false); }}>Done</button>}
                         <button
                           onClick={() => {
                             setActiveAtmosphere('none');
@@ -2515,11 +2573,21 @@ export function KineticPlayer({
           isPlaying={isPlaying}
           layout={pageLayout}
           controlsVisible={isHudVisible}
+          glassVisible={!isPlaying && isHudVisible && (pageGlassMode || showSettingsPopover || musicMenuOpen || isNavOpen)}
           emphasis={emphasisMode}
           currentEmphasized={isEmphasisWord}
           currentWhispered={isWhisperedWord}
           onInteract={handleMouseMove}
-          onPause={() => { setIsPlaying(false); handleMouseMove(); void persistReadingTime(true); }}
+          onPause={() => {
+            setIsPlaying(false);
+            setPageGlassMode(true);
+            handleMouseMove();
+            void persistReadingTime(true);
+          }}
+          onDismissGlass={() => {
+            setPageGlassMode(false);
+            if (!showSettingsPopover && !musicMenuOpen && !isNavOpen) setShowControls(false);
+          }}
           onNavigate={seekToIndex}
         />
       )}
