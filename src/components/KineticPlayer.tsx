@@ -2062,7 +2062,7 @@ export function KineticPlayer({
                       </button>
                     </PopoverTrigger>
                     <PopoverContent
-                      className="w-72 sm:w-80"
+                      className="w-72 sm:w-80 max-h-[75dvh] overflow-y-auto overscroll-contain touch-pan-y"
                       side="top"
                       align="end"
                       onClick={(e) => e.stopPropagation()}
