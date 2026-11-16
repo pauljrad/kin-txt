@@ -164,7 +164,8 @@ export function KineticPlayer({
   const onMenuHandleTouchEnd = (event: React.TouchEvent, close: () => void) => {
     const start = menuSwipeStartYRef.current;
     menuSwipeStartYRef.current = null;
-    if (start !== null && event.changedTouches[0]?.clientY - start > 45) close();
+    const end = event.changedTouches[0]?.clientY;
+    if (start !== null && typeof end === 'number' && end - start > 45) close();
   };
   // Closing any reader menu must restore the sharp ebook text immediately.
   useEffect(() => {
