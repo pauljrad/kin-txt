@@ -2085,12 +2085,14 @@ export function KineticPlayer({
                       <button
                         key={preset}
                         onClick={() => {
-                          setRhythmPreset(preset);
-                          if (!rhythmMode) {
-                            setRhythmMode(true);
+                          if (pageMode) {
+                            setPageRhythmPreset(preset);
+                          } else {
+                            setRhythmPreset(preset);
+                            if (!rhythmMode) setRhythmMode(true);
                           }
                         }}
-                        className={`px-1.5 py-1 sm:px-3 sm:py-1.5 rounded-lg text-[0.65em] sm:text-[0.8em] font-medium transition-colors capitalize ${rhythmMode && rhythmPreset === preset
+                        className={`px-1.5 py-1 sm:px-3 sm:py-1.5 rounded-lg text-[0.65em] sm:text-[0.8em] font-medium transition-colors capitalize ${rhythmActive && activeRhythmPreset === preset
                           ? 'bg-primary text-primary-foreground'
                           : 'hover:bg-secondary text-muted-foreground'
                           }`}
@@ -2270,8 +2272,8 @@ export function KineticPlayer({
                               {(['slower', 'normal', 'faster'] as const).map((preset) => (
                                 <button
                                   key={preset}
-                                  onClick={() => setRhythmPreset(preset)}
-                                  className={`flex-1 px-2 py-1.5 rounded-lg text-xs font-medium transition-colors capitalize ${rhythmPreset === preset
+                                  onClick={() => pageMode ? setPageRhythmPreset(preset) : setRhythmPreset(preset)}
+                                  className={`flex-1 px-2 py-1.5 rounded-lg text-xs font-medium transition-colors capitalize ${activeRhythmPreset === preset
                                     ? 'bg-primary text-primary-foreground'
                                     : 'bg-secondary hover:bg-secondary/80 text-muted-foreground'
                                     }`}
@@ -2298,7 +2300,10 @@ export function KineticPlayer({
                             aria-describedby="emphasis-mode-description"
                             aria-checked={emphasisEnabled}
                             disabled={targetMode && !pageMode}
-                            onClick={() => setEmphasisMode(value => !value)}
+                            onClick={() => {
+                              if (pageMode) setPageEmphasisMode(value => !value);
+                              else setEmphasisMode(value => !value);
+                            }}
                             className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${emphasisEnabled ? 'bg-primary' : 'bg-muted'}`}
                           >
                             <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${emphasisEnabled ? 'translate-x-6' : 'translate-x-1'}`} />
@@ -2582,7 +2587,7 @@ export function KineticPlayer({
                   {rhythmActive ? (
                     <>
                       <Music className="w-3 h-3 inline mr-1" />
-                      {pageMode ? 'Page reading · Rhythm' : 'Rhythm mode'} ({rhythmPreset})
+                      {pageMode ? 'Page reading · Rhythm' : 'Rhythm mode'} ({activeRhythmPreset})
                     </>
                   ) : accelerationMode ? (
                     <>Accelerating: {startSpeed.toFixed(1)}x → {endSpeed.toFixed(1)}x</>
