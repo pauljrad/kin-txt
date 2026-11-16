@@ -1,4 +1,4 @@
-import { Fragment, memo, useCallback, useLayoutEffect, useRef, useState } from 'react';
+import { Fragment, memo, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import type { ParsedText } from '@/lib/textParser';
 import { useTextSize } from '@/hooks/useTextSize';
@@ -47,6 +47,13 @@ export function PageReader({ parsedText, paragraphOffsets, currentWordIndex, isP
   const lastReadIndex = useRef(0);
   const wasPlayingOnPress = useRef(false);
   const followedLineTop = useRef<number | null>(null);
+  const manualScroll = useRef(false);
+  const scrollProgressTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (isPlaying && scrollProgressTimeout.current) clearTimeout(scrollProgressTimeout.current);
+    return () => { if (scrollProgressTimeout.current) clearTimeout(scrollProgressTimeout.current); };
+  }, [isPlaying]);
 
   useLayoutEffect(() => {
     const frame = viewport.current;
@@ -105,7 +112,7 @@ export function PageReader({ parsedText, paragraphOffsets, currentWordIndex, isP
           lineTop - frame.clientHeight * 0.42,
         ));
         if (Math.abs(frame.scrollTop - top) > 3) {
-          frame.scrollTo({ top, behavior: 'smooth' });
+          frame.scrollTo({ top, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
         }
         followedLineTop.current = lineTop;
       }
@@ -147,6 +154,30 @@ export function PageReader({ parsedText, paragraphOffsets, currentWordIndex, isP
     };
   }, [currentWordIndex, emphasis, currentEmphasized, currentWhispered, parsedText]);
 
+  // Static continuous reading is a real ebook: remember where the reader has
+  // manually scrolled, so reopening the TXT or pressing Play uses that position.
+  const rememberScrollPosition = useCallback(() => {
+    if (!manualScroll.current || isPlaying || glassVisible || layout !== 'scroll') return;
+    if (scrollProgressTimeout.current) clearTimeout(scrollProgressTimeout.current);
+    scrollProgressTimeout.current = setTimeout(() => {
+      const frame = viewport.current;
+      const items = words.current;
+      if (!frame || !items.length || !manualScroll.current) return;
+      const y = frame.scrollTop + Math.min(frame.clientHeight * 0.24, 120);
+      // Words are laid out in reading order. Binary search keeps this cheap.
+      let low = 0;
+      let high = items.length;
+      while (low < high) {
+        const mid = Math.floor((low + high) / 2);
+        if (items[mid].offsetTop < y) low = mid + 1;
+        else high = mid;
+      }
+      const index = Math.max(0, Math.min(items.length - 1, low - 1));
+      manualScroll.current = false;
+      if (index !== currentWordIndex) onNavigate(index);
+    }, 300);
+  }, [layout, isPlaying, glassVisible, currentWordIndex, onNavigate]);
+
   const turnPage = useCallback((direction: number) => {
     const next = page + direction;
     if (next < 0 || next >= pageStarts.length || glassVisible) return;
@@ -169,6 +200,7 @@ export function PageReader({ parsedText, paragraphOffsets, currentWordIndex, isP
         }
         wasPlayingOnPress.current = isPlaying;
         if (glassVisible) return; // Settings surface is non-navigable.
+        if (!isPlaying && layout === 'scroll') manualScroll.current = true;
         if (isPlaying) onPause();
       }}
       onPointerUp={e => e.stopPropagation()}
@@ -182,6 +214,7 @@ export function PageReader({ parsedText, paragraphOffsets, currentWordIndex, isP
         }
         if (glassVisible) {
           // Tapping outside the controls closes the glass; never seeks a word.
+          manualScroll.current = false;
           onDismissGlass();
           return;
         }
@@ -189,14 +222,20 @@ export function PageReader({ parsedText, paragraphOffsets, currentWordIndex, isP
         // Keyboard/synthetic clicks still pause even without a pointerdown.
         if (isPlaying) { onPause(); return; }
         const word = (e.target as HTMLElement).closest<HTMLElement>('[data-reader-word]');
-        if (word) onNavigate(Number(word.dataset.readerWord));
+        if (word) {
+          manualScroll.current = false;
+          onNavigate(Number(word.dataset.readerWord));
+        }
         // Tap and seek both reveal controls; restart auto-hide after navigation.
         onInteract();
       }}>
       <div className={`page-reader-content ${glassVisible ? 'page-reader-content-glass' : ''}`}>
         <div ref={viewport} className={`page-reader-viewport page-reader-${layout}`} tabIndex={0}
           role="region" aria-label={layout === 'pages' ? 'Book pages. Use left and right arrows to turn pages.' : 'Continuous text'}
+          onScroll={rememberScrollPosition}
+          onWheel={() => { if (layout === 'scroll' && !isPlaying && !glassVisible) manualScroll.current = true; }}
           onKeyDown={e => {
+            if (layout === 'scroll' && !isPlaying && (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'PageDown' || e.key === 'PageUp')) manualScroll.current = true;
             if (glassVisible) return;
             if (layout === 'pages' && (e.key === 'ArrowRight' || e.key === 'ArrowLeft')) {
               e.preventDefault(); turnPage(e.key === 'ArrowRight' ? 1 : -1);
@@ -204,6 +243,7 @@ export function PageReader({ parsedText, paragraphOffsets, currentWordIndex, isP
           }}
           onTouchStart={e => {
             suppressClick.current = false;
+            if (layout === 'scroll' && !isPlaying && !glassVisible) manualScroll.current = true;
             touchStart.current = glassVisible ? null : { x: e.touches[0].clientX, y: e.touches[0].clientY };
           }}
           onTouchEnd={e => {
