@@ -1989,8 +1989,23 @@ export function KineticPlayer({
               className="controls-panel pointer-events-auto absolute left-4 right-4 sm:left-1/2 sm:-translate-x-1/2 sm:w-auto" style={{ bottom: 'calc(3.5rem + env(safe-area-inset-bottom, 0px))' }}
             >
               <div className="glass-panel p-2 sm:p-4 flex flex-col gap-2 sm:gap-4">
+                {pageMode && (
+                  <div className="flex items-center justify-between gap-3 px-2 py-1">
+                    <div>
+                      <div className="text-xs font-semibold">Play Mode</div>
+                      <div className="text-[10px] text-muted-foreground">{pagePlaybackEnabled ? 'Rhythm following on' : 'Off — static ebook'}</div>
+                    </div>
+                    <button type="button" role="switch" aria-label="Play Mode" aria-checked={pagePlaybackEnabled}
+                      onClick={(e) => { e.stopPropagation(); setPagePlaybackEnabled(v => !v); setIsPlaying(false); }}
+                      className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${pagePlaybackEnabled ? 'bg-primary' : 'bg-muted'}`}>
+                      <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${pagePlaybackEnabled ? 'translate-x-6' : 'translate-x-1'}`} />
+                    </button>
+                  </div>
+                )}
                 {/* Playback Controls */}
                 <div className="flex items-center justify-center gap-1.5 sm:gap-4">
+                  {(!pageMode || pagePlaybackEnabled) && (
+                  <>
                   {/* Rewind 2 sentences */}
                   <button
                     onClick={(e) => {
@@ -2026,6 +2041,8 @@ export function KineticPlayer({
                   >
                     <RotateCcw className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
                   </button>
+                  </>
+                  )}
 
                   {/* Divider */}
                   <div className="w-px h-6 sm:h-8 bg-border" />
@@ -2630,18 +2647,21 @@ export function KineticPlayer({
           isPlaying={isPlaying}
           layout={pageLayout}
           controlsVisible={isHudVisible}
+          playbackEnabled={pagePlaybackEnabled}
           glassVisible={!isPlaying && isHudVisible && (pageGlassMode || showSettingsPopover || musicMenuOpen || isNavOpen)}
           emphasis={emphasisMode}
           currentEmphasized={isEmphasisWord}
           currentWhispered={isWhisperedWord}
           onInteract={handleMouseMove}
           onPause={() => {
+            if (!pagePlaybackEnabled) return;
             setIsPlaying(false);
             setPageGlassMode(true);
             handleMouseMove();
             void persistReadingTime(true);
           }}
           onPlay={() => {
+            if (!pagePlaybackEnabled) return;
             // A second tap should play, never navigate to a word.
             setShowSettingsPopover(false);
             setMusicMenuOpen(false);
@@ -2661,6 +2681,27 @@ export function KineticPlayer({
           }}
           onNavigate={seekToIndex}
         />
+      )}
+
+      {/* One discreet corner control while the ebook is paused. */}
+      {pageMode && !isPlaying && !showFullText && (
+        <button type="button"
+          className="controls-panel pointer-events-auto absolute z-[45] right-4 flex h-10 w-10 items-center justify-center rounded-full glass-panel shadow-md"
+          style={{ bottom: 'calc(1rem + env(safe-area-inset-bottom, 0px))' }}
+          aria-label={isHudVisible ? 'Close reader menu' : 'Open reader menu'}
+          aria-expanded={isHudVisible}
+          title={isHudVisible ? 'Hide reader controls' : 'Reader menu'}
+          onClick={e => {
+            e.stopPropagation();
+            const next = !isHudVisible;
+            setShowSettingsPopover(false);
+            setMusicMenuOpen(false);
+            setIsNavOpen(false);
+            setPageGlassMode(next);
+            setShowControls(next);
+          }}>
+          {isHudVisible ? <X className="h-4 w-4" /> : <Ellipsis className="h-5 w-5" />}
+        </button>
       )}
 
       {/* Full Text View */}
