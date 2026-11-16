@@ -155,6 +155,18 @@ export function KineticPlayer({
       : 'none';
   const [activeAtmosphere, setActiveAtmosphere] = useState<AtmosphereId>(directedExperience ? creatorInitialAtmosphere : (initialSettings.activeAtmosphere ?? 'none'));
   const [musicMenuOpen, setMusicMenuOpen] = useState(false);
+  // The settings popovers scroll normally; a deliberate swipe on the handle
+  // dismisses them without competing with the scrollable settings content.
+  const menuSwipeStartYRef = useRef<number | null>(null);
+  const onMenuHandleTouchStart = (event: React.TouchEvent) => {
+    menuSwipeStartYRef.current = event.touches[0]?.clientY ?? null;
+  };
+  const onMenuHandleTouchEnd = (event: React.TouchEvent, close: () => void) => {
+    const start = menuSwipeStartYRef.current;
+    menuSwipeStartYRef.current = null;
+    const end = event.changedTouches[0]?.clientY;
+    if (start !== null && typeof end === 'number' && end - start > 45) close();
+  };
   // Closing any reader menu must restore the sharp ebook text immediately.
   useEffect(() => {
     if (!pageMode || (!showSettingsPopover && !musicMenuOpen && !isNavOpen)) {
@@ -2073,6 +2085,16 @@ export function KineticPlayer({
                       container={containerRef.current}
                     >
                       <div className="space-y-4">
+                        {pageMode && (
+                          <div className="flex justify-center py-1 touch-none cursor-grab"
+                            role="button" tabIndex={0} aria-label="Swipe down or press to close settings"
+                            onTouchStart={onMenuHandleTouchStart}
+                            onTouchEnd={e => onMenuHandleTouchEnd(e, () => { setShowSettingsPopover(false); setPageGlassMode(false); })}
+                            onClick={() => { setShowSettingsPopover(false); setPageGlassMode(false); }}
+                            onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setShowSettingsPopover(false); setPageGlassMode(false); } }}>
+                            <span className="h-1.5 w-12 rounded-full bg-muted-foreground/50" />
+                          </div>
+                        )}
                         <div className="flex items-center justify-between gap-3">
                           <div className="font-medium text-sm">Reader Settings</div>
                           {pageMode && (
@@ -2404,6 +2426,16 @@ export function KineticPlayer({
                     <PopoverContent className="w-48 bg-card border-border p-2 mb-2" side="top" align="center"
                       onPointerDownOutside={e => { if (pageMode) e.preventDefault(); }}>
                       <div className="flex flex-col gap-1">
+                        {pageMode && (
+                          <div className="flex justify-center py-2 touch-none cursor-grab"
+                            role="button" tabIndex={0} aria-label="Swipe down or press to close music menu"
+                            onTouchStart={onMenuHandleTouchStart}
+                            onTouchEnd={e => onMenuHandleTouchEnd(e, () => { setMusicMenuOpen(false); setPageGlassMode(false); })}
+                            onClick={() => { setMusicMenuOpen(false); setPageGlassMode(false); }}
+                            onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setMusicMenuOpen(false); setPageGlassMode(false); } }}>
+                            <span className="h-1.5 w-12 rounded-full bg-muted-foreground/50" />
+                          </div>
+                        )}
                         {pageMode && <button type="button" className="text-right text-xs font-semibold p-2"
                           onClick={() => { setMusicMenuOpen(false); setPageGlassMode(false); }}>Done</button>}
                         <button
@@ -2584,9 +2616,23 @@ export function KineticPlayer({
             handleMouseMove();
             void persistReadingTime(true);
           }}
-          onDismissGlass={() => {
+          onPlay={() => {
+            // A second tap should play, never navigate to a word.
+            setShowSettingsPopover(false);
+            setMusicMenuOpen(false);
+            setIsNavOpen(false);
             setPageGlassMode(false);
-            if (!showSettingsPopover && !musicMenuOpen && !isNavOpen) setShowControls(false);
+            setShowControls(false);
+            setIsPlaying(true);
+            if (!isFullscreen) void enterFullscreen();
+          }}
+          onDismissMenus={() => {
+            // Swiping the glass backdrop clears every open page menu.
+            setShowSettingsPopover(false);
+            setMusicMenuOpen(false);
+            setIsNavOpen(false);
+            setPageGlassMode(false);
+            setShowControls(false);
           }}
           onNavigate={seekToIndex}
         />

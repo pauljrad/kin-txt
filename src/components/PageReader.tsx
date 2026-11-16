@@ -18,7 +18,8 @@ interface Props {
   currentWhispered: boolean;
   onInteract: () => void;
   onPause: () => void;
-  onDismissGlass: () => void;
+  onPlay: () => void;
+  onDismissMenus: () => void;
   onNavigate: (index: number) => void;
 }
 
@@ -33,7 +34,7 @@ const BookText = memo(function BookText({ parsedText, offsets }: { parsedText: P
 });
 
 export function PageReader({ parsedText, paragraphOffsets, currentWordIndex, isPlaying, layout, controlsVisible,
-  glassVisible, emphasis, currentEmphasized, currentWhispered, onInteract, onPause, onDismissGlass, onNavigate }: Props) {
+  glassVisible, emphasis, currentEmphasized, currentWhispered, onInteract, onPause, onPlay, onDismissMenus, onNavigate }: Props) {
   const { textSize } = useTextSize();
   const [page, setPage] = useState(0);
   const [pageStarts, setPageStarts] = useState<number[]>([0]);
@@ -215,22 +216,13 @@ export function PageReader({ parsedText, paragraphOffsets, currentWordIndex, isP
           suppressClick.current = false;
           return;
         }
-        if (glassVisible) {
-          // Tapping outside the controls closes the glass; never seeks a word.
-          manualScroll.current = false;
-          onDismissGlass();
-          return;
-        }
-        if (suppressClick.current) { suppressClick.current = false; onInteract(); return; }
-        // Keyboard/synthetic clicks still pause even without a pointerdown.
-        if (isPlaying) { onPause(); return; }
-        const word = (e.target as HTMLElement).closest<HTMLElement>('[data-reader-word]');
-        if (word) {
-          manualScroll.current = false;
-          onNavigate(Number(word.dataset.readerWord));
-        }
-        // Tap and seek both reveal controls; restart auto-hide after navigation.
-        onInteract();
+        // A gesture is never a tap and must never start playback.
+        if (suppressClick.current) { suppressClick.current = false; return; }
+        // The reading surface has one simple interaction: tap = pause/play.
+        // Word-selection taps have intentionally been removed.
+        manualScroll.current = false;
+        if (isPlaying) onPause();
+        else onPlay();
       }}>
       <div className={`page-reader-content ${glassVisible ? 'page-reader-content-glass' : ''}`}>
         <div ref={viewport} className={`page-reader-viewport page-reader-${layout}`} tabIndex={0}
@@ -239,28 +231,44 @@ export function PageReader({ parsedText, paragraphOffsets, currentWordIndex, isP
           onWheel={() => { if (layout === 'scroll' && !isPlaying && !glassVisible) manualScroll.current = true; }}
           onKeyDown={e => {
             if (layout === 'scroll' && !isPlaying && (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'PageDown' || e.key === 'PageUp')) manualScroll.current = true;
-            if (glassVisible) return;
+            if (e.key === ' ' || e.key === 'Enter') {
+              e.preventDefault();
+              if (isPlaying) onPause(); else onPlay();
+              return;
+            }
+            if (glassVisible) {
+              if (e.key === 'Escape') { e.preventDefault(); onDismissMenus(); }
+              return;
+            }
             if (layout === 'pages' && (e.key === 'ArrowRight' || e.key === 'ArrowLeft')) {
               e.preventDefault(); turnPage(e.key === 'ArrowRight' ? 1 : -1);
-            } else if (e.key === ' ') { e.preventDefault(); onPause(); onInteract(); }
+            }
           }}
           onTouchStart={e => {
             suppressClick.current = false;
             if (layout === 'scroll' && !isPlaying && !glassVisible) manualScroll.current = true;
-            touchStart.current = glassVisible ? null : { x: e.touches[0].clientX, y: e.touches[0].clientY };
+            touchStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
           }}
           onTouchEnd={e => {
             const start = touchStart.current;
             touchStart.current = null;
-            if (!start || glassVisible || layout !== 'pages') return;
+            if (!start) return;
             const dx = e.changedTouches[0].clientX - start.x;
             const dy = e.changedTouches[0].clientY - start.y;
-            if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) {
-              // A gesture that began during playback only pauses; it never turns
-              // a page as a second action from the same initial touch.
-              suppressClick.current = true;
+            if (Math.hypot(dx, dy) < 18) return;
+            // Swiping on glass removes the player/settings overlay rather than
+            // selecting a word or turning a page.
+            suppressClick.current = true;
+            if (glassVisible) {
+              manualScroll.current = false;
+              if (Math.hypot(dx, dy) >= 55) onDismissMenus();
+              return;
+            }
+            if (layout === 'pages' && Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+              // Only a swipe that began paused turns a page.
               if (!wasPlayingOnPress.current) turnPage(dx < 0 ? 1 : -1);
             }
+            // Continuous mode keeps native scroll, without a tap-to-play after a swipe.
           }}>
           <div ref={book} className="page-reader-book">
             <BookText parsedText={parsedText} offsets={paragraphOffsets} />
