@@ -69,6 +69,12 @@ export function KineticPlayer({
     rhythmMode: boolean;
     emphasisMode: boolean;
     rhythmPreset: 'slower' | 'normal' | 'faster';
+    // Last view and independent Page Reader preferences.
+    pageMode: boolean;
+    pagePlaybackEnabled: boolean;
+    pageEmphasisMode: boolean;
+    pageRhythmPreset: 'slower' | 'normal' | 'faster';
+    pageLayout: 'pages' | 'scroll';
     accelerationMode: boolean;
     adaptiveSpeed: boolean;
     resetInterval: '1' | '2' | '3' | '4' | 'end' | 'paragraph';
@@ -92,12 +98,24 @@ export function KineticPlayer({
   const initialSettings = loadSettings();
 
   const [isPlaying, setIsPlaying] = useState(false);
-  const [pageMode, setPageMode] = useState(false);
-  // Static ebook first. Play Mode must be enabled explicitly.
-  const [pagePlaybackEnabled, setPagePlaybackEnabled] = useState(false);
+  // Reopen the view the reader used last, defaulting to KiNetic for first-time users.
+  const [pageMode, setPageMode] = useState(() => initialSettings.pageMode === true);
+  // Page Play Mode is ON by default, but playback itself waits for a tap.
+  const [pagePlaybackEnabled, setPagePlaybackEnabled] = useState(() => initialSettings.pagePlaybackEnabled ?? true);
+  const [pageEmphasisMode, setPageEmphasisMode] = useState(() => initialSettings.pageEmphasisMode ?? true);
+  const [pageRhythmPreset, setPageRhythmPreset] = useState<'slower' | 'normal' | 'faster'>(() => {
+    const saved = initialSettings.pageRhythmPreset;
+    return saved === 'slower' || saved === 'faster' ? saved : 'normal';
+  });
+  const pageModeRef = useRef(pageMode);
+  useEffect(() => { pageModeRef.current = pageMode; }, [pageMode]);
   // Frosted text is an explicit temporary controls/settings state, not static ebook mode.
   const [pageGlassMode, setPageGlassMode] = useState(false);
   const [pageLayout, setPageLayout] = useState<'pages' | 'scroll'>(() => {
+    if (initialSettings.pageLayout === 'pages' || initialSettings.pageLayout === 'scroll') {
+      return initialSettings.pageLayout;
+    }
+    // Preserve the separate layout preference used by earlier app versions.
     try { return localStorage.getItem('kin_page_layout') === 'scroll' ? 'scroll' : 'pages'; }
     catch { return 'pages'; }
   });
@@ -131,10 +149,11 @@ export function KineticPlayer({
   const [resetInterval, setResetInterval] = useState<'1' | '2' | '3' | '4' | 'end' | 'paragraph'>(creatorDefaults?.resetInterval ?? (initialSettings.resetInterval && (initialSettings.resetInterval as string) !== 'start' ? (initialSettings.resetInterval as any) : '3'));
   const [focusMode, setFocusMode] = useState(initialSettings.focusMode ?? false);
   const [targetMode, setTargetMode] = useState(initialSettings.targetMode ?? false);
-  const emphasisEnabled = emphasisMode && (!targetMode || pageMode);
+  const emphasisEnabled = (pageMode ? pageEmphasisMode : emphasisMode) && (!targetMode || pageMode);
+  const activeRhythmPreset = pageMode ? pageRhythmPreset : rhythmPreset;
   const rhythmActive = rhythmMode || pageMode;
   const [targetColor, setTargetColor] = useState(initialSettings.targetColor ?? '#FFD600');
-  const [showControls, setShowControls] = useState(true);
+  const [showControls, setShowControls] = useState(() => !initialSettings.pageMode);
   const [isComplete, setIsComplete] = useState(false);
   const [chunkLength, setChunkLength] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
@@ -232,6 +251,11 @@ export function KineticPlayer({
       rhythmMode,
       emphasisMode,
       rhythmPreset,
+      pageMode,
+      pagePlaybackEnabled,
+      pageEmphasisMode,
+      pageRhythmPreset,
+      pageLayout,
       accelerationMode,
       adaptiveSpeed,
       resetInterval,
@@ -240,10 +264,12 @@ export function KineticPlayer({
       targetColor,
       activeAtmosphere: activeAtmosphere === 'custom' ? 'none' : activeAtmosphere
     };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(settings)); }
+    catch (error) { console.warn('Could not save reader preferences', error); }
   }, [
-    startSpeed, endSpeed, rhythmMode, emphasisMode, rhythmPreset, 
-    accelerationMode, adaptiveSpeed, resetInterval, 
+    startSpeed, endSpeed, rhythmMode, emphasisMode, rhythmPreset,
+    pageMode, pagePlaybackEnabled, pageEmphasisMode, pageRhythmPreset, pageLayout,
+    accelerationMode, adaptiveSpeed, resetInterval,
     focusMode, targetMode, targetColor, activeAtmosphere
   ]);
 
@@ -485,7 +511,7 @@ export function KineticPlayer({
     // These presets aim for a more comfortable default range.
     // (Reminder: speed=1.0 corresponds to ~200 WPM given our 300ms baseline.)
     let baseMultiplier: number;
-    switch (rhythmPreset) {
+    switch (activeRhythmPreset) {
       case 'slower':
         baseMultiplier = 0.667; // 1.5x slower (1 / 1.5)
         break;
@@ -497,7 +523,7 @@ export function KineticPlayer({
     }
 
     return baseMultiplier * adaptiveMultiplier;
-  }, [rhythmPreset, adaptiveMultiplier]);
+  }, [activeRhythmPreset, adaptiveMultiplier]);
 
   // Generate rhythm speeds synchronously using local heuristics (instant, no API call)
   const generateLocalRhythm = useCallback((words: string[]): WordSpeed[] => {
@@ -1442,7 +1468,9 @@ export function KineticPlayer({
     // Start playing automatically after a short delay (rhythm is already analyzed synchronously)
     let isMounted = true;
     const timer = setTimeout(() => {
-      if (isMounted && !activeCreatorImage) {
+      if (isMounted && !activeCreatorImage && !pageModeRef.current) {
+        // Restored Page Reader starts paused, with clear text and an ellipsis.
+        // KiNetic retains its existing automatic-start behaviour.
         setIsPlaying(true);
       }
     }, 300); // Faster start since rhythm is instant now
@@ -1887,7 +1915,7 @@ export function KineticPlayer({
                   setMusicMenuOpen(false);
                   setIsNavOpen(false);
                   setFocusMode(false);
-                  setPagePlaybackEnabled(false);
+                  // Keep the saved Page Play Mode choice when switching views.
                   setPageMode(value => !value);
                   setShowControls(false);
                   void enterFullscreen();
@@ -2057,12 +2085,14 @@ export function KineticPlayer({
                       <button
                         key={preset}
                         onClick={() => {
-                          setRhythmPreset(preset);
-                          if (!rhythmMode) {
-                            setRhythmMode(true);
+                          if (pageMode) {
+                            setPageRhythmPreset(preset);
+                          } else {
+                            setRhythmPreset(preset);
+                            if (!rhythmMode) setRhythmMode(true);
                           }
                         }}
-                        className={`px-1.5 py-1 sm:px-3 sm:py-1.5 rounded-lg text-[0.65em] sm:text-[0.8em] font-medium transition-colors capitalize ${rhythmMode && rhythmPreset === preset
+                        className={`px-1.5 py-1 sm:px-3 sm:py-1.5 rounded-lg text-[0.65em] sm:text-[0.8em] font-medium transition-colors capitalize ${rhythmActive && activeRhythmPreset === preset
                           ? 'bg-primary text-primary-foreground'
                           : 'hover:bg-secondary text-muted-foreground'
                           }`}
@@ -2146,7 +2176,7 @@ export function KineticPlayer({
                                   setIsPlaying(false);
                                   setPageGlassMode(false);
                                   setFocusMode(false);
-                                  setPagePlaybackEnabled(false);
+                                  // Changing views must not erase Page Reader settings.
                                   setPageMode(isPage);
                                   setShowSettingsPopover(false);
                                   setShowControls(!isPage);
@@ -2242,8 +2272,8 @@ export function KineticPlayer({
                               {(['slower', 'normal', 'faster'] as const).map((preset) => (
                                 <button
                                   key={preset}
-                                  onClick={() => setRhythmPreset(preset)}
-                                  className={`flex-1 px-2 py-1.5 rounded-lg text-xs font-medium transition-colors capitalize ${rhythmPreset === preset
+                                  onClick={() => pageMode ? setPageRhythmPreset(preset) : setRhythmPreset(preset)}
+                                  className={`flex-1 px-2 py-1.5 rounded-lg text-xs font-medium transition-colors capitalize ${activeRhythmPreset === preset
                                     ? 'bg-primary text-primary-foreground'
                                     : 'bg-secondary hover:bg-secondary/80 text-muted-foreground'
                                     }`}
@@ -2270,7 +2300,10 @@ export function KineticPlayer({
                             aria-describedby="emphasis-mode-description"
                             aria-checked={emphasisEnabled}
                             disabled={targetMode && !pageMode}
-                            onClick={() => setEmphasisMode(value => !value)}
+                            onClick={() => {
+                              if (pageMode) setPageEmphasisMode(value => !value);
+                              else setEmphasisMode(value => !value);
+                            }}
                             className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${emphasisEnabled ? 'bg-primary' : 'bg-muted'}`}
                           >
                             <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${emphasisEnabled ? 'translate-x-6' : 'translate-x-1'}`} />
@@ -2554,7 +2587,7 @@ export function KineticPlayer({
                   {rhythmActive ? (
                     <>
                       <Music className="w-3 h-3 inline mr-1" />
-                      {pageMode ? 'Page reading · Rhythm' : 'Rhythm mode'} ({rhythmPreset})
+                      {pageMode ? 'Page reading · Rhythm' : 'Rhythm mode'} ({activeRhythmPreset})
                     </>
                   ) : accelerationMode ? (
                     <>Accelerating: {startSpeed.toFixed(1)}x → {endSpeed.toFixed(1)}x</>
@@ -2656,7 +2689,7 @@ export function KineticPlayer({
           controlsVisible={isHudVisible}
           playbackEnabled={pagePlaybackEnabled}
           glassVisible={!isPlaying && isHudVisible && (pageGlassMode || showSettingsPopover || musicMenuOpen || isNavOpen)}
-          emphasis={emphasisMode}
+          emphasis={pageEmphasisMode}
           currentEmphasized={isEmphasisWord}
           currentWhispered={isWhisperedWord}
           onInteract={handleMouseMove}
