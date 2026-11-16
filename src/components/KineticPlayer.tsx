@@ -2546,7 +2546,8 @@ export function KineticPlayer({
                   </div>
                 </div>
 
-                {/* Mode indicator */}
+                {/* Mode indicator — not shown for ordinary static ebook reading. */}
+                {(!pageMode || pagePlaybackEnabled) && (
                 <div className="text-center text-[10px] sm:text-xs text-muted-foreground">
                   {rhythmActive ? (
                     <>
@@ -2559,6 +2560,7 @@ export function KineticPlayer({
                     <>Static: {startSpeed.toFixed(1)}x</>
                   )}
                 </div>
+                )}
               </div>
             </motion.div>
           </motion.div>
