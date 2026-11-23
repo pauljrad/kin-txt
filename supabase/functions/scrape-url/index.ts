@@ -239,7 +239,7 @@ serve(async (req) => {
   } catch (err) {
     firstError = err instanceof Error ? err : new ImportError("Failed to load this webpage.");
     console.warn("Direct import failed:", firstError.message);
-    if (firstError instanceof ImportError && [400,413,415].includes(firstError.status))
+    if (firstError instanceof ImportError && [400,404,413,415].includes(firstError.status))
       return reply({ success: false, error: firstError.message }, firstError.status);
   }
 
