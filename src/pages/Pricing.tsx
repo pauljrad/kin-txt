@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Check, ArrowLeft, LogOut, ExternalLink } from 'lucide-react';
@@ -87,6 +87,29 @@ export default function Pricing() {
   const [checkoutError, setCheckoutError] = useState('');
   const returnTo = searchParams.get('returnTo') === 'submissions' ? 'submissions' : null;
   const isNative = Capacitor.isNativePlatform();
+
+  // Keep pricing relevant in search results when a crawler renders the page.
+  // Restore the landing metadata when returning to the homepage.
+  useEffect(() => {
+    if (isNative) return;
+    const previousTitle = document.title;
+    const description = document.querySelector<HTMLMetaElement>('meta[name="description"]');
+    const canonical = document.querySelector<HTMLLinkElement>('link[rel="canonical"]');
+    const previousDescription = description?.content;
+    const previousCanonical = canonical?.href;
+
+    document.title = 'KiN-TXT Pro | Try Focused Reading Free for 7 Days';
+    if (description) {
+      description.content = 'Try KiN-TXT Pro free for seven days. Read with rhythm, emphasis or familiar ebook pages. Choose £3.99/month or £30/year after the trial.';
+    }
+    if (canonical) canonical.href = 'https://kin-txt.com/pricing';
+
+    return () => {
+      document.title = previousTitle;
+      if (description && previousDescription !== undefined) description.content = previousDescription;
+      if (canonical && previousCanonical) canonical.href = previousCanonical;
+    };
+  }, [isNative]);
 
   // On the native iOS app, subscriptions are sold through Apple In-App Purchase.
   // App Store rules forbid showing external prices / "subscribe on the web" CTAs,
