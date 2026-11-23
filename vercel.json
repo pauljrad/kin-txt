@@ -1,4 +1,16 @@
 {
+    "redirects": [
+        {
+            "source": "/ig",
+            "destination": "/?utm_source=instagram&utm_medium=social&utm_campaign=reader_focus_202611",
+            "permanent": false
+        },
+        {
+            "source": "/tt",
+            "destination": "/?utm_source=tiktok&utm_medium=social&utm_campaign=reader_focus_202611",
+            "permanent": false
+        }
+    ],
     "rewrites": [
         {
             "source": "/(.*)",
