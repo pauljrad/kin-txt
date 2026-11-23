@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { parseHTML } from "npm:linkedom@0.18.12";
 import { Readability } from "npm:@mozilla/readability@0.6.0";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 
 const headers = {
   "Access-Control-Allow-Origin": "*",
@@ -40,7 +41,8 @@ function publicUrl(input: string): URL {
   if (!host.includes(".") || /^\[/.test(host) ||
       /^\d+\.\d+\.\d+\.\d+$/.test(host) ||
       /\.(local|localhost|internal|test|invalid|onion)$/.test(host) ||
-      host.startsWith("metadata.") || host.includes("%"))
+      host.startsWith("metadata.") || host.includes("%") ||
+      /\.(nip\.io|sslip\.io|lvh\.me|localtest\.me|localhost\.direct)$/.test(host))
     throw new ImportError("Use a public website address, not an internal network address.", 400);
   url.hash = "";
   return url;
@@ -214,6 +216,24 @@ function fromMarkdown(markdown: string): string {
   );
 }
 
+async function canUseRenderer(req: Request): Promise<boolean> {
+  // Keep direct public-page extraction available for free-news readers, but
+  // reserve potentially chargeable JS rendering for authenticated members.
+  const auth = req.headers.get("Authorization") || "";
+  if (!auth.startsWith("Bearer ")) return false;
+  try {
+    const client = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { auth: { persistSession: false } },
+    );
+    const { data, error } = await client.auth.getUser(auth.slice(7));
+    return !error && Boolean(data?.user?.id);
+  } catch {
+    return false;
+  }
+}
+
 async function renderedFallback(url: URL): Promise<{ title: string; text: string; method: string } | null> {
   const apiKey = Deno.env.get("FIRECRAWL_API_KEY");
   if (!apiKey) return null;
@@ -286,7 +306,7 @@ serve(async (req) => {
 
   // Only use the configured JS-rendering provider when ordinary HTML fails,
   // reducing both cost and latency for publicly readable articles.
-  const rendered = await renderedFallback(url);
+  const rendered = await (await canUseRenderer(req) ? renderedFallback(url) : Promise.resolve(null));
   if (rendered) return reply({ success: true, ...rendered });
   return reply({
     success: false,
