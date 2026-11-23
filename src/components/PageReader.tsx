@@ -250,7 +250,7 @@ export function PageReader({ parsedText, paragraphOffsets, currentWordIndex, isP
       }}>
       <div className={`page-reader-content ${glassVisible ? 'page-reader-content-glass' : ''}`}>
         <div ref={viewport} className={`page-reader-viewport page-reader-${layout}`} tabIndex={0}
-          role="region" aria-label={layout === 'pages' ? 'Book pages. Use left and right arrows to turn pages.' : 'Continuous text'}
+          role="region" aria-label={layout === 'pages' ? 'Book pages. Swipe left or right to turn pages, or use the arrow keys.' : 'Continuous text'}
           onScroll={rememberScrollPosition}
           onWheel={() => { if (layout === 'scroll' && !isPlaying && !glassVisible) manualScroll.current = true; }}
           onPointerDown={e => {
@@ -276,7 +276,11 @@ export function PageReader({ parsedText, paragraphOffsets, currentWordIndex, isP
             const dy = e.clientY - drag.y;
             if (!drag.dragging) {
               // A vertical gesture belongs to the browser, not page turning.
-              if (Math.abs(dy) > 12 && Math.abs(dy) > Math.abs(dx)) return;
+              if (Math.abs(dy) > 12 && Math.abs(dy) > Math.abs(dx)) {
+                // Vertical drags do not count as taps either.
+                suppressClick.current = true;
+                return;
+              }
               if (Math.abs(dx) < 12 || Math.abs(dx) < Math.abs(dy) * 1.2) return;
               drag.dragging = true;
               suppressClick.current = true;
@@ -304,11 +308,12 @@ export function PageReader({ parsedText, paragraphOffsets, currentWordIndex, isP
             const flick = Math.abs(dx) > 35 && Math.abs(dx) / dt > 0.4;
             const direction = Math.abs(dx) >= distance || flick ? (dx < 0 ? 1 : -1) : 0;
             const next = Math.max(0, Math.min(pageStarts.length - 1, drag.page + direction));
-            if (next !== drag.page) {
+            const nextWordIndex = pageStarts[next];
+            if (next !== drag.page && nextWordIndex !== undefined) {
               swipePageTarget.current = next;
               // Advance the saved reading position and let the layout effect
               // finish the turn smoothly. This also works if playback was on.
-              onNavigate(pageStarts[next]);
+              onNavigate(nextWordIndex);
             } else {
               // Incomplete drags settle back to the original page.
               frame.scrollTo({
