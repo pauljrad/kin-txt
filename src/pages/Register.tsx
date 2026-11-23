@@ -9,6 +9,7 @@ import { ThemeToggle } from '@/components/ThemeToggle';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Capacitor } from '@capacitor/core';
+import { trackMarketingEvent } from '@/lib/marketingAnalytics';
 
 const schema = z.object({
   displayName: z.string().min(2, 'Display name must be at least 2 characters'),
@@ -77,6 +78,9 @@ export default function Register() {
         return;
       }
 
+      // This is account creation, not a paid Pro subscription.
+      trackMarketingEvent('sign_up', { method: 'email' });
+
       // 2. Launch background emails safely and concurrently without blocking execution permanently
       await Promise.allSettled([
         supabase.functions.invoke('send-welcome-email', {
@@ -109,7 +113,12 @@ export default function Register() {
         return;
       }
 
-      // 4. Redirect to Stripe Checkout
+      // 4. Redirect to Stripe Checkout. This event does not imply purchase.
+      const checkoutValue = plan === 'annual' ? 30 : 3.99;
+      trackMarketingEvent('begin_checkout', {
+        currency: 'GBP', value: checkoutValue,
+        items: [{ item_id: `kin_txt_pro_${plan}`, item_name: 'KiN-TXT Pro', price: checkoutValue, quantity: 1 }],
+      });
       window.location.href = data.url;
 
     } catch (err) {
