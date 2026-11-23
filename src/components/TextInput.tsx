@@ -55,10 +55,15 @@ export function TextInput({ onTextParsed }: TextInputProps) {
     setError(null);
 
     try {
-      // Format URL if needed
+      // Accept links without a scheme, and preserve HTTP/HTTPS case-insensitively.
       let formattedUrl = url.trim();
-      if (!formattedUrl.startsWith('http://') && !formattedUrl.startsWith('https://')) {
-        formattedUrl = `https://${formattedUrl}`;
+      if (!/^https?:\/\//i.test(formattedUrl)) {
+        formattedUrl = 'https://' + formattedUrl;
+      }
+      try {
+        new URL(formattedUrl);
+      } catch {
+        throw new Error('Please enter a valid webpage URL.');
       }
 
       // Explicitly get session to pass auth token
@@ -77,12 +82,25 @@ export function TextInput({ onTextParsed }: TextInputProps) {
         },
       });
 
-      if (fnError) throw fnError;
-      if (!data.success) throw new Error(data.error || 'Failed to scrape URL');
+      if (fnError) {
+        // Supabase surfaces non-2xx Edge responses as a generic error unless
+        // we read the structured body from its response context.
+        const context = (fnError as { context?: Response }).context;
+        if (context && typeof context.json === 'function') {
+          const detail = await context.json().catch(() => null);
+          if (typeof detail?.error === 'string' && detail.error.trim()) {
+            throw new Error(detail.error);
+          }
+        }
+        throw new Error('Unable to fetch this webpage right now. Please try again or paste its text.');
+      }
+      if (!data?.success || typeof data.text !== 'string' || !data.text.trim()) {
+        throw new Error(data?.error || 'No readable text was found on this page.');
+      }
 
       const parsed = parseTextContent(data.text);
       onTextParsed(parsed, data.title || 'Web Article', 'url');
-      toast.success('Web article content fetched successfully');
+      toast.success('Web content imported successfully');
     } catch (err) {
       console.error('Error scraping URL:', err);
       const msg = err instanceof Error ? err.message : 'Failed to fetch URL content';
