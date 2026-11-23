@@ -67,6 +67,32 @@ function titleFrom(text: unknown): string {
     .replace(/\s+\|\s+[^|]+$/, "").slice(0, 220) || "Imported webpage";
 }
 
+function structuredText(root: Element): string {
+  // linkedom's textContent can concatenate adjacent paragraphs with no spaces.
+  // Preserve semantic block boundaries when converting Reader Mode HTML into
+  // the plain text KiN-TXT expects.
+  const parts: string[] = [];
+  const block = new Set(["P","DIV","ARTICLE","SECTION","MAIN","H1","H2","H3",
+    "H4","H5","H6","LI","UL","OL","BLOCKQUOTE","PRE","TABLE","TR"]);
+  const ignore = new Set(["SCRIPT","STYLE","NOSCRIPT","SVG","IFRAME","FORM",
+    "BUTTON","NAV","FOOTER","HEADER","ASIDE"]);
+  const walk = (node: Node): void => {
+    if (node.nodeType === 3) {
+      parts.push(node.textContent || "");
+      return;
+    }
+    if (node.nodeType !== 1) return;
+    const name = (node as Element).tagName.toUpperCase();
+    if (ignore.has(name)) return;
+    if (name === "BR") { parts.push("\n"); return; }
+    if (block.has(name)) parts.push("\n\n");
+    for (const child of Array.from(node.childNodes)) walk(child);
+    if (block.has(name)) parts.push("\n\n");
+  };
+  walk(root);
+  return cleanText(parts.join(""));
+}
+
 function extractHtml(html: string): { text: string; title: string; method: string } | null {
   const { document } = parseHTML(html);
   const title = titleFrom(
@@ -79,8 +105,13 @@ function extractHtml(html: string): { text: string; title: string; method: strin
     const readerDoc = document.cloneNode(true) as Document;
     readerDoc.querySelectorAll(ignored).forEach(el => el.remove());
     const article = new Readability(readerDoc, { charThreshold: 100 }).parse();
-    if (article?.textContent && readable(article.textContent)) {
-      return { text: cleanText(article.textContent), title: titleFrom(article.title || title), method: "readability" };
+    if (article?.content) {
+      const parsedContent = parseHTML("<section id='kin-article'>" + article.content + "</section>");
+      const root = parsedContent.document.querySelector("#kin-article");
+      const text = root ? structuredText(root) : cleanText(article.textContent || "");
+      if (readable(text)) {
+        return { text, title: titleFrom(article.title || title), method: "readability" };
+      }
     }
   } catch (err) {
     console.warn("Readability parser fallback:", err instanceof Error ? err.message : String(err));
@@ -100,11 +131,7 @@ function extractHtml(html: string): { text: string; title: string; method: strin
     for (const el of Array.from(document.querySelectorAll(selector)).slice(0, 12)) {
       const clone = el.cloneNode(true) as Element;
       clone.querySelectorAll("nav,aside,footer,form,script,style,[class*='newsletter'],[class*='advert'],[class*='social-share']").forEach(x => x.remove());
-      clone.querySelectorAll("p,li,blockquote,h1,h2,h3,h4,h5,h6,br,section,div").forEach((node) => {
-        if (node.tagName === "BR") node.replaceWith(document.createTextNode("\n"));
-        else node.prepend(document.createTextNode("\n"));
-      });
-      const text = cleanText(clone.textContent || "");
+      const text = structuredText(clone);
       if (!readable(text)) continue;
       const linkedChars = Array.from(el.querySelectorAll("a")).reduce((n, a) => n + (a.textContent?.length || 0), 0);
       const score = text.length + Math.min(20, (text.match(/\n/g) || []).length) * 40 - linkedChars * 1.5;
@@ -228,7 +255,21 @@ serve(async (req) => {
 
   let firstError: Error | null = null;
   try {
-    const page = await fetchDirect(url);
+    // A transient 502/503/504 or disconnected fetch is common on publishers.
+    // Retry once with a fresh connection; don't retry user mistakes or denials.
+    let page: Awaited<ReturnType<typeof fetchDirect>> | null = null;
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        page = await fetchDirect(url);
+        break;
+      } catch (error) {
+        const retryable = !(error instanceof ImportError) ||
+          (error.status === 502 && /HTTP 50[234]/.test(error.message));
+        if (!retryable || attempt === 1) throw error;
+        await new Promise(resolve => setTimeout(resolve, 350));
+      }
+    }
+    if (!page) throw new ImportError("Could not connect to this webpage.");
     const extracted = /text\/plain|markdown/.test(page.type)
       ? (readable(page.html) ? { text: cleanText(page.html), title: page.url.hostname, method: "plain-text" } : null)
       : extractHtml(page.html);
