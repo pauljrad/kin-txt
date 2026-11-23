@@ -2735,7 +2735,7 @@ export function KineticPlayer({
       {/* One discreet corner control while the ebook is paused. */}
       {pageMode && !isPlaying && !showFullText && (
         <button type="button"
-          className="controls-panel pointer-events-auto absolute z-[45] right-4 flex h-10 w-10 items-center justify-center rounded-full glass-panel shadow-md"
+          className="controls-panel pointer-events-auto absolute z-[45] right-4 flex h-10 w-10 items-center justify-center rounded-full bg-foreground text-background border border-foreground shadow-md transition-colors hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground"
           style={{ bottom: 'calc(1rem + env(safe-area-inset-bottom, 0px))' }}
           aria-label={isHudVisible ? 'Close reader menu' : 'Open reader menu'}
           aria-expanded={isHudVisible}
