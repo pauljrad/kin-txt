@@ -1,401 +1,315 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { parseHTML } from "npm:linkedom@0.18.12";
+import { Readability } from "npm:@mozilla/readability@0.6.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, GET, OPTIONS, PUT, DELETE',
+const headers = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Content-Type": "application/json; charset=utf-8",
 };
+const PAGE_MAX = 4 * 1024 * 1024;
+const TEXT_MAX = 250000;
+const MIN_TEXT = 130;
 
-// Decode all common HTML entities to plain text
-function decodeHtmlEntities(str: string): string {
-  if (!str) return '';
-  return str
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&apos;/g, "'")
-    .replace(/&nbsp;/gi, ' ')
-    .replace(/&hellip;/gi, '\u2026')
-    .replace(/&mdash;/gi, '\u2014')
-    .replace(/&ndash;/gi, '\u2013')
-    .replace(/&laquo;/gi, '\u00AB')
-    .replace(/&raquo;/gi, '\u00BB')
-    .replace(/&ldquo;/gi, '\u201C')
-    .replace(/&rdquo;/gi, '\u201D')
-    .replace(/&lsquo;/gi, '\u2018')
-    .replace(/&rsquo;/gi, '\u2019')
-    .replace(/&trade;/gi, '\u2122')
-    .replace(/&copy;/gi, '\u00A9')
-    .replace(/&reg;/gi, '\u00AE')
-    // Numeric decimal entities e.g. &#039; &#8211;
-    .replace(/&#0*(\d+);/g, (_, num) => String.fromCharCode(parseInt(num, 10)))
-    // Numeric hex entities e.g. &#x27;
-    .replace(/&#x([0-9a-f]+);/gi, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
-    // Any remaining unknown named entities — drop silently
-    .replace(/&[a-zA-Z][a-zA-Z0-9]*;/g, '');
+class ImportError extends Error {
+  constructor(message: string, public status = 422) { super(message); }
+}
+function reply(data: Record<string, unknown>, status = 200) {
+  return new Response(JSON.stringify(data), { status, headers });
+}
+function publicUrl(input: string): URL {
+  if (typeof input !== "string" || !input.trim())
+    throw new ImportError("Please enter a webpage URL.", 400);
+  const raw = input.trim();
+  if (raw.length > 2048 || /[\x00-\x1f\x7f]/.test(raw))
+    throw new ImportError("The URL contains invalid characters or is too long.", 400);
+  const candidate = /^https?:\/\//i.test(raw) ? raw : "https://" + raw;
+  let url: URL;
+  try { url = new URL(candidate); }
+  catch { throw new ImportError("Please enter a valid HTTP or HTTPS URL.", 400); }
+  if (url.protocol !== "http:" && url.protocol !== "https:")
+    throw new ImportError("Only HTTP and HTTPS webpages are supported.", 400);
+  if (url.username || url.password)
+    throw new ImportError("Links containing login credentials are not supported.", 400);
+  if (url.port && url.port !== "80" && url.port !== "443")
+    throw new ImportError("Non-standard web ports are not supported.", 400);
+  const host = url.hostname.toLowerCase().replace(/\.$/, "");
+  // URL() canonicalises hex, octal and integer IPv4 hosts to dotted notation.
+  // No raw IP addresses, intranet or special-use domains can be fetched.
+  if (!host.includes(".") || /^\[/.test(host) ||
+      /^\d+\.\d+\.\d+\.\d+$/.test(host) ||
+      /\.(local|localhost|internal|test|invalid|onion)$/.test(host) ||
+      host.startsWith("metadata.") || host.includes("%") ||
+      /\.(nip\.io|sslip\.io|lvh\.me|localtest\.me|localhost\.direct)$/.test(host))
+    throw new ImportError("Use a public website address, not an internal network address.", 400);
+  url.hash = "";
+  return url;
+}
+function cleanText(input: string): string {
+  return String(input || "")
+    .replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g, " ")
+    .replace(/\u00a0/g, " ")
+    .replace(/\r\n?/g, "\n")
+    .replace(/[ \t]+/g, " ")
+    .replace(/[ \t]*\n[ \t]*/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim().slice(0, TEXT_MAX);
+}
+function readable(text: string): boolean {
+  const cleaned = cleanText(text);
+  const words = cleaned.match(/[\p{L}\p{N}]+/gu) || [];
+  if (cleaned.length < MIN_TEXT || words.length < 25) return false;
+  const bot = /checking your browser|verify (?:you are|that you are) human|enable javascript and cookies|captcha|cloudflare ray id|subscribe to continue reading|access denied/i;
+  return !(cleaned.length < 4000 && bot.test(cleaned));
+}
+function titleFrom(text: unknown): string {
+  return cleanText(String(text || ""))
+    .replace(/\s+\|\s+[^|]+$/, "").slice(0, 220) || "Imported webpage";
 }
 
-// Validate URL to prevent SSRF attacks
-function validateUrl(urlString: string): void {
-  const url = new URL(urlString);
-
-  if (!['http:', 'https:'].includes(url.protocol)) {
-    throw new Error('Only HTTP/HTTPS protocols are allowed');
-  }
-
-  const hostname = url.hostname.toLowerCase();
-
-  if (['localhost', '127.0.0.1', '0.0.0.0', '[::1]', '::1'].includes(hostname)) {
-    throw new Error('Access to localhost is not allowed');
-  }
-
-  if (hostname === '169.254.169.254' || hostname.startsWith('metadata.')) {
-    throw new Error('Access to metadata endpoints is not allowed');
-  }
-
-  if (/^10\./.test(hostname) ||
-    /^172\.(1[6-9]|2[0-9]|3[01])\./.test(hostname) ||
-    /^192\.168\./.test(hostname) ||
-    /^169\.254\./.test(hostname)) {
-    throw new Error('Access to private networks is not allowed');
-  }
-
-  if (hostname.endsWith('.local') || hostname.endsWith('.internal')) {
-    throw new Error('Access to internal domains is not allowed');
-  }
+function structuredText(root: Element): string {
+  // linkedom's textContent can concatenate adjacent paragraphs with no spaces.
+  // Preserve semantic block boundaries when converting Reader Mode HTML into
+  // the plain text KiN-TXT expects.
+  const parts: string[] = [];
+  const block = new Set(["P","DIV","ARTICLE","SECTION","MAIN","H1","H2","H3",
+    "H4","H5","H6","LI","UL","OL","BLOCKQUOTE","PRE","TABLE","TR"]);
+  const ignore = new Set(["SCRIPT","STYLE","NOSCRIPT","SVG","IFRAME","FORM",
+    "BUTTON","NAV","FOOTER","HEADER","ASIDE"]);
+  const walk = (node: Node): void => {
+    if (node.nodeType === 3) {
+      parts.push(node.textContent || "");
+      return;
+    }
+    if (node.nodeType !== 1) return;
+    const name = (node as Element).tagName.toUpperCase();
+    if (ignore.has(name)) return;
+    if (name === "BR") { parts.push("\n"); return; }
+    if (block.has(name)) parts.push("\n\n");
+    for (const child of Array.from(node.childNodes)) walk(child);
+    if (block.has(name)) parts.push("\n\n");
+  };
+  walk(root);
+  return cleanText(parts.join(""));
 }
 
-// Filter and score paragraphs using readability heuristics
-function extractReadableContent(textInput: string, allowLowScore: boolean = false): string {
-  // Simple check: is this HTML? If so, strip tags but preserve structure hints
-  let text = textInput;
-  if (text.includes('<') && text.includes('>')) {
-    text = text
-      .replace(/<script[\s\S]*?<\/script>/gi, '')
-      .replace(/<style[\s\S]*?<\/style>/gi, '')
-      .replace(/<footer[\s\S]*?<\/footer>/gi, '')
-      .replace(/<nav[\s\S]*?<\/nav>/gi, '')
-      .replace(/<p[^>]*>/gi, '\n\n')
-      .replace(/<br[^>]*>/gi, '\n')
-      .replace(/<li[^>]*>/gi, '\n- ')
-      .replace(/<h[1-6][^>]*>/gi, '\n\n# ')
-      .replace(/<[^>]+>/g, ' ');
+function extractHtml(html: string): { text: string; title: string; method: string } | null {
+  const { document } = parseHTML(html);
+  const title = titleFrom(
+    document.querySelector('meta[property="og:title"]')?.getAttribute("content") ||
+    document.querySelector('meta[name="twitter:title"]')?.getAttribute("content") ||
+    document.title || document.querySelector("h1")?.textContent
+  );
+  const ignored = "script,style,noscript,nav,header,footer,aside,form,button,iframe,svg,canvas,video,audio,[hidden],[aria-hidden='true']";
+  try {
+    const readerDoc = document.cloneNode(true) as Document;
+    readerDoc.querySelectorAll(ignored).forEach(el => el.remove());
+    const article = new Readability(readerDoc, { charThreshold: 100 }).parse();
+    if (article?.content) {
+      const parsedContent = parseHTML("<section id='kin-article'>" + article.content + "</section>");
+      const root = parsedContent.document.querySelector("#kin-article");
+      const text = root ? structuredText(root) : cleanText(article.textContent || "");
+      if (readable(text)) {
+        return { text, title: titleFrom(article.title || title), method: "readability" };
+      }
+    }
+  } catch (err) {
+    console.warn("Readability parser fallback:", err instanceof Error ? err.message : String(err));
   }
 
-  const paragraphs = text.split(/\n\s*\n/);
-  const scoredParagraphs = paragraphs.map(para => {
-    const trimmed = decodeHtmlEntities(para.trim());
-    if (trimmed.length === 0) return { text: '', score: 0, keep: false };
-
-    // Basic scoring logic...
-    let score = 0;
-    const wordCount = trimmed.split(/\s+/).length;
-    const sentenceEndings = (trimmed.match(/[.!?]["']?\s|[.!?]["']?$/g) || []).length;
-
-    score += wordCount * 1;
-    score += sentenceEndings * 10;
-
-    // Reject very short snippets that look like UI/Metadata
-    if (!allowLowScore && score < 30) return { text: trimmed, score, keep: false };
-    if (allowLowScore && score < 10) return { text: trimmed, score, keep: false };
-
-    return { text: trimmed, score, keep: true };
-  });
-
-  return scoredParagraphs
-    .filter(p => p.keep)
-    .map(p => p.text)
-    .join('\n\n');
-}
-
-// Fallback: Basic HTML extraction for when Firecrawl is unavailable
-function extractFromHtml(html: string): { title: string; body: string } {
-  // Extract title
-  const ogTitleMatch = html.match(/<meta[^>]*property="og:title"[^>]*content="([^"]+)"/i);
-  const h1Match = html.match(/<h1[^>]*>([^<]+)<\/h1>/i);
-  const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
-
-  let title = ogTitleMatch?.[1] || h1Match?.[1] || titleMatch?.[1] || 'Untitled Article';
-  title = title.replace(/\s*[|\-–—]\s*[^|\-–—]+$/, '').trim();
-
-  // Try to find the article container
-  let articleHtml = html;
-
-  // Priority order for content containers
-  const contentSelectors = [
-    /<article[^>]*class="[^"]*article-body[^"]*"[^>]*>([\s\S]*?)<\/article>/i,
-    /<div[^>]*class="[^"]*article-body[^"]*"[^>]*>([\s\S]*?)<\/div>/i,
-    /<div[^>]*class="[^"]*post-content[^"]*"[^>]*>([\s\S]*?)<\/div>/i,
-    /<div[^>]*class="[^"]*entry-content[^"]*"[^>]*>([\s\S]*?)<\/div>/i,
-    /<div[^>]*class="[^"]*content-body[^"]*"[^>]*>([\s\S]*?)<\/div>/i,
-    /<article[^>]*>([\s\S]*?)<\/article>/i,
-    /<main[^>]*>([\s\S]*?)<\/main>/i,
+  document.querySelectorAll(ignored).forEach(el => el.remove());
+  // For generic webpages that are not editorial articles, use a likely
+  // primary container; avoid pulling the entire document head/navigation.
+  const selectors = [
+    "[itemprop='articleBody']", "article", "main", "[role='main']",
+    ".article-body", ".article-content", ".post-content", ".entry-content",
+    ".content-body", ".story-body", "#content", "body"
   ];
-
-  for (const selector of contentSelectors) {
-    const match = html.match(selector);
-    if (match) {
-      articleHtml = match[1];
-      break;
+  let best = "";
+  let bestScore = -Infinity;
+  for (const selector of selectors) {
+    for (const el of Array.from(document.querySelectorAll(selector)).slice(0, 12)) {
+      const clone = el.cloneNode(true) as Element;
+      clone.querySelectorAll("nav,aside,footer,form,script,style,[class*='newsletter'],[class*='advert'],[class*='social-share']").forEach(x => x.remove());
+      const text = structuredText(clone);
+      if (!readable(text)) continue;
+      const linkedChars = Array.from(el.querySelectorAll("a")).reduce((n, a) => n + (a.textContent?.length || 0), 0);
+      const score = text.length + Math.min(20, (text.match(/\n/g) || []).length) * 40 - linkedChars * 1.5;
+      if (score > bestScore) { bestScore = score; best = text; }
     }
   }
+  return best ? { title, text: best, method: "main-content" } : null;
+}
 
-  // Remove non-content elements aggressively
-  let cleanHtml = articleHtml
-    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
-    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
-    .replace(/<nav[^>]*>[\s\S]*?<\/nav>/gi, '')
-    .replace(/<header[^>]*>[\s\S]*?<\/header>/gi, '')
-    .replace(/<footer[^>]*>[\s\S]*?<\/footer>/gi, '')
-    .replace(/<aside[^>]*>[\s\S]*?<\/aside>/gi, '')
-    .replace(/<noscript[^>]*>[\s\S]*?<\/noscript>/gi, '')
-    .replace(/<figcaption[^>]*>[\s\S]*?<\/figcaption>/gi, '')
-    .replace(/<figure[^>]*>[\s\S]*?<\/figure>/gi, '')
-    .replace(/<picture[^>]*>[\s\S]*?<\/picture>/gi, '')
-    .replace(/<video[^>]*>[\s\S]*?<\/video>/gi, '')
-    .replace(/<audio[^>]*>[\s\S]*?<\/audio>/gi, '')
-    .replace(/<iframe[^>]*>[\s\S]*?<\/iframe>/gi, '')
-    .replace(/<svg[^>]*>[\s\S]*?<\/svg>/gi, '')
-    .replace(/<form[^>]*>[\s\S]*?<\/form>/gi, '')
-    .replace(/<button[^>]*>[\s\S]*?<\/button>/gi, '')
-    .replace(/<input[^>]*>/gi, '')
-    .replace(/<select[^>]*>[\s\S]*?<\/select>/gi, '')
-    .replace(/<textarea[^>]*>[\s\S]*?<\/textarea>/gi, '')
-    .replace(/<!--[\s\S]*?-->/g, '')
-    // Remove divs with ad/social/share classes
-    .replace(/<div[^>]*class="[^"]*(?:ad-|ads-|advert|social|share|related|recommend|newsletter|signup|promo|sidebar|widget)[^"]*"[^>]*>[\s\S]*?<\/div>/gi, '')
-    // Remove elements with data attributes indicating non-content
-    .replace(/<[^>]*data-(?:ad|tracking|analytics|component="(?:share|social|ad|related)")[^>]*>[\s\S]*?<\/[^>]+>/gi, '')
-    // Remove image tags
-    .replace(/<img[^>]*>/gi, '');
+async function limitedBody(response: Response): Promise<string> {
+  if (Number(response.headers.get("content-length") || "0") > PAGE_MAX)
+    throw new ImportError("The page is too large to import.", 413);
+  if (!response.body) return "";
+  const reader = response.body.getReader();
+  const parts: Uint8Array[] = [];
+  let total = 0;
+  try {
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      if (!value) continue;
+      total += value.byteLength;
+      if (total > PAGE_MAX) throw new ImportError("The page is too large to import.", 413);
+      parts.push(value);
+    }
+  } finally { await reader.cancel().catch(() => {}); }
+  const bytes = new Uint8Array(total);
+  let index = 0;
+  for (const part of parts) { bytes.set(part, index); index += part.byteLength; }
+  const charset = response.headers.get("content-type")?.match(/charset\s*=\s*["']?([\w-]+)/i)?.[1];
+  try { return new TextDecoder(charset || "utf-8").decode(bytes); }
+  catch { return new TextDecoder("utf-8").decode(bytes); }
+}
 
-  // Convert to text preserving paragraph structure
-  let text = cleanHtml
-    .replace(/<\/p>/gi, '\n\n')
-    .replace(/<\/h[1-6]>/gi, '\n\n')
-    .replace(/<\/li>/gi, '\n')
-    .replace(/<\/div>/gi, '\n')
-    .replace(/<br\s*\/?>/gi, '\n')
-    .replace(/<[^>]+>/g, ' ');
+async function fetchDirect(initial: URL): Promise<{ url: URL; html: string; type: string }> {
+  let url = initial;
+  for (let hops = 0; hops <= 5; hops++) {
+    url = publicUrl(url.href);
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 12000);
+    try {
+      const response = await fetch(url.href, {
+        signal: controller.signal, redirect: "manual",
+        headers: {
+          "Accept": "text/html,application/xhtml+xml,text/plain;q=0.9,*/*;q=0.1",
+          "Accept-Language": "en-GB,en;q=0.9",
+          "User-Agent": "Mozilla/5.0 (compatible; KiN-TXT Reading/1.0)",
+        },
+      });
+      if ([301,302,303,307,308].includes(response.status)) {
+        const target = response.headers.get("location");
+        if (!target || hops === 5) throw new ImportError("This page redirects too many times.");
+        url = publicUrl(new URL(target, url).href);
+        await response.body?.cancel().catch(() => {});
+        continue;
+      }
+      if ([401,403,429].includes(response.status))
+        throw new ImportError("This website restricts automated access. Try a public page or paste the text.", 422);
+      if (!response.ok)
+        throw new ImportError("Website returned HTTP " + response.status + ". Check the URL.", response.status === 404 ? 404 : 502);
+      const type = response.headers.get("content-type")?.toLowerCase() || "";
+      if (/pdf|octet-stream|zip|image\/|video\/|audio\//.test(type) ||
+          /\.(pdf|epub|docx?|zip)$/i.test(url.pathname))
+        throw new ImportError("This is a downloadable file. Download it and choose Upload File instead.", 415);
+      if (type && !/html|xml|text\/plain|markdown/.test(type))
+        throw new ImportError("This link is not a supported webpage.", 415);
+      return { url, type, html: await limitedBody(response) };
+    } finally { clearTimeout(timer); }
+  }
+  throw new ImportError("This page redirects too many times.");
+}
 
-  // Decode all HTML entities in one pass
-  text = decodeHtmlEntities(text)
-    .replace(/[ \t]+/g, ' ')
-    .replace(/\n{3,}/g, '\n\n')
-    .trim();
+function fromMarkdown(markdown: string): string {
+  return cleanText(markdown
+    .replace(/!\[[^\]]*]\([^)]+\)/g, "")
+    .replace(/\[([^\]]+)]\((?:https?:\/\/|\/)[^)]+\)/g, "$1")
+    .replace(/^#{1,6}\s+/gm, "")
+    .replace(/^>\s?/gm, "")
+    .replace(/[*_]{2,}/g, "")
+  );
+}
 
-  // Apply readability filtering to the extracted text
-  // We allow a slightly lower score here because we've already done some HTML-specific filtering
-  const cleanedBody = extractReadableContent(text, true);
+async function canUseRenderer(req: Request): Promise<boolean> {
+  // Keep direct public-page extraction available for free-news readers, but
+  // reserve potentially chargeable JS rendering for authenticated members.
+  const auth = req.headers.get("Authorization") || "";
+  if (!auth.startsWith("Bearer ")) return false;
+  try {
+    const client = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { auth: { persistSession: false } },
+    );
+    const { data, error } = await client.auth.getUser(auth.slice(7));
+    return !error && Boolean(data?.user?.id);
+  } catch {
+    return false;
+  }
+}
 
-  return { title, body: cleanedBody };
+async function renderedFallback(url: URL): Promise<{ title: string; text: string; method: string } | null> {
+  const apiKey = Deno.env.get("FIRECRAWL_API_KEY");
+  if (!apiKey) return null;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 18000);
+  try {
+    const response = await fetch("https://api.firecrawl.dev/v1/scrape", {
+      method: "POST", signal: controller.signal,
+      headers: { Authorization: "Bearer " + apiKey, "Content-Type": "application/json" },
+      body: JSON.stringify({ url: url.href, formats: ["markdown"], onlyMainContent: true, waitFor: 2000 }),
+    });
+    if (!response.ok) {
+      console.warn("Rendering provider status:", response.status);
+      return null;
+    }
+    const result = JSON.parse(await limitedBody(response));
+    if (!result?.success) return null;
+    const data = result.data || result;
+    const text = fromMarkdown(data.markdown || "");
+    if (!readable(text)) return null;
+    return { title: titleFrom(data.metadata?.title || data.metadata?.ogTitle), text, method: "rendered" };
+  } catch (err) {
+    console.warn("Rendering fallback unavailable:", err instanceof Error ? err.message : String(err));
+    return null;
+  } finally { clearTimeout(timer); }
 }
 
 serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
-  }
-
+  if (req.method === "OPTIONS") return new Response("ok", { headers });
+  if (req.method !== "POST") return reply({ success: false, error: "Use POST to import a URL." }, 405);
+  let url: URL;
   try {
-    // Auth is optional — news article scraping is available to free users too.
-    const authHeader = req.headers.get('Authorization');
-    let userId = 'anonymous';
-    if (authHeader?.startsWith('Bearer ')) {
-      const supabase = createClient(
-        Deno.env.get('SUPABASE_URL')!,
-        Deno.env.get('SUPABASE_ANON_KEY')!,
-        { global: { headers: { Authorization: authHeader } } }
-      );
-      const jwt = authHeader.replace('Bearer ', '');
-      const { data: { user } } = await supabase.auth.getUser(jwt);
-      if (user) userId = user.id;
-    }
-
-    console.log('Scraping for:', userId);
-
-    const { url } = await req.json();
-
-    if (!url) {
-      return new Response(
-        JSON.stringify({ success: false, error: 'URL is required' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    let formattedUrl = url.trim();
-    if (!formattedUrl.startsWith('http://') && !formattedUrl.startsWith('https://')) {
-      formattedUrl = `https://${formattedUrl}`;
-    }
-
-    console.log('Validating URL:', formattedUrl);
-
-    try {
-      validateUrl(formattedUrl);
-    } catch (validationError) {
-      console.error('URL validation failed:', validationError);
-      const message = validationError instanceof Error ? validationError.message : 'Invalid URL';
-      return new Response(
-        JSON.stringify({ success: false, error: message }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Try Firecrawl first (handles JS rendering, paywalls better)
-    const firecrawlApiKey = Deno.env.get('FIRECRAWL_API_KEY');
-
-    if (firecrawlApiKey) {
-      console.log('Using Firecrawl for:', formattedUrl);
-
-      try {
-        const firecrawlResponse = await fetch('https://api.firecrawl.dev/v1/scrape', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${firecrawlApiKey}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            url: formattedUrl,
-            formats: ['markdown'],
-            onlyMainContent: true,
-            waitFor: 3000, // Wait for JS to render
-          }),
-        });
-
-        const firecrawlData = await firecrawlResponse.json();
-
-        if (firecrawlResponse.ok && firecrawlData.success) {
-          const markdown = firecrawlData.data?.markdown || firecrawlData.markdown || '';
-          const metadata = firecrawlData.data?.metadata || firecrawlData.metadata || {};
-
-          let title = metadata.title || metadata.ogTitle || 'Untitled Article';
-          title = title.replace(/\s*[|\-–—]\s*[^|\-–—]+$/, '').trim();
-
-          // Apply readability extraction to the markdown
-          const cleanedText = extractReadableContent(markdown, true); // Allow low score for Firecrawl output
-
-          // Prepend headline to the body text
-          const fullText = title + '\n\n' + cleanedText;
-
-          console.log('Firecrawl extracted title:', title);
-          console.log('Firecrawl raw markdown length:', markdown.length);
-          console.log('Firecrawl cleaned body length:', cleanedText.length);
-
-          return new Response(
-            JSON.stringify({
-              success: true,
-              text: fullText,
-              title: title
-            }),
-            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
-        } else {
-          console.warn('Firecrawl failed, falling back to basic scraping:', firecrawlData.error);
-        }
-      } catch (firecrawlError) {
-        console.warn('Firecrawl error, falling back to basic scraping:', firecrawlError);
-      }
-    } else {
-      console.log('Firecrawl API key not configured, using basic scraping');
-    }
-
-    // Fallback: Basic HTTP fetch
-    console.log(`[scraper] Fetching URL: ${formattedUrl}`);
-
-    // Some publishers (Global Voices among them) have unstable HTTP/2 and drop
-    // the stream mid-request with "unspecific protocol error". That failure is
-    // transient, so retry on a fresh connection before giving up.
-    const fetchWithRetry = async (attempts = 3): Promise<Response> => {
-      let lastErr: unknown;
-      for (let i = 0; i < attempts; i++) {
-        try {
-          const res = await fetch(formattedUrl, {
-            headers: {
-              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-              'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
-              'Accept-Language': 'en-US,en;q=0.9',
-              'Connection': 'close',
-            },
-          });
-          if (!res.ok) throw new Error(`Failed to fetch URL: ${res.statusText}`);
-          return res;
-        } catch (err) {
-          lastErr = err;
-          console.error(`[scraper] attempt ${i + 1}/${attempts} failed:`, err instanceof Error ? err.message : err);
-          if (i < attempts - 1) await new Promise((r) => setTimeout(r, 400 * (i + 1)));
-        }
-      }
-      throw lastErr instanceof Error ? lastErr : new Error(String(lastErr));
-    };
-
-    const response = await fetchWithRetry();
-
-    const html = await response.text();
-    console.log(`[scraper] Received HTML length: ${html.length}`);
-
-    // Extract title from HTML
-    const { title: pageTitle } = extractFromHtml(html);
-    console.log(`[scraper] Extracted Page Title: ${pageTitle}`);
-
-    // Step 1: Use Readability-style extraction
-    console.log('[scraper] Attempting Stage 1: Smart Extraction');
-    let extractedText = extractReadableContent(html);
-    console.log(`[scraper] Stage 1 result length: ${extractedText.length}`);
-
-    // Case 1: Success (enough content)
-    if (extractedText.length > 500) {
-      console.log('[scraper] Stage 1 SUCCESS (extractedText > 500 chars)');
-      return new Response(
-        JSON.stringify({
-          success: true,
-          text: extractedText,
-          title: pageTitle,
-          method: 'smart'
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Case 2: Fallback (low content)
-    console.log('[scraper] content too short, attempting Stage 2: Wide-net Fallback');
-    const fallbackText = extractReadableContent(html, true); // True for "allow low score"
-    console.log(`[scraper] Stage 2 result length: ${fallbackText.length}`);
-
-    if (fallbackText.length > 100) {
-      console.log('[scraper] Stage 2 SUCCESS (fallbackText > 100 chars)');
-      return new Response(
-        JSON.stringify({
-          success: true,
-          text: fallbackText,
-          title: pageTitle,
-          method: 'fallback'
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    console.warn('[scraper] All extraction methods returned insufficient content.');
-    return new Response(
-      JSON.stringify({
-        success: false,
-        error: 'Could not extract enough readable content from this page.',
-        title: pageTitle,
-        debug_lengths: { smart: extractedText.length, fallback: fallbackText.length }
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-  } catch (error) {
-    console.error('Error in scrape-url function:', error);
-
-    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
-
-    return new Response(
-      JSON.stringify({
-        success: false,
-        error: errorMessage
-      }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    const body = await req.json().catch(() => null);
+    url = publicUrl(body?.url);
+  } catch (err) {
+    return reply({ success: false, error: err instanceof Error ? err.message : "Invalid URL" },
+      err instanceof ImportError ? err.status : 400);
   }
+
+  let firstError: Error | null = null;
+  try {
+    // A transient 502/503/504 or disconnected fetch is common on publishers.
+    // Retry once with a fresh connection; don't retry user mistakes or denials.
+    let page: Awaited<ReturnType<typeof fetchDirect>> | null = null;
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        page = await fetchDirect(url);
+        break;
+      } catch (error) {
+        const retryable = !(error instanceof ImportError) ||
+          (error.status === 502 && /HTTP 50[234]/.test(error.message));
+        if (!retryable || attempt === 1) throw error;
+        await new Promise(resolve => setTimeout(resolve, 350));
+      }
+    }
+    if (!page) throw new ImportError("Could not connect to this webpage.");
+    const extracted = /text\/plain|markdown/.test(page.type)
+      ? (readable(page.html) ? { text: cleanText(page.html), title: page.url.hostname, method: "plain-text" } : null)
+      : extractHtml(page.html);
+    if (extracted && readable(extracted.text)) {
+      return reply({ success: true, ...extracted });
+    }
+    firstError = new ImportError("No readable article text was found on this page.");
+  } catch (err) {
+    firstError = err instanceof Error ? err : new ImportError("Failed to load this webpage.");
+    console.warn("Direct import failed:", firstError.message);
+    if (firstError instanceof ImportError && [400,404,413,415].includes(firstError.status))
+      return reply({ success: false, error: firstError.message }, firstError.status);
+  }
+
+  // Only use the configured JS-rendering provider when ordinary HTML fails,
+  // reducing both cost and latency for publicly readable articles.
+  const rendered = await (await canUseRenderer(req) ? renderedFallback(url) : Promise.resolve(null));
+  if (rendered) return reply({ success: true, ...rendered });
+  return reply({
+    success: false,
+    error: firstError?.message || "Could not extract readable text. Try the public article URL or Paste Text.",
+  }, firstError instanceof ImportError ? firstError.status : 422);
 });
