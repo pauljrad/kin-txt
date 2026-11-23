@@ -19,7 +19,15 @@
    Lock the background so a swipe cannot scroll the book beneath a menu. */
 .page-reader-content-glass .page-reader-viewport { overflow: hidden; touch-action: none; }
 .page-reader-viewport { height: 100%; width: 100%; overscroll-behavior: contain; }
-.page-reader-pages { overflow: hidden; touch-action: pan-y; }
+/* Let the browser handle vertical gestures but reserve horizontal motion for
+   finger-tracking page turns. Holding a word must not select it mid-drag. */
+.page-reader-pages {
+  overflow: hidden;
+  touch-action: pan-y;
+  user-select: none;
+  -webkit-user-select: none;
+  overscroll-behavior-x: contain;
+}
 .page-reader-scroll { overflow-y: auto; overflow-x: hidden; touch-action: pan-y; }
 .page-reader-book { position: relative; font-family: inherit; font-size: calc(1.125rem * var(--text-size-multiplier, 1)); line-height: 1.65; text-align: justify; overflow-wrap: anywhere; }
 .page-reader-pages .page-reader-book { height: 100%; column-count: 1; column-gap: 40px; column-fill: auto; }
