@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Newspaper, Loader2, RefreshCw, Users } from 'lucide-react';
@@ -49,9 +49,9 @@ const NEWS_CACHE_PREFIX = 'kinxt-news-cache-';
 
 function getNewsReadsToday(): string[] {
   const today = new Date().toISOString().slice(0, 10);
-  const raw = localStorage.getItem('kinxt-news-reads');
-  if (!raw) return [];
   try {
+    const raw = localStorage.getItem('kinxt-news-reads');
+    if (!raw) return [];
     const data = JSON.parse(raw);
     if (data.date !== today) return [];
     return data.ids || [];
@@ -64,7 +64,11 @@ function recordNewsRead(articleId: string) {
   const today = new Date().toISOString().slice(0, 10);
   const existing = getNewsReadsToday();
   if (!existing.includes(articleId)) existing.push(articleId);
-  localStorage.setItem('kinxt-news-reads', JSON.stringify({ date: today, ids: existing }));
+  try {
+    localStorage.setItem('kinxt-news-reads', JSON.stringify({ date: today, ids: existing }));
+  } catch {
+    // Don't prevent opening a news article when browser storage is disabled.
+  }
 }
 
 function readCachedNews(category: string): NewsItem[] {
@@ -95,41 +99,50 @@ export function NewsLibrary({ onSelectArticle, isPro = false, onUpgrade }: NewsL
   const [error, setError] = useState<string | null>(null);
   const [activeCategory, setActiveCategory] = useState<string>('top');
   const [showLimitDialog, setShowLimitDialog] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const requestSequence = useRef(0);
 
   const fetchNews = useCallback(async (category: string = 'top') => {
-    setIsLoading(true);
+    // Switching categories quickly must not allow an older response to replace
+    // the latest selection. Show saved news immediately during network fetches.
+    const requestId = ++requestSequence.current;
+    const cached = readCachedNews(category);
+    setNews(cached);
+    setIsLoading(cached.length === 0);
+    setIsRefreshing(cached.length > 0);
     setError(null);
 
-    const load = async () => {
+    try {
       const { data, error: fnError } = await supabase.functions.invoke('fetch-news', {
         body: { category },
       });
+      if (requestId !== requestSequence.current) return;
       if (fnError) throw fnError;
       if (!data?.success) throw new Error(data?.error || 'Failed to fetch news');
-      return data;
-    };
 
-    try {
-      let data = await load();
-      if (!data.news?.length) data = await load();
+      if (Array.isArray(data.categories)) {
+        setCategories(previous => previous.length ? previous : data.categories);
+      }
 
-      if (data.categories && categories.length === 0) setCategories(data.categories);
-
-      if (data.news?.length) {
+      if (Array.isArray(data.news) && data.news.length > 0) {
         setNews(data.news);
         writeCachedNews(category, data.news);
-      } else {
-        setNews(readCachedNews(category));
+      } else if (!cached.length) {
+        setError('Global Voices is temporarily unavailable. Please try again.');
       }
     } catch (err) {
+      if (requestId !== requestSequence.current) return;
       console.error('Error fetching news:', err);
-      const cached = readCachedNews(category);
-      if (cached.length) setNews(cached);
-      else setError(err instanceof Error ? err.message : 'Failed to fetch news');
+      if (!cached.length) {
+        setError(err instanceof Error ? err.message : 'Failed to fetch news');
+      }
     } finally {
-      setIsLoading(false);
+      if (requestId === requestSequence.current) {
+        setIsLoading(false);
+        setIsRefreshing(false);
+      }
     }
-  }, [categories.length]);
+  }, []);
 
   useEffect(() => {
     if (section === 'global') fetchNews(activeCategory);
@@ -138,7 +151,7 @@ export function NewsLibrary({ onSelectArticle, isPro = false, onUpgrade }: NewsL
   const handleSelectArticle = useCallback(async (article: NewsItem) => {
     if (!isPro) {
       const reads = getNewsReadsToday();
-      if (reads.length >= FREE_DAILY_NEWS_LIMIT && !reads.includes(article.id)) {
+      if (reads.length >= FREE_DAILY_NEWS_LIMIT && !reads.includes(article.link || article.id)) {
         setShowLimitDialog(true);
         return;
       }
@@ -167,7 +180,7 @@ export function NewsLibrary({ onSelectArticle, isPro = false, onUpgrade }: NewsL
           .replace(/<\/p>/gi, '\n')
           .replace(/<br\s*\/?>/gi, '\n')
           .replace(/<[^>]+>/g, ' ');
-        recordNewsRead(article.id);
+        recordNewsRead(article.link || article.id);
         onSelectArticle(parseTextContent(cleanText), article.title, {
           link: article.link,
           source: article.source,
@@ -177,7 +190,7 @@ export function NewsLibrary({ onSelectArticle, isPro = false, onUpgrade }: NewsL
         return;
       }
 
-      recordNewsRead(article.id);
+      recordNewsRead(article.link || article.id);
       onSelectArticle(parseTextContent(data.text), article.title, {
         link: article.link,
         source: article.source,
@@ -289,6 +302,11 @@ export function NewsLibrary({ onSelectArticle, isPro = false, onUpgrade }: NewsL
           </div>
 
           <div className="flex items-center justify-end mb-4">
+            {isRefreshing && (
+              <span className="mr-3 text-xs text-muted-foreground" role="status">
+                Checking for latest stories…
+              </span>
+            )}
             <motion.button onClick={() => fetchNews(activeCategory)} whileHover={{ scale: 1.1, rotate: 180 }} whileTap={{ scale: 0.9 }} className="p-2 rounded-lg bg-secondary text-secondary-foreground hover:bg-secondary/80" title="Refresh Global Voices">
               <RefreshCw className="w-4 h-4" />
             </motion.button>
