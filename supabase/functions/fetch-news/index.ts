@@ -245,7 +245,20 @@ async function writeCache(category: string, items: NewsItem[]): Promise<void> {
 
 // Refresh a category from the feed and store the result. Used both inline (on a
 // cold cache) and in the background (stale-while-revalidate).
+// Deduplicate concurrent requests within a warm Edge Function instance.
+const inFlightRefreshes = new Map<string, Promise<NewsItem[]>>();
+
 async function refreshCategory(category: string): Promise<NewsItem[]> {
+  const existing = inFlightRefreshes.get(category);
+  if (existing) return existing;
+  const task = loadAndCacheCategory(category).finally(() => {
+    inFlightRefreshes.delete(category);
+  });
+  inFlightRefreshes.set(category, task);
+  return task;
+}
+
+async function loadAndCacheCategory(category: string): Promise<NewsItem[]> {
   const feeds = RSS_FEEDS.filter((f) => f.category === category);
   const results = await Promise.all(feeds.map(fetchRSSFeed));
   const seen = new Set<string>();
@@ -318,7 +331,9 @@ async function fetchRSSFeed(feed: RSSFeed): Promise<NewsItem[]> {
       const author = extractAuthor(entryXml, feed.source, fullContent) || feed.source;
 
       items.push({
-        id: `${feed.source.toLowerCase().replace(/ /g, '-')}-${count}-${Date.now()}`,
+        // Article identifiers must remain stable across refreshes. A timestamp
+        // broke React keys and allowed free daily limits to reset on every load.
+        id: link,
         title,
         description: summary,
         link,
@@ -396,21 +411,31 @@ serve(async (req) => {
       );
     };
 
-    // Stale-while-revalidate. Global Voices routinely needs 15–25s, so waiting
-    // on it per request is what made the page feel broken. Anything cached is
-    // returned straight away; if it has aged past FRESH_MS the refresh happens
-    // in the background so the next reader gets newer articles without this one
-    // paying for it.
+    // Fresh cache is instant. Moderately stale data remains instant while
+    // revalidation runs in the Edge background. Very stale data (>24 hours)
+    // MUST refresh synchronously: the old condition excluded it from all
+    // refreshes, leaving the same August 2026 articles visible for months.
     const cached = await readCache(category);
     if (cached) {
       const age = Date.now() - cached.at;
-      if (age > FRESH_MS && age < STALE_OK_MS) {
-        const bg = refreshCategory(category).catch((err) => console.error("bg refresh:", err));
+      if (age > STALE_OK_MS) {
+        const latest = await refreshCategory(category);
+        return latest.length > 0
+          ? respond(latest, "refreshed expired cache")
+          : respond(cached.items, "stale fallback: upstream unavailable");
+      }
+      if (age > FRESH_MS) {
+        const bg = refreshCategory(category).catch((err) => {
+          console.error("bg refresh:", err);
+          return [];
+        });
         // deno-lint-ignore no-explicit-any
         const rt = (globalThis as any).EdgeRuntime;
         if (rt?.waitUntil) rt.waitUntil(bg);
+        else await bg;
+        return respond(cached.items, "cached, refreshing");
       }
-      return respond(cached.items, age > FRESH_MS ? "cached, refreshing" : "cached");
+      return respond(cached.items, "cached");
     }
 
     // Nothing cached for this category yet — this is the only path that waits.
