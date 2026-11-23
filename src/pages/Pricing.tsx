@@ -8,6 +8,7 @@ import { Capacitor } from '@capacitor/core';
 import { Paywall } from '@/components/Paywall';
 import { useSubscription } from '@/hooks/useSubscription';
 import { supabase } from '@/integrations/supabase/client';
+import { trackMarketingEvent } from '@/lib/marketingAnalytics';
 
 // Animated KiN logo — same as splash screen, scaled down
 const KinLogo = ({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) => {
@@ -105,6 +106,7 @@ export default function Pricing() {
   };
 
   const handleStartTrial = async (plan: typeof PLANS[0]) => {
+    trackMarketingEvent('trial_plan_selected', { plan: plan.id, placement: 'pricing' });
     // No account yet: keep the existing create-account flow. An existing
     // account is an inactive Pro account, so reactivate it directly instead
     // of asking the person to create a second account.
@@ -132,6 +134,13 @@ export default function Pricing() {
         return;
       }
 
+      // Reaching checkout is not a purchase. A paid subscription must be
+      // measured separately after Stripe confirms payment.
+      const value = plan.id === 'annual' ? 30 : 3.99;
+      trackMarketingEvent('begin_checkout', {
+        currency: 'GBP', value,
+        items: [{ item_id: `kin_txt_pro_${plan.id}`, item_name: 'KiN-TXT Pro', price: value, quantity: 1 }],
+      });
       window.location.href = data.url;
     } catch {
       setCheckoutError('Could not start Pro checkout — please try again in a moment.');
