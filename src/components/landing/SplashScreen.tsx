@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback, forwardRef, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { trackMarketingEvent } from "@/lib/marketingAnalytics";
 import { createPortal } from "react-dom";
 import {
     motion,
@@ -442,16 +443,38 @@ export const InteractiveSplashScreen = forwardRef<HTMLDivElement, AnimatedTitleP
                         <motion.span animate={lettersControls}>TXT</motion.span>
                     </h1>
 
-                    <div className="absolute top-[60%] left-0 w-full flex flex-col items-center justify-center gap-12 pointer-events-auto">
+                    <div className="absolute top-[60%] left-0 w-full flex flex-col items-center justify-center gap-4 pointer-events-auto">
                         <motion.button
                             initial={{ opacity: 0 }}
                             animate={!isIntro ? { opacity: 1 } : { opacity: 0 }}
                             transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
-                            onClick={() => (onEnter ? onEnter() : navigate('/home'))}
+                            onClick={() => {
+                                if (onEnter) onEnter();
+                                else {
+                                    trackMarketingEvent('reader_entry_click', { placement: 'landing_hero' });
+                                    navigate('/home');
+                                }
+                            }}
                             className={`px-6 py-2 border text-[11px] tracking-[0.25em] transition-colors duration-500 uppercase font-bold ${themed ? "border-foreground/20 text-foreground hover:bg-foreground hover:text-background" : "border-white/20 text-white hover:bg-white hover:text-black"}`}
                         >
-                            Enter
+                            {onEnter ? 'Enter' : 'Start Reading'}
                         </motion.button>
+                        {!onEnter && (
+                            <motion.a
+                                href="/pricing"
+                                initial={{ opacity: 0 }}
+                                animate={!isIntro ? { opacity: 1 } : { opacity: 0 }}
+                                transition={{ duration: 0.8, delay: 0.35, ease: 'easeOut' }}
+                                onClick={(event) => {
+                                    event.preventDefault();
+                                    trackMarketingEvent('trial_cta_click', { placement: 'landing_hero' });
+                                    navigate('/pricing');
+                                }}
+                                className="text-[11px] tracking-[0.12em] text-white/80 underline underline-offset-4 transition-colors hover:text-white focus-visible:text-white"
+                            >
+                                Explore Pro · 7-day free trial
+                            </motion.a>
+                        )}
 
 
                     </div>
