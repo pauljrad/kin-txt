@@ -1,3 +1,5 @@
+import { trackMarketingEvent } from '@/lib/marketingAnalytics';
+
 const APP_STORE_URL = 'https://apps.apple.com/us/app/kin-txt/id6785441989';
 
 /**
@@ -9,6 +11,7 @@ export function AppStoreBadge() {
   return (
     <a
       href={APP_STORE_URL}
+      onClick={() => trackMarketingEvent('app_store_click', { placement: 'landing_header' })}
       target="_blank"
       rel="noopener noreferrer"
       className="fixed z-[70] flex items-center gap-1.5 border border-white/25 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] text-white mix-blend-difference transition-colors hover:border-white/60"
