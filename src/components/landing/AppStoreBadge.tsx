@@ -3,7 +3,7 @@ import { trackMarketingEvent } from '@/lib/marketingAnalytics';
 const APP_STORE_URL = 'https://apps.apple.com/us/app/kin-txt/id6785441989';
 
 /**
- * Small fixed corner link to the App Store listing. Uses mix-blend-difference,
+ * Small top-right link on the landing hero that scrolls away with the first screen. Uses mix-blend-difference,
  * the same trick as the hero title, so it self-inverts against whatever
  * section is scrolled behind it without needing per-section color props.
  */
@@ -14,7 +14,7 @@ export function AppStoreBadge() {
       onClick={() => trackMarketingEvent('app_store_click', { placement: 'landing_header' })}
       target="_blank"
       rel="noopener noreferrer"
-      className="fixed z-[70] flex items-center gap-1.5 border border-white/25 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] text-white mix-blend-difference transition-colors hover:border-white/60"
+      className="absolute z-[70] flex items-center gap-1.5 border border-white/25 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] text-white mix-blend-difference transition-colors hover:border-white/60"
       style={{
         top: 'calc(3.75rem + env(safe-area-inset-top, 0px))',
         right: 'calc(1rem + env(safe-area-inset-right, 0px))',
