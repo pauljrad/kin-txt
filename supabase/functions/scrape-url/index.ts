@@ -69,6 +69,84 @@ function titleFrom(text: unknown): string {
     .replace(/\s+\|\s+[^|]+$/, "").slice(0, 220) || "Imported webpage";
 }
 
+
+interface ExtractedPage {
+  title: string;
+  text: string;
+  method: string;
+  author?: string;
+  source?: string;
+}
+
+function extractArticleMetadata(document: Document): { author?: string; source?: string } {
+  // Structured data usually contains the definitive byline, especially on
+  // modern news sites where visible author names sit outside the article body.
+  let author = "";
+  let source = "";
+  const nameOf = (value: unknown): string => {
+    if (typeof value === "string") return value.trim();
+    if (!value || typeof value !== "object") return "";
+    const name = (value as Record<string, unknown>).name;
+    return typeof name === "string" ? name.trim() : "";
+  };
+  const authorNames = (value: unknown): string[] =>
+    (Array.isArray(value) ? value : value ? [value] : [])
+      .map(nameOf).filter(name => name.length > 1 && name.length < 100);
+  const visit = (data: unknown): void => {
+    if (!data || typeof data !== "object") return;
+    if (Array.isArray(data)) { data.forEach(visit); return; }
+    const item = data as Record<string, unknown>;
+    const kind = Array.isArray(item["@type"])
+      ? item["@type"].join(" ")
+      : String(item["@type"] || "");
+    if (/Article|NewsArticle|BlogPosting|Reportage|LiveBlogPosting/i.test(kind)) {
+      if (!author) author = [...new Set(authorNames(item.author || item.creator))].join(" and ");
+      if (!source) source = nameOf(item.publisher);
+    }
+    if (item["@graph"]) visit(item["@graph"]);
+  };
+  for (const script of Array.from(document.querySelectorAll('script[type="application/ld+json"]')).slice(0, 15)) {
+    try { visit(JSON.parse(script.textContent || "")); }
+    catch { /* Malformed publisher metadata must never break the importer. */ }
+  }
+  if (!author) {
+    const bbcNames = Array.from(document.querySelectorAll('[data-testid="multi-byline"] [class*="TextContributorName"]'))
+      .map(node => (node.textContent || "").trim()).filter(Boolean);
+    if (bbcNames.length) author = [...new Set(bbcNames)].join(" and ");
+  }
+  if (!author) {
+    author = document.querySelector('meta[name="author"]')?.getAttribute("content")?.trim()
+      || document.querySelector('meta[property="article:author"][content]:not([content^="http"])')?.getAttribute("content")?.trim()
+      || "";
+  }
+  if (!source) source = document.querySelector('meta[property="og:site_name"]')?.getAttribute("content")?.trim() || "";
+  return {
+    author: author.slice(0, 200) || undefined,
+    source: source.slice(0, 100) || undefined,
+  };
+}
+
+function formatForReading(page: ExtractedPage, finalUrl: URL): ExtractedPage {
+  const title = titleFrom(page.title);
+  const author = page.author?.trim();
+  const source = page.source?.trim() || finalUrl.hostname.replace(/^www\./, "");
+  let body = cleanText(page.text);
+  // Some publishers append the literal "external" link-marker to sentences.
+  if (/(\.|^)bbc\.(?:co\.uk|com)$/i.test(finalUrl.hostname))
+    body = body.replace(/,\s*external(?=\s*$|\n)/gi, "");
+  // Avoid repeating the article title when a publisher includes it in content.
+  const firstBreak = body.indexOf("\n\n");
+  if (firstBreak >= 0 && body.slice(0, firstBreak).trim().toLowerCase() === title.toLowerCase())
+    body = body.slice(firstBreak).trim();
+  const credit = author
+    ? "By " + author + " — " + source
+    : "Source: " + source;
+  return {
+    title, author, source, method: page.method,
+    text: [title, credit, body].filter(Boolean).join("\n\n"),
+  };
+}
+
 function structuredText(root: Element): string {
   // linkedom's textContent can concatenate adjacent paragraphs with no spaces.
   // Preserve semantic block boundaries when converting Reader Mode HTML into
@@ -95,13 +173,14 @@ function structuredText(root: Element): string {
   return cleanText(parts.join(""));
 }
 
-function extractHtml(html: string): { text: string; title: string; method: string } | null {
+function extractHtml(html: string): ExtractedPage | null {
   const { document } = parseHTML(html);
   const title = titleFrom(
     document.querySelector('meta[property="og:title"]')?.getAttribute("content") ||
     document.querySelector('meta[name="twitter:title"]')?.getAttribute("content") ||
     document.title || document.querySelector("h1")?.textContent
   );
+  const meta = extractArticleMetadata(document);
   const ignored = "script,style,noscript,nav,header,footer,aside,form,button,iframe,svg,canvas,video,audio,[hidden],[aria-hidden='true']";
   try {
     const readerDoc = document.cloneNode(true) as Document;
@@ -112,7 +191,7 @@ function extractHtml(html: string): { text: string; title: string; method: strin
       const root = parsedContent.document.querySelector("#kin-article");
       const text = root ? structuredText(root) : cleanText(article.textContent || "");
       if (readable(text)) {
-        return { text, title: titleFrom(article.title || title), method: "readability" };
+        return { text, title: titleFrom(article.title || title), method: "readability", author: meta.author || article.byline || undefined, source: meta.source };
       }
     }
   } catch (err) {
@@ -140,7 +219,7 @@ function extractHtml(html: string): { text: string; title: string; method: strin
       if (score > bestScore) { bestScore = score; best = text; }
     }
   }
-  return best ? { title, text: best, method: "main-content" } : null;
+  return best ? { title, text: best, method: "main-content", ...meta } : null;
 }
 
 async function limitedBody(response: Response): Promise<string> {
@@ -234,7 +313,7 @@ async function canUseRenderer(req: Request): Promise<boolean> {
   }
 }
 
-async function renderedFallback(url: URL): Promise<{ title: string; text: string; method: string } | null> {
+async function renderedFallback(url: URL): Promise<ExtractedPage | null> {
   const apiKey = Deno.env.get("FIRECRAWL_API_KEY");
   if (!apiKey) return null;
   const controller = new AbortController();
@@ -254,7 +333,7 @@ async function renderedFallback(url: URL): Promise<{ title: string; text: string
     const data = result.data || result;
     const text = fromMarkdown(data.markdown || "");
     if (!readable(text)) return null;
-    return { title: titleFrom(data.metadata?.title || data.metadata?.ogTitle), text, method: "rendered" };
+    return { title: titleFrom(data.metadata?.title || data.metadata?.ogTitle), text, method: "rendered", author: typeof data.metadata?.author === "string" ? data.metadata.author : undefined, source: typeof data.metadata?.siteName === "string" ? data.metadata.siteName : undefined };
   } catch (err) {
     console.warn("Rendering fallback unavailable:", err instanceof Error ? err.message : String(err));
     return null;
@@ -294,7 +373,7 @@ serve(async (req) => {
       ? (readable(page.html) ? { text: cleanText(page.html), title: page.url.hostname, method: "plain-text" } : null)
       : extractHtml(page.html);
     if (extracted && readable(extracted.text)) {
-      return reply({ success: true, ...extracted });
+      return reply({ success: true, ...formatForReading(extracted, page.url) });
     }
     firstError = new ImportError("No readable article text was found on this page.");
   } catch (err) {
@@ -307,7 +386,7 @@ serve(async (req) => {
   // Only use the configured JS-rendering provider when ordinary HTML fails,
   // reducing both cost and latency for publicly readable articles.
   const rendered = await (await canUseRenderer(req) ? renderedFallback(url) : Promise.resolve(null));
-  if (rendered) return reply({ success: true, ...rendered });
+  if (rendered) return reply({ success: true, ...formatForReading(rendered, url) });
   return reply({
     success: false,
     error: firstError?.message || "Could not extract readable text. Try the public article URL or Paste Text.",
