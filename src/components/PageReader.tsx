@@ -45,6 +45,15 @@ export function PageReader({ parsedText, paragraphOffsets, currentWordIndex, isP
   const words = useRef<HTMLElement[]>([]);
   const touchStart = useRef<{ x: number; y: number } | null>(null);
   const suppressClick = useRef(false);
+  const pageDrag = useRef<{
+    pointerId: number;
+    x: number;
+    y: number;
+    startedAt: number;
+    page: number;
+    dragging: boolean;
+  } | null>(null);
+  const swipePageTarget = useRef<number | null>(null);
 
   const lastReadIndex = useRef(0);
   const wasPlayingOnPress = useRef(false);
@@ -100,7 +109,19 @@ export function PageReader({ parsedText, paragraphOffsets, currentWordIndex, isP
       const stride = frame.clientWidth + 40;
       const nextPage = Math.floor((word.offsetLeft + 1) / stride);
       const left = nextPage * stride;
-      if (Math.abs(frame.scrollLeft - left) > 1) frame.scrollLeft = left;
+      if (Math.abs(frame.scrollLeft - left) > 1) {
+        if (swipePageTarget.current === nextPage) {
+          // When a page was turned by dragging, glide from the finger's
+          // release position instead of jumping to the next column.
+          frame.scrollTo({
+            left,
+            behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+          });
+        } else {
+          frame.scrollLeft = left;
+        }
+      }
+      swipePageTarget.current = null;
       if (frame.scrollTop !== 0) frame.scrollTop = 0;
       setPage(previous => previous === nextPage ? previous : nextPage);
       return;
@@ -229,9 +250,88 @@ export function PageReader({ parsedText, paragraphOffsets, currentWordIndex, isP
       }}>
       <div className={`page-reader-content ${glassVisible ? 'page-reader-content-glass' : ''}`}>
         <div ref={viewport} className={`page-reader-viewport page-reader-${layout}`} tabIndex={0}
-          role="region" aria-label={layout === 'pages' ? 'Book pages. Use left and right arrows to turn pages.' : 'Continuous text'}
+          role="region" aria-label={layout === 'pages' ? 'Book pages. Swipe left or right to turn pages, or use the arrow keys.' : 'Continuous text'}
           onScroll={rememberScrollPosition}
           onWheel={() => { if (layout === 'scroll' && !isPlaying && !glassVisible) manualScroll.current = true; }}
+          onPointerDown={e => {
+            if (layout !== 'pages' || glassVisible || !e.isPrimary || (e.pointerType === 'mouse' && e.button !== 0)) return;
+            const frame = e.currentTarget;
+            const stride = frame.clientWidth + 40;
+            pageDrag.current = {
+              pointerId: e.pointerId,
+              x: e.clientX,
+              y: e.clientY,
+              startedAt: e.timeStamp,
+              page: Math.round(frame.scrollLeft / stride),
+              dragging: false,
+            };
+            // Keep receiving movement and release events if the finger
+            // leaves the text area; a long press must not select text.
+            frame.setPointerCapture(e.pointerId);
+          }}
+          onPointerMove={e => {
+            const drag = pageDrag.current;
+            if (!drag || drag.pointerId !== e.pointerId || layout !== 'pages') return;
+            const dx = e.clientX - drag.x;
+            const dy = e.clientY - drag.y;
+            if (!drag.dragging) {
+              // A vertical gesture belongs to the browser, not page turning.
+              if (Math.abs(dy) > 12 && Math.abs(dy) > Math.abs(dx)) {
+                // Vertical drags do not count as taps either.
+                suppressClick.current = true;
+                return;
+              }
+              if (Math.abs(dx) < 12 || Math.abs(dx) < Math.abs(dy) * 1.2) return;
+              drag.dragging = true;
+              suppressClick.current = true;
+            }
+            if (e.cancelable) e.preventDefault();
+            const frame = e.currentTarget;
+            const stride = frame.clientWidth + 40;
+            const rightEdge = Math.max(0, (pageStarts.length - 1) * stride);
+            // The adjacent page follows the finger in either direction.
+            frame.scrollLeft = Math.max(0, Math.min(rightEdge, drag.page * stride - dx));
+          }}
+          onPointerUp={e => {
+            const drag = pageDrag.current;
+            if (!drag || drag.pointerId !== e.pointerId) return;
+            pageDrag.current = null;
+            if (!drag.dragging || layout !== 'pages') return;
+            suppressClick.current = true;
+            e.stopPropagation();
+            const dx = e.clientX - drag.x;
+            const dt = Math.max(1, e.timeStamp - drag.startedAt);
+            const frame = e.currentTarget;
+            const stride = frame.clientWidth + 40;
+            // Accept either a deliberate drag or a shorter, quick flick.
+            const distance = Math.min(90, frame.clientWidth * 0.2);
+            const flick = Math.abs(dx) > 35 && Math.abs(dx) / dt > 0.4;
+            const direction = Math.abs(dx) >= distance || flick ? (dx < 0 ? 1 : -1) : 0;
+            const next = Math.max(0, Math.min(pageStarts.length - 1, drag.page + direction));
+            const nextWordIndex = pageStarts[next];
+            if (next !== drag.page && nextWordIndex !== undefined) {
+              swipePageTarget.current = next;
+              // Advance the saved reading position and let the layout effect
+              // finish the turn smoothly. This also works if playback was on.
+              onNavigate(nextWordIndex);
+            } else {
+              // Incomplete drags settle back to the original page.
+              frame.scrollTo({
+                left: drag.page * stride,
+                behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+              });
+            }
+          }}
+          onPointerCancel={e => {
+            const drag = pageDrag.current;
+            if (!drag || drag.pointerId !== e.pointerId) return;
+            pageDrag.current = null;
+            if (drag.dragging) {
+              suppressClick.current = true;
+              const stride = e.currentTarget.clientWidth + 40;
+              e.currentTarget.scrollTo({ left: drag.page * stride, behavior: 'auto' });
+            }
+          }}
           onKeyDown={e => {
             if (layout === 'scroll' && !isPlaying && (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'PageDown' || e.key === 'PageUp')) manualScroll.current = true;
             if (playbackEnabled && (e.key === ' ' || e.key === 'Enter')) {
@@ -267,11 +367,9 @@ export function PageReader({ parsedText, paragraphOffsets, currentWordIndex, isP
               if (Math.hypot(dx, dy) >= 55) onDismissMenus();
               return;
             }
-            if (layout === 'pages' && Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) {
-              // Only a swipe that began paused turns a page.
-              if (!wasPlayingOnPress.current) turnPage(dx < 0 ? 1 : -1);
-            }
-            // Continuous mode keeps native scroll, without a tap-to-play after a swipe.
+            // Horizontal page turning is handled by pointer drag above.
+            // Touch end only suppresses the follow-up click and keeps
+            // Continuous mode's native scrolling intact.
           }}>
           <div ref={book} className="page-reader-book">
             <BookText parsedText={parsedText} offsets={paragraphOffsets} />
