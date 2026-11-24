@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>How to Stay Focused While Reading | KiN-TXT</title>
+<meta name="description" content="Try a free interactive one-word-at-a-time reading exercise, learn how to reduce reading distractions, and find a reading rhythm that suits you.">
+<link rel="canonical" href="https://kin-txt.com/reading-focus.html">
+<meta property="og:title" content="How to stay focused while reading | KiN-TXT">
+<meta property="og:description" content="Try a short interactive reading exercise. Choose a pace, follow the words, and find your own reading rhythm.">
+<meta property="og:url" content="https://kin-txt.com/reading-focus.html">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://kin-txt.com/pwa-512x512-v3.png">
+<meta name="theme-color" content="#090909">
+<link rel="icon" href="/favicon.svg">
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-3QT73NTM4S"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config','G-3QT73NTM4S');</script>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#090909;color:#fafafa;font:17px/1.65 system-ui,sans-serif}main,header,footer{max-width:780px;margin:auto;padding:24px}header{display:flex;align-items:center;justify-content:space-between;gap:16px;border-bottom:1px solid #353535}a{color:inherit;text-underline-offset:4px}header a:first-child{font-size:24px;letter-spacing:.08em;text-decoration:none;font-weight:750}h1{font-size:clamp(2.5rem,8vw,4.6rem);line-height:1.05;letter-spacing:-.05em;margin:50px 0 24px}h2{font-size:1.6rem;line-height:1.25;margin:36px 0 12px}p{color:#ccc}button,.cta{font:inherit;border:1px solid #aaa;border-radius:4px;background:white;color:#111;padding:11px 19px;cursor:pointer;text-decoration:none;font-weight:650;display:inline-block}button.secondary,.cta.secondary{background:transparent;color:white}button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid #fff;outline-offset:4px}section.demo{padding:22px;border:1px solid #444;margin:34px 0}.word{height:138px;display:grid;place-items:center;font-weight:700;font-size:clamp(1.65rem,7vw,3rem);overflow-wrap:anywhere;text-align:center}.controls{display:flex;gap:10px;flex-wrap:wrap}label{display:block;margin:16px 0 8px}input[type=range]{width:100%;accent-color:white}small,.muted{color:#aaa}footer{font-size:14px;border-top:1px solid #333;display:flex;flex-wrap:wrap;gap:18px}.actions{display:flex;flex-wrap:wrap;gap:12px;margin:22px 0}
+</style>
+</head>
+<body><header><a href="/">KiN-TXT</a><a href="/pricing">Explore Pro</a></header>
+<main><h1>How to stay focused while reading.</h1>
+<p>Ever read a paragraph, only to realise you have not taken it in? Try a short reading exercise and explore a different way to stay with the words. KiN-TXT is a reading app that lets you follow text in rhythm or read familiar ebook-style pages.</p>
+<section class="demo" aria-labelledby="exercise"><h2 id="exercise" style="margin-top:0">Try one word at a time</h2>
+<p>Choose a comfortable pace. Press play, keep your eyes in one place and let the words arrive. You can pause or restart at any time.</p>
+<div id="word" class="word" aria-hidden="true">Ready?</div>
+<div class="controls"><button id="play" type="button">Play</button><button id="restart" class="secondary" type="button">Restart</button></div>
+<label for="pace">Reading pace: <output id="wpm">230</output> words/minute</label><input id="pace" type="range" min="120" max="420" step="10" value="230">
+<details><summary>Read the sample as a paragraph</summary><p id="sample">You do not have to rush through a book. Take a moment to notice the rhythm of a sentence. Let yourself stay with the words, at a pace that feels comfortable.</p></details>
+<p class="muted"><small>This is an illustrative demo. The full reader has additional modes, controls and a library.</small></p>
+<div class="actions"><a class="cta" href="/home" data-track="reader_entry_click">Try the full reader</a></div></section>
+<h2>Make a little space for reading</h2><p>Put notifications aside, choose a short passage and start with a pace that feels comfortable. If you lose the thread, pause and return to the last sentence. You do not need to finish a whole chapter for the time to count.</p>
+<h2>What is kinetic reading?</h2><p>Kinetic reading presents words over time rather than asking you to scan an entire page. One approach displays individual words in the same position. Other approaches use rhythm, highlighting and changes in pace. KiN-TXT combines these options with traditional pages so you can choose how to read.</p>
+<h2>Does it replace normal reading?</h2><p>No. Reading preferences differ, and one-word presentation is not suitable for every text or reader. You may want a full page for a complicated argument, reference material or a passage you want to revisit. KiN-TXT also offers Page mode and adjustable playback.</p>
+<h2>Try KiN-TXT Pro</h2><p>Explore the reading modes and a personal library. Pro is £3.99 a month or £30 a year after a seven-day free trial. Cancel before the trial ends to avoid a charge.</p>
+<div class="actions"><a class="cta" href="/pricing" data-track="trial_cta_click">Explore the 7-day trial</a><a class="cta secondary" href="/">Visit KiN-TXT</a></div>
+</main><footer><a href="/privacy">Privacy</a><a href="/terms">Terms</a><a href="/payment-policy">Payment policy</a><a href="/support">Support</a></footer>
+<script>
+(function(){var sample=document.getElementById('sample').textContent.trim().split(/\s+/),word=document.getElementById('word'),play=document.getElementById('play'),pace=document.getElementById('pace'),wpm=document.getElementById('wpm'),i=0,timer=null,playing=false;
+function event(name,params){if(typeof window.gtag==='function')window.gtag('event',name,params)}
+function stop(){playing=false;clearTimeout(timer);timer=null;play.textContent='Play'}
+function next(){if(!playing)return;if(i>=sample.length){stop();word.textContent='Finished.';i=0;event('reading_demo_complete',{placement:'reading_focus_guide'});return;}var current=sample[i++];word.textContent=current;timer=setTimeout(next,60000/Number(pace.value)*(/[.!?]$/.test(current)?1.55:1));}
+play.addEventListener('click',function(){if(playing){stop();return;}playing=true;play.textContent='Pause';event('reading_demo_play',{placement:'reading_focus_guide'});next();});
+document.getElementById('restart').addEventListener('click',function(){stop();i=0;word.textContent='Ready?';});
+pace.addEventListener('input',function(){wpm.textContent=pace.value;});
+document.querySelectorAll('[data-track]').forEach(function(a){a.addEventListener('click',function(){event(a.dataset.track,{placement:'reading_focus_guide'})})});
+document.addEventListener('visibilitychange',function(){if(document.hidden)stop()});
+})();
+</script></body></html>
