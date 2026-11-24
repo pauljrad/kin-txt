@@ -147,6 +147,7 @@ const Landing = () => {
                         { label: 'Copyright Policy', href: '/copyright' },
                         { label: 'Payment Policy', href: '/payment-policy' },
                         { label: 'Writers & Submissions', href: '/submissions' },
+                        { label: 'How to stay focused while reading', href: '/reading-focus.html' },
                       ].map(link => (
                         <a
                           key={link.href}
