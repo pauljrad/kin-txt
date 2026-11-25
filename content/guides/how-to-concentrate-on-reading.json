@@ -1,0 +1,47 @@
+{
+  "title": "How to concentrate on reading when your mind keeps wandering",
+  "description": "Try a practical ten-minute reading routine, learn how to recover your place and experiment with a paced reading interface without sacrificing comprehension.",
+  "category": "Reading",
+  "date": "2026-11-25",
+  "intro": "You reach the bottom of a page and realise you cannot remember the last paragraph. Rather than starting the whole chapter again, try changing the conditions under which you read. This guide gives you a short routine to experiment with today.",
+  "sections": [
+    {
+      "heading": "Make the next ten minutes easy to begin",
+      "paragraphs": [
+        "Choose a passage you actually want to read. Put your phone on Do Not Disturb if you are reading on it, close unrelated tabs and decide on a small stopping point. Two pages or one short section is enough. The aim is to spend time with the text, not to hit an ambitious page count.",
+        "Before starting, ask yourself one question about the passage. For fiction, it might be what a character wants. For non-fiction, it might be what the author is trying to explain. Having a question gives you something concrete to return to."
+      ]
+    },
+    {
+      "heading": "Recover your place without restarting",
+      "paragraphs": [
+        "When you notice your attention drifting, stop at the next sentence boundary. Try to explain the last idea in your own words. If you cannot, go back to the last sentence you remember rather than automatically returning to the beginning of the page.",
+        "For a physical book, try moving a bookmark beneath the current line. On a screen, experiment with larger type or a narrower text column. Change one thing at a time so you can tell which adjustment helps."
+      ]
+    },
+    {
+      "heading": "Try reading with a moving point of attention",
+      "paragraphs": [
+        "A paced reading interface changes how words arrive on the screen. Instead of deciding where to look next, you can follow a moving word or highlight. Some readers may find this useful; others prefer the freedom to scan backwards and forwards on a conventional page.",
+        "Use the kinetic word and page buttons at the top of this guide to compare both approaches. Start at a comfortable pace, pause whenever an idea needs more thought and slow down if you cannot follow the meaning. There is no need to maximise words per minute."
+      ]
+    },
+    {
+      "heading": "Check whether the routine actually helps",
+      "paragraphs": [
+        "After ten minutes, close the text and write two sentences about what you remember. Note whether you enjoyed the session and how often you lost your place. Repeat with a similar passage on another day using a different reading format.",
+        "Choose the approach that helps you understand and enjoy the material. Persistent attention difficulties that affect everyday life may warrant a conversation with a qualified health professional. A reading interface is a tool, not a treatment for ADHD or another condition."
+      ]
+    }
+  ],
+  "sources": [
+    {
+      "label": "NHS · ADHD overview",
+      "url": "https://www.nhs.uk/conditions/attention-deficit-hyperactivity-disorder-adhd/"
+    },
+    {
+      "label": "KiN-TXT · reading and writing guides",
+      "url": "https://kin-txt.com/blog"
+    }
+  ]
+}
