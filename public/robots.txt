@@ -14,3 +14,4 @@ User-agent: *
 Allow: /
 
 Sitemap: https://kin-txt.com/sitemap.xml
+Sitemap: https://kin-txt.com/blog/sitemap.xml

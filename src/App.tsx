@@ -8,6 +8,7 @@ import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/hooks/useAuth";
 import { TextSizeProvider } from "@/hooks/useTextSize";
 import Index from "./pages/Index";
+import GuideReader from "./pages/GuideReader";
 import Login from "./pages/Login";
 import Landing from "./pages/Landing";
 import NotFound from "./pages/NotFound";
@@ -74,6 +75,7 @@ const AppContent = () => {
       <Routes>
         <Route path="/" element={isNative ? <Navigate to="/home" replace /> : <Landing />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/guide-reader" element={<GuideReader />} />
         <Route path="/pricing" element={<Pricing />} />
         <Route path="/register" element={<Register />} />
         <Route path="/terms" element={<Terms />} />
