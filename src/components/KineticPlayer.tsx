@@ -107,6 +107,7 @@ export function KineticPlayer({
   }
 
   const [isPlaying, setIsPlaying] = useState(false);
+  const [guideDark, setGuideDark] = useState(true);
   // Reopen the view the reader used last, defaulting to KiNetic for first-time users.
   const [pageMode, setPageMode] = useState(() => initialView ? initialView === 'page' : initialSettings.pageMode === true);
   // Page Play Mode is ON by default, but playback itself waits for a tap.
@@ -1534,7 +1535,7 @@ export function KineticPlayer({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className={`fixed inset-0 h-[100dvh] w-screen flex items-center justify-center overflow-hidden cursor-pointer transition-all duration-700 bg-background ${pageMode ? 'touch-auto' : 'touch-none'} z-50`}
+      className={`fixed inset-0 h-[100dvh] w-screen flex items-center justify-center overflow-hidden cursor-pointer transition-all duration-700 bg-background ${initialView ? (guideDark ? 'dark' : 'guide-light') : ''} ${pageMode ? 'touch-auto' : 'touch-none'} z-50`}
       onMouseMove={pageMode ? undefined : handleMouseMove}
       onPointerUp={handleScreenTap}
     >
@@ -1894,7 +1895,7 @@ export function KineticPlayer({
             transition={{ duration: 0.3 }}
             className="absolute inset-0 z-20 pointer-events-none"
           >
-            <ThemeToggle className="controls-panel pointer-events-auto absolute right-4 z-30 toolbar-button" />
+            {initialView ? <button type="button" className="controls-panel pointer-events-auto absolute right-4 z-30 toolbar-button" style={{ top: 'calc(1rem + env(safe-area-inset-top, 0px))' }} aria-label={guideDark ? 'Switch to light mode' : 'Switch to dark mode'} onClick={e => { e.stopPropagation(); setGuideDark(v => !v); }}>{guideDark ? '☀' : '☾'}</button> : <ThemeToggle className="controls-panel pointer-events-auto absolute right-4 z-30 toolbar-button" />}
             {/* Top-left Controls (aligned) */}
             <motion.div
               initial={{ opacity: 0, x: -20 }}
