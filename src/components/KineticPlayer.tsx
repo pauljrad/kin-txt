@@ -98,6 +98,13 @@ export function KineticPlayer({
 
   // Initialize state from local storage or defaults
   const initialSettings = loadSettings();
+  // Guide links always open at Normal pace, independent of saved reader speeds.
+  if (initialView) {
+    initialSettings.rhythmPreset = 'normal';
+    initialSettings.pageRhythmPreset = 'normal';
+    initialSettings.rhythmMode = true;
+    initialSettings.accelerationMode = false;
+  }
 
   const [isPlaying, setIsPlaying] = useState(false);
   // Reopen the view the reader used last, defaulting to KiNetic for first-time users.
