@@ -1,4 +1,4 @@
-import { readFileSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import type { Plugin } from 'vite';
 
@@ -86,6 +86,21 @@ export function guidePages(): Plugin {
         const fileName = path.slice(1) + (path.endsWith('.xml') ? '' : '/index.html');
         this.emitFile({ type: 'asset', fileName, source });
       }
+    },
+    configurePreviewServer(server) {
+      // Match production's clean URL rewrites when serving the generated files locally.
+      server.middlewares.use((req, res, next) => {
+        const url = new URL(req.url ?? '/', 'http://localhost');
+        if (/^\/blog(?:\/[a-z0-9-]+)?\/?$/.test(url.pathname)) {
+          const file = url.pathname.replace(/\/$/, '') + '/index.html';
+          if (!existsSync(join(server.config.build.outDir, file))) {
+            res.statusCode = 404;
+            return res.end('Guide not found');
+          }
+          req.url = file + url.search;
+        }
+        next();
+      });
     },
     configureServer(server) {
       server.middlewares.use((req, res, next) => {
