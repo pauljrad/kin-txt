@@ -10,4 +10,7 @@
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
+  <url>
+    <loc>https://kin-txt.com/blog</loc>
+  </url>
 </urlset>

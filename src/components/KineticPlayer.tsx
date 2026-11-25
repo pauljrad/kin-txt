@@ -25,6 +25,7 @@ interface WordSpeed {
 interface KineticPlayerProps {
   parsedText: ParsedText;
   documentId?: string;
+  initialView?: 'word' | 'page';
   initialProgress?: { paragraph: number; word: number };
   emphasisWords?: string[];
   whisperedWords?: string[];
@@ -45,6 +46,7 @@ export function KineticPlayer({
   parsedText,
   documentId,
   initialProgress,
+  initialView,
   emphasisWords = [],
   whisperedWords = [],
   initialTotalReadingTime = 0,
@@ -58,7 +60,7 @@ export function KineticPlayer({
   const { textSize, setTextSize } = useTextSize();
 
   // Settings Persistence Logic
-  const STORAGE_KEY = 'kin_reader_settings';
+  const STORAGE_KEY = initialView ? 'kin_guide_reader_settings' : 'kin_reader_settings';
   const directedExperience = useMemo(() => creatorExperience ? withCreatorExperienceDefaults(creatorExperience) : null, [creatorExperience]);
   const creatorDefaults = directedExperience?.defaults;
   type AtmosphereId = 'none' | 'noir' | 'fret' | 'fret2' | 'custom';
@@ -86,7 +88,7 @@ export function KineticPlayer({
 
   const loadSettings = (): Partial<ReaderSettings> => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEY);
+      const saved = localStorage.getItem(STORAGE_KEY) ?? (initialView ? localStorage.getItem('kin_reader_settings') : null);
       return saved ? JSON.parse(saved) : {};
     } catch (e) {
       console.error('Failed to load settings', e);
@@ -99,7 +101,7 @@ export function KineticPlayer({
 
   const [isPlaying, setIsPlaying] = useState(false);
   // Reopen the view the reader used last, defaulting to KiNetic for first-time users.
-  const [pageMode, setPageMode] = useState(() => initialSettings.pageMode === true);
+  const [pageMode, setPageMode] = useState(() => initialView ? initialView === 'page' : initialSettings.pageMode === true);
   // Page Play Mode is ON by default, but playback itself waits for a tap.
   const [pagePlaybackEnabled, setPagePlaybackEnabled] = useState(() => initialSettings.pagePlaybackEnabled ?? true);
   const [pageEmphasisMode, setPageEmphasisMode] = useState(() => initialSettings.pageEmphasisMode ?? true);
@@ -153,7 +155,7 @@ export function KineticPlayer({
   const activeRhythmPreset = pageMode ? pageRhythmPreset : rhythmPreset;
   const rhythmActive = rhythmMode || pageMode;
   const [targetColor, setTargetColor] = useState(initialSettings.targetColor ?? '#FFD600');
-  const [showControls, setShowControls] = useState(() => !initialSettings.pageMode);
+  const [showControls, setShowControls] = useState(() => !pageMode);
   const [isComplete, setIsComplete] = useState(false);
   const [chunkLength, setChunkLength] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
@@ -348,7 +350,8 @@ export function KineticPlayer({
   }, [parsedText.paragraphs]);
 
   // Detect chapters and sentence boundaries
-  const chapters = useMemo(() => detectChapters(parsedText), [parsedText]);
+  // A short guide reads continuously, without generated book sections or chapter summaries.
+  const chapters = useMemo(() => initialView ? [] : detectChapters(parsedText), [initialView, parsedText]);
   const sentenceBoundaries = useMemo(() => findSentenceBoundaries(parsedText), [parsedText]);
 
   // Create sets for quick lookup (lowercase for comparison)

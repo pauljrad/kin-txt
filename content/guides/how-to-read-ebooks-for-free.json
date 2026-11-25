@@ -1,0 +1,45 @@
+{
+  "title": "How to read ebooks for free with a library card or a browser",
+  "description": "Borrow a recent novel through your local library, read a classic in your browser or download an EPUB to keep. Here’s how to choose.",
+  "category": "Reading",
+  "date": "2026-11-25",
+  "intro": "If you want the book everyone in your book club is talking about, start with your library. If you want to start Pride and Prejudice in the next two minutes, open Project Gutenberg in a browser. Both routes are free. The difference is what you can read, where you can open it and whether the book has a return date.",
+  "sections": [
+    {
+      "heading": "Borrow a recent book on your phone",
+      "paragraphs": [
+        "Look up your town or city’s public library and open its ebooks page. Following the library’s own link matters. Two neighbouring library services can use different apps or offer different titles. Have your card number and PIN ready. If you have no card, check whether the library offers online membership.",
+        "Take Liverpool as a worked example. People who live, work or study in Liverpool can register online for access to its digital resources. Liverpool Libraries lists Libby and BorrowBox and explains how to sign in with a borrower number and PIN. If you live elsewhere, use the instructions from your own library.",
+        "In Libby, find your library, sign in and search for the title and author. Pick the ebook edition if you want to read the words. A headphones icon identifies an audiobook. If the ebook is already on loan, place a hold or filter for titles available now. For a book club with a fixed meeting date, check the estimated wait before everyone commits to the same title."
+      ]
+    },
+    {
+      "heading": "Read a classic without downloading an app",
+      "paragraphs": [
+        "Open Project Gutenberg’s page for Pride and Prejudice and choose the option to read online. You can go straight to the first chapter in a browser. Bookmark the book’s title page if you want to find the other formats later.",
+        "For an offline copy, choose EPUB and open the downloaded file in a reader on your device that supports it. Plain text is handy when you want just the words, although you lose the original layout. Project Gutenberg describes copyright status in the United States. If you are elsewhere, check the notice for that edition and the rules where you live before downloading."
+      ]
+    },
+    {
+      "heading": "Pick the copy that suits the occasion",
+      "paragraphs": [
+        "For a train journey, open the book before leaving Wi-Fi, switch your phone into flight mode and check that the next few pages still load. For a book club, agree on the translation or edition as well as the title. Two copies of the same novel can have very different chapter openings and page numbers.",
+        "A library loan normally stays in the library’s supported reading system and expires at the end of its loan period. If you want to try a different reading interface, use an ebook you have permission to import. In KiN-TXT you can open a compatible personal file or try a classic from the library. The two buttons above let you test the reading experience on this guide before choosing a book."
+      ]
+    }
+  ],
+  "sources": [
+    {
+      "label": "Liverpool Libraries · e-reading and online membership",
+      "url": "https://liverpool.gov.uk/libraries/e-reading/"
+    },
+    {
+      "label": "Libby Help · getting started",
+      "url": "https://help.libbyapp.com/en-us/6103.htm"
+    },
+    {
+      "label": "Project Gutenberg · Pride and Prejudice, with download options",
+      "url": "https://www.gutenberg.org/ebooks/1342"
+    }
+  ]
+}

@@ -13,8 +13,27 @@
     ],
     "rewrites": [
         {
-            "source": "/(.*)",
+            "source": "/blog",
+            "destination": "/blog/index.html"
+        },
+        {
+            "source": "/blog/:slug([a-z0-9-]+)",
+            "destination": "/blog/:slug/index.html"
+        },
+        {
+            "source": "/((?!blog/).*)",
             "destination": "/index.html"
+        }
+    ],
+    "headers": [
+        {
+            "source": "/guide-reader",
+            "headers": [
+                {
+                    "key": "X-Robots-Tag",
+                    "value": "noindex, follow"
+                }
+            ]
         }
     ]
 }

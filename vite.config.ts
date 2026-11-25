@@ -1,4 +1,5 @@
 import { defineConfig } from "vite";
+import { guidePages } from "./scripts/guides";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
@@ -13,6 +14,7 @@ export default defineConfig(({ mode }) => ({
   },
   plugins: [
     react(),
+    guidePages(),
     tailwindcss(),
     mode === "development" && componentTagger(),
     VitePWA({
@@ -56,6 +58,8 @@ export default defineConfig(({ mode }) => ({
         ],
       },
       workbox: {
+        navigateFallbackDenylist: [/^\/blog(?:\/|$)/],
+        globIgnores: ["blog/**"],
         // Cache strategies for different resource types
         runtimeCaching: [
           {
