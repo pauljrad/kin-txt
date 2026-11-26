@@ -1,39 +1,52 @@
 {
-    "redirects": [
+  "redirects": [
+    {
+      "source": "/ig",
+      "destination": "/?utm_source=instagram&utm_medium=social&utm_campaign=reader_focus_202611",
+      "permanent": false
+    },
+    {
+      "source": "/tt",
+      "destination": "/?utm_source=tiktok&utm_medium=social&utm_campaign=reader_focus_202611",
+      "permanent": false
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/motion-studio",
+      "destination": "/motion-studio-001.html"
+    },
+    {
+      "source": "/blog",
+      "destination": "/blog/index.html"
+    },
+    {
+      "source": "/blog/:slug([a-z0-9-]+)",
+      "destination": "/blog/:slug/index.html"
+    },
+    {
+      "source": "/((?!blog/).*)",
+      "destination": "/index.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/guide-reader",
+      "headers": [
         {
-            "source": "/ig",
-            "destination": "/?utm_source=instagram&utm_medium=social&utm_campaign=reader_focus_202611",
-            "permanent": false
-        },
-        {
-            "source": "/tt",
-            "destination": "/?utm_source=tiktok&utm_medium=social&utm_campaign=reader_focus_202611",
-            "permanent": false
+          "key": "X-Robots-Tag",
+          "value": "noindex, follow"
         }
-    ],
-    "rewrites": [
+      ]
+    },
+    {
+      "source": "/motion-studio",
+      "headers": [
         {
-            "source": "/blog",
-            "destination": "/blog/index.html"
-        },
-        {
-            "source": "/blog/:slug([a-z0-9-]+)",
-            "destination": "/blog/:slug/index.html"
-        },
-        {
-            "source": "/((?!blog/).*)",
-            "destination": "/index.html"
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
         }
-    ],
-    "headers": [
-        {
-            "source": "/guide-reader",
-            "headers": [
-                {
-                    "key": "X-Robots-Tag",
-                    "value": "noindex, follow"
-                }
-            ]
-        }
-    ]
+      ]
+    }
+  ]
 }
