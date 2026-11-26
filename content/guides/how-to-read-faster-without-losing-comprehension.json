@@ -1,0 +1,61 @@
+{
+  "title": "How to read faster without losing comprehension",
+  "description": "Use a short baseline, adjust your pace in small steps and check what you remember. A practical alternative to unrealistic speed-reading claims.",
+  "category": "Reading",
+  "date": "2026-11-26",
+  "intro": "Reading faster is useful only when the meaning comes with you. Research does not support the idea that most people can double or triple their speed and keep the same understanding, but you can learn where your own comfortable range sits. This guide gives you a simple way to test pace without turning reading into a race.",
+  "sections": [
+    {
+      "heading": "Decide what you need from the text",
+      "paragraphs": [
+        "A novel, a contract and a news briefing do not ask for the same kind of reading. Before you begin, decide whether you need the main idea, an accurate account of the argument or details you could explain later. Skimming can be sensible when you only need an overview. It is a poor substitute for careful reading when the details matter.",
+        "Pick a passage of about five minutes at your normal pace. Use something unfamiliar but not unusually difficult. When you finish, look away and write the main point plus three details. This is your baseline: not a universal words-per-minute target, but a record of what you understood."
+      ]
+    },
+    {
+      "heading": "Increase the pace one step at a time",
+      "paragraphs": [
+        "Read a similar passage slightly faster. In KiN-TXT, start in Rhythm & Emphasis at Normal speed, then try the next comfortable pace or use Acceleration so the change happens gradually. Pause at a difficult sentence. Faster reading is not improved by pretending every sentence deserves the same amount of time.",
+        "Repeat the same recall check. If the main point or important details disappear, return to the previous pace. If recall stays steady and the text still feels comfortable, try another passage before changing the speed again. One good result can reflect an easy topic or familiar vocabulary."
+      ]
+    },
+    {
+      "heading": "Do not treat rereading as failure",
+      "paragraphs": [
+        "Claims about speed reading sometimes tell readers to stop moving their eyes backwards. A major review of reading research found that regressions can support comprehension. Returning to a name, qualification or earlier claim is part of making sense of a text, not necessarily a habit to eliminate.",
+        "Kinetic word mode reduces the need to choose the next visual position, but it also limits immediate scanning backwards while the text is playing. Use pause and rewind when meaning matters. Page Reader keeps the surrounding paragraph visible and may suit material that needs comparison, checking or annotation."
+      ]
+    },
+    {
+      "heading": "Train comprehension, not just the timer",
+      "paragraphs": [
+        "Vocabulary, familiarity with the subject and the difficulty of the writing all affect pace. Regular reading and better language knowledge are more dependable routes to efficient reading than trying to force every text through at one high speed.",
+        "After several sessions, compare passages of a similar type. Keep the fastest pace at which you can still explain the argument, remember the important details and enjoy the text. On another day, test the same routine with the guide on concentrating when your mind wanders. Attention and speed are related, but they are not the same problem."
+      ]
+    }
+  ],
+  "related": [
+    {
+      "label": "How to concentrate on reading when your mind keeps wandering",
+      "url": "/blog/how-to-concentrate-on-reading"
+    },
+    {
+      "label": "How to read ebooks for free with a library card or a browser",
+      "url": "/blog/how-to-read-ebooks-for-free"
+    }
+  ],
+  "sources": [
+    {
+      "label": "Association for Psychological Science · So Much to Read, So Little Time",
+      "url": "https://www.psychologicalscience.org/journals/pspi/1529100615623267/"
+    },
+    {
+      "label": "Journal of Research in Reading · Does speed-reading training work?",
+      "url": "https://onlinelibrary.wiley.com/doi/10.1111/1467-9817.12417"
+    },
+    {
+      "label": "PubMed · Eye movements during regular reading, thorough reading and skimming",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/33828678/"
+    }
+  ]
+}

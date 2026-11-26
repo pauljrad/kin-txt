@@ -9,6 +9,7 @@ interface Guide {
   date: string;
   intro: string;
   sections: { heading: string; paragraphs: string[] }[];
+  related?: { label: string; url: string }[];
   sources: { label: string; url: string }[];
 }
 
@@ -51,6 +52,12 @@ function renderGuides() {
   for (const { guide, slug, path } of entries) {
     const sections = guide.sections.map(section => `<h2 data-reader>${escape(section.heading)}</h2>
       ${section.paragraphs.map(p => '<p data-reader>' + escape(p) + '</p>').join('\n')}`).join('\n');
+    const related = (guide.related ?? []).map(link => {
+      const url = new URL(link.url, origin);
+      if (url.origin !== origin || !url.pathname.startsWith('/blog/')) throw new Error('Invalid related guide: ' + slug);
+      return `<li><a href="${escape(link.url)}">${escape(link.label)}</a></li>`;
+    }).join('');
+    const relatedSection = related ? `<nav class="related" aria-label="Related guides"><h2>Related guides</h2><ul>${related}</ul></nav>` : '';
     const sources = guide.sources.map(source => {
       if (new URL(source.url).protocol !== 'https:') throw new Error('Invalid source: ' + slug);
       return `<li><a href="${escape(source.url)}">${escape(source.label)}</a></li>`;
@@ -64,7 +71,7 @@ function renderGuides() {
       <p class="terms">After the trial, Pro costs £3.99/month or £30/year, depending on the plan you choose. Cancel before the trial ends to avoid being charged.</p></aside>`;
     const main = `<article><div class="meta">${escape(guide.category)} · <time datetime="${guide.date}">${dateLabel(guide.date)}</time> · KiN-TXT</div>
       <h1 data-reader>${escape(guide.title)}</h1><div class="actions modes" aria-label="Read this article in KiN-TXT">${modes}</div>
-      <div class="copy"><p class="intro" data-reader>${escape(guide.intro)}</p>${sections}</div>
+      <div class="copy"><p class="intro" data-reader>${escape(guide.intro)}</p>${sections}</div>${relatedSection}
       <section class="sources"><h2>Sources and further reading</h2><ul>${sources}</ul></section></article>${cta}`;
     pages.set(path, renderPage(guide.title, guide.description, path, main, guide));
   }

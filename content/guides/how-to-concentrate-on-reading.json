@@ -43,5 +43,15 @@
       "label": "KiN-TXT · reading and writing guides",
       "url": "https://kin-txt.com/blog"
     }
+  ],
+  "related": [
+    {
+      "label": "How to read faster without losing comprehension",
+      "url": "/blog/how-to-read-faster-without-losing-comprehension"
+    },
+    {
+      "label": "How to read ebooks for free with a library card or a browser",
+      "url": "/blog/how-to-read-ebooks-for-free"
+    }
   ]
 }
