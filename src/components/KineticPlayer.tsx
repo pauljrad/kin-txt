@@ -890,6 +890,15 @@ export function KineticPlayer({
     // Check if this word ends a sentence
     if (isSentenceEnd(word)) {
       sentenceCountRef.current += 1;
+      if (motionDemo && sentenceCountRef.current === 1) {
+        pageModeRef.current = true; setPageMode(true); setPagePlaybackEnabled(true); setShowControls(false);
+        window.parent.postMessage('kin-demo-page-started', location.origin);
+      }
+      if (motionDemo && sentenceCountRef.current >= 3) {
+        setIsPlaying(false); setShowControls(false);
+        window.parent.postMessage('kin-demo-finished', location.origin);
+        return;
+      }
     }
 
     // Determine reset count based on interval setting
