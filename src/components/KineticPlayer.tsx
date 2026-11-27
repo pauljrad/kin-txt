@@ -175,9 +175,11 @@ export function KineticPlayer({
       if (e.data === 'kin-demo-page') { pageModeRef.current = true; setPageMode(true); setPagePlaybackEnabled(true); setPageGlassMode(false); setIsComplete(false); setShowControls(false); setIsPlaying(true); }
       if (e.data === 'kin-demo-pause') setIsPlaying(false);
     };
+    const localReceive = (e: Event) => receive({origin: location.origin, source: window.parent, data: (e as CustomEvent).detail} as MessageEvent);
+    window.addEventListener('kin-motion-command', localReceive);
     window.addEventListener('message', receive);
-    window.parent.postMessage('kin-demo-ready', location.origin);
-    return () => window.removeEventListener('message', receive);
+    window.dispatchEvent(new CustomEvent('kin-motion-status', {detail: 'kin-demo-ready'})); window.parent.postMessage('kin-demo-ready', location.origin);
+    return () => { window.removeEventListener('message', receive); window.removeEventListener('kin-motion-command', localReceive); };
   }, [motionDemo]);
   const [isComplete, setIsComplete] = useState(false);
   const [chunkLength, setChunkLength] = useState(0);
@@ -892,11 +894,11 @@ export function KineticPlayer({
       sentenceCountRef.current += 1;
       if (motionDemo && sentenceCountRef.current === 1) {
         pageModeRef.current = true; setPageMode(true); setPagePlaybackEnabled(true); setShowControls(false);
-        window.parent.postMessage('kin-demo-page-started', location.origin);
+        window.dispatchEvent(new CustomEvent('kin-motion-status', {detail: 'kin-demo-page-started'})); window.parent.postMessage('kin-demo-page-started', location.origin);
       }
       if (motionDemo && sentenceCountRef.current >= 3) {
         setIsPlaying(false); setShowControls(false);
-        window.parent.postMessage('kin-demo-finished', location.origin);
+        window.dispatchEvent(new CustomEvent('kin-motion-status', {detail: 'kin-demo-finished'})); window.parent.postMessage('kin-demo-finished', location.origin);
         return;
       }
     }
@@ -1560,7 +1562,7 @@ export function KineticPlayer({
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       className={`fixed inset-0 h-[100dvh] w-screen flex items-center justify-center overflow-hidden cursor-pointer transition-all duration-700 bg-background ${initialView ? (guideDark ? 'dark' : 'guide-light') : ''} ${pageMode ? 'touch-auto' : 'touch-none'} z-50`}
-      style={motionDemo ? { backgroundColor: '#000', '--background': '0 0% 0%', '--color-background': '#000' } as React.CSSProperties : undefined}
+      style={motionDemo ? { backgroundColor: '#000', width: '100%', height: '100%', '--background': '0 0% 0%', '--color-background': '#000' } as React.CSSProperties : undefined}
       onMouseMove={motionDemo || pageMode ? undefined : handleMouseMove}
       onPointerUp={handleScreenTap}
     >
