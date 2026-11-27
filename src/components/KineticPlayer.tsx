@@ -17,6 +17,8 @@ import { Capacitor } from '@capacitor/core';
 import { StatusBar } from '@capacitor/status-bar';
 import { CreatorExperience, CreatorImageMoment, withCreatorExperienceDefaults } from '@/lib/creatorExperience';
 
+import { trackMarketingEvent } from '@/lib/marketingAnalytics';
+
 interface WordSpeed {
   word: string;
   speed: number;
@@ -25,6 +27,7 @@ interface WordSpeed {
 interface KineticPlayerProps {
   parsedText: ParsedText;
   documentId?: string;
+  guideSlug?: string;
   initialView?: 'word' | 'page';
   initialProgress?: { paragraph: number; word: number };
   emphasisWords?: string[];
@@ -47,6 +50,7 @@ export function KineticPlayer({
   documentId,
   initialProgress,
   initialView,
+  guideSlug,
   emphasisWords = [],
   whisperedWords = [],
   initialTotalReadingTime = 0,
@@ -110,6 +114,16 @@ export function KineticPlayer({
   const [guideDark, setGuideDark] = useState(true);
   // Reopen the view the reader used last, defaulting to KiNetic for first-time users.
   const [pageMode, setPageMode] = useState(() => initialView ? initialView === 'page' : initialSettings.pageMode === true);
+  const guidePlaybackStarted = useRef(false);
+  useEffect(() => {
+    if (!guideSlug || !isPlaying || guidePlaybackStarted.current) return;
+    guidePlaybackStarted.current = true;
+    trackMarketingEvent('guide_reader_start', {
+      guide_slug: guideSlug,
+      reader_mode: pageMode ? 'page' : 'word',
+    });
+  }, [guideSlug, isPlaying, pageMode]);
+
   // Page Play Mode is ON by default, but playback itself waits for a tap.
   const [pagePlaybackEnabled, setPagePlaybackEnabled] = useState(() => initialSettings.pagePlaybackEnabled ?? true);
   const [pageEmphasisMode, setPageEmphasisMode] = useState(() => initialSettings.pageEmphasisMode ?? true);

@@ -1,0 +1,57 @@
+{
+  "title": "How to open an EPUB file on your iPhone",
+  "description": "Find a downloaded EPUB in Files, open it in Apple Books and check it works offline. If it won’t open, work out whether the problem is the file or the app.",
+  "category": "Reading",
+  "date": "2026-11-27",
+  "intro": "Open Files, find the downloaded .epub and tap it. If a preview appears, choose Copy to Books, or use Share and select Books. Once the title appears in your Books library, open it there. You can read a standard, unprotected EPUB on an iPhone without converting it to a PDF.",
+  "sections": [
+    {
+      "heading": "Find the copy you downloaded",
+      "paragraphs": [
+        "If you just downloaded the book in Safari, tap the downloads icon beside the address field and select the file. This saves you searching for a title whose filename might be something like book-final-v3.epub.",
+        "Coming back later? Open Files and tap Browse, then Downloads. If Downloads isn’t listed there, look inside iCloud Drive or the location you chose for Safari downloads. For a book someone emailed you, open the attachment itself. A link to a shop or a receipt takes you back to the seller, so look there for the actual EPUB download."
+      ]
+    },
+    {
+      "heading": "Put the book in your library",
+      "paragraphs": [
+        "Tap the EPUB in Files. If another app opens it, return to Files, touch and hold the file, choose Share, then select Books from the row of apps. Swipe along that row to More if Books is out of view. If you previously removed Apple Books, reinstall it or choose another reader that accepts EPUB files.",
+        "Open Library in Books and look for the cover or the author’s name. The title on the shelf can differ from the filename in Downloads. Open the table of contents and jump to a chapter. That confirms you have the book itself and gives you a place to return to."
+      ]
+    },
+    {
+      "heading": "Check before you travel",
+      "paragraphs": [
+        "A cover on your shelf can represent a book stored in the cloud. If there is a cloud icon, use the book’s menu to download it while you have a connection. Then turn on flight mode, check Wi-Fi is off, reopen the book and jump to a chapter you haven’t opened yet. Restore your connection afterwards."
+      ]
+    },
+    {
+      "heading": "If the EPUB still won’t open",
+      "paragraphs": [
+        "Check the filename in Files using Get Info. A PDF opens as fixed pages. A web page saved from a bookshop may contain only the description. Changing the extension to .epub won’t turn either into an ebook. Return to the source and choose its EPUB download.",
+        "If one title fails, try a second EPUB that you know you can open in another reader. If the second works, download a fresh copy of the first. For a protected purchase or library loan, use the seller’s or library’s supported app. Keep the original file while troubleshooting.",
+        "For an EPUB you have permission to import, KiN-TXT offers another way to read it. Try this guide in kinetic Word mode and then in Page mode using the buttons above. If one suits you, choose your own EPUB in the app’s file uploader."
+      ]
+    }
+  ],
+  "related": [
+    {
+      "label": "Need an ebook to try? Find free classics and library loans",
+      "url": "/blog/how-to-read-ebooks-for-free"
+    }
+  ],
+  "sources": [
+    {
+      "label": "Apple Support · Find downloads on iPhone or iPad",
+      "url": "https://support.apple.com/en-us/102440"
+    },
+    {
+      "label": "Apple iPhone User Guide · Find, inspect and share files",
+      "url": "https://support.apple.com/en-gb/guide/iphone/iphe9d46e90f/ios"
+    },
+    {
+      "label": "iDownloadBlog · Open an EPUB in Books and check offline availability",
+      "url": "https://www.idownloadblog.com/2026/04/27/fix-epub-file-issues-ios/"
+    }
+  ]
+}

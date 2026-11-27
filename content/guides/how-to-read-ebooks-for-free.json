@@ -41,5 +41,11 @@
       "label": "Project Gutenberg · Pride and Prejudice, with download options",
       "url": "https://www.gutenberg.org/ebooks/1342"
     }
+  ],
+  "related": [
+    {
+      "label": "Already downloaded an EPUB? Open it on your iPhone and check offline access",
+      "url": "/blog/how-to-open-an-epub-file-on-iphone"
+    }
   ]
 }

@@ -3,7 +3,8 @@ import { useSearchParams } from 'react-router-dom';
 import { KineticPlayer } from '@/components/KineticPlayer';
 import { parseTextContent, processTextStyles, type ProcessedTextResult } from '@/lib/textParser';
 
-function ArticlePlayer({ path, view }: { path: string; view: 'word' | 'page' }) {
+function ArticlePlayer({ slug, view }: { slug: string; view: 'word' | 'page' }) {
+  const path = '/blog/' + slug;
   const [article, setArticle] = useState<ProcessedTextResult | null>(null);
   const [failed, setFailed] = useState(false);
   useEffect(() => {
@@ -34,7 +35,7 @@ function ArticlePlayer({ path, view }: { path: string; view: 'word' | 'page' }) 
     else location.replace(path);
   }
   return <div className="fixed inset-0 z-50 bg-background">
-    <KineticPlayer parsedText={article.cleanedText} initialView={view} onBack={returnToGuide}
+    <KineticPlayer parsedText={article.cleanedText} guideSlug={slug} initialView={view} onBack={returnToGuide}
       emphasisWords={article.detectedEmphasis} whisperedWords={article.detectedWhispered} />
   </div>;
 }
@@ -46,5 +47,5 @@ export default function GuideReader() {
   if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug) || (mode !== 'word' && mode !== 'page')) {
     return <main className="mx-auto max-w-lg px-6 py-16"><h1>Choose a guide to read</h1><a className="underline" href="/blog">Browse the guides</a></main>;
   }
-  return <ArticlePlayer key={slug + mode} path={'/blog/' + slug} view={mode} />;
+  return <ArticlePlayer key={slug + mode} slug={slug} view={mode} />;
 }
