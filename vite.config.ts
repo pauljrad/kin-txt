@@ -148,7 +148,7 @@ export default defineConfig(({ mode }) => ({
   build: {
     // Optimize chunk splitting for faster loads
     rollupOptions: {
-      input: { main: path.resolve(__dirname, 'index.html'), motionReader: path.resolve(__dirname, 'motion-reader.html') },
+      input: { main: path.resolve(__dirname, 'index.html'), motionReader: path.resolve(__dirname, 'motion-reader.html'), motionPoster: path.resolve(__dirname, 'motion-poster.html') },
       output: {
         manualChunks: {
           vendor: ["react", "react-dom", "react-router-dom"],
