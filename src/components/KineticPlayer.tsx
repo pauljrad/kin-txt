@@ -172,7 +172,7 @@ export function KineticPlayer({
     const receive = (e: MessageEvent) => {
       if (e.origin !== location.origin || e.source !== window.parent) return;
       if (e.data === 'kin-demo-play') { setShowControls(false); setIsPlaying(true); }
-      if (e.data === 'kin-demo-page') { setPageMode(true); setShowControls(false); setIsPlaying(true); }
+      if (e.data === 'kin-demo-page') { pageModeRef.current = true; setPageMode(true); setPagePlaybackEnabled(true); setPageGlassMode(false); setIsComplete(false); setShowControls(false); setIsPlaying(true); }
       if (e.data === 'kin-demo-pause') setIsPlaying(false);
     };
     window.addEventListener('message', receive);
@@ -1112,9 +1112,9 @@ export function KineticPlayer({
     } else {
       // Finished
       setIsPlaying(false);
-      setIsComplete(true);
+      if (!motionDemo) setIsComplete(true);
     }
-  }, [parsedText, resetInterval, accelerationMode, isEbook, chapters, lastChapterIndex, directedExperience]);
+  }, [parsedText, resetInterval, accelerationMode, isEbook, chapters, lastChapterIndex, directedExperience, motionDemo]);
 
   useEffect(() => {
     // Clear any existing timeout first
@@ -1189,7 +1189,7 @@ export function KineticPlayer({
         timeoutRef.current = null;
       }
     };
-  }, [isPlaying, currentParagraph, currentWord, getCurrentSpeed, advanceWord, parsedText.paragraphs, isComplete, emphasisSet, whisperedSet, showFullText, isNavOpen, rhythmActive, emphasisEnabled, showingChapterTitle, showChapterSummary, activeCreatorImage]);
+  }, [isPlaying, currentParagraph, currentWord, getCurrentSpeed, advanceWord, parsedText.paragraphs, isComplete, emphasisSet, whisperedSet, showFullText, isNavOpen, rhythmActive, emphasisEnabled, showingChapterTitle, showChapterSummary, activeCreatorImage, pageMode]);
 
   useEffect(() => {
     if (!directedExperience?.images?.length || activeCreatorImage) return;
@@ -1551,7 +1551,8 @@ export function KineticPlayer({
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       className={`fixed inset-0 h-[100dvh] w-screen flex items-center justify-center overflow-hidden cursor-pointer transition-all duration-700 bg-background ${initialView ? (guideDark ? 'dark' : 'guide-light') : ''} ${pageMode ? 'touch-auto' : 'touch-none'} z-50`}
-      onMouseMove={pageMode ? undefined : handleMouseMove}
+      style={motionDemo ? { backgroundColor: '#000', '--background': '0 0% 0%', '--color-background': '#000' } as React.CSSProperties : undefined}
+      onMouseMove={motionDemo || pageMode ? undefined : handleMouseMove}
       onPointerUp={handleScreenTap}
     >
       {/* Creator image moment — edge-to-edge, ORBIT-style cover crop */}
@@ -2664,7 +2665,7 @@ export function KineticPlayer({
       </AnimatePresence>
 
       <AnimatePresence>
-        {isComplete && (
+        {isComplete && !motionDemo && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
