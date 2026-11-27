@@ -26,6 +26,7 @@ interface KineticPlayerProps {
   parsedText: ParsedText;
   documentId?: string;
   initialView?: 'word' | 'page';
+  motionDemo?: boolean;
   initialProgress?: { paragraph: number; word: number };
   emphasisWords?: string[];
   whisperedWords?: string[];
@@ -47,6 +48,7 @@ export function KineticPlayer({
   documentId,
   initialProgress,
   initialView,
+  motionDemo = false,
   emphasisWords = [],
   whisperedWords = [],
   initialTotalReadingTime = 0,
@@ -60,7 +62,7 @@ export function KineticPlayer({
   const { textSize, setTextSize } = useTextSize();
 
   // Settings Persistence Logic
-  const STORAGE_KEY = initialView ? 'kin_guide_reader_settings' : 'kin_reader_settings';
+  const STORAGE_KEY = motionDemo ? 'kin_motion_demo_settings' : initialView ? 'kin_guide_reader_settings' : 'kin_reader_settings';
   const directedExperience = useMemo(() => creatorExperience ? withCreatorExperienceDefaults(creatorExperience) : null, [creatorExperience]);
   const creatorDefaults = directedExperience?.defaults;
   type AtmosphereId = 'none' | 'noir' | 'fret' | 'fret2' | 'custom';
@@ -87,6 +89,7 @@ export function KineticPlayer({
   }
 
   const loadSettings = (): Partial<ReaderSettings> => {
+    if (motionDemo) return { emphasisMode: true, pageEmphasisMode: true, pagePlaybackEnabled: true, pageLayout: 'pages', activeAtmosphere: 'none' };
     try {
       const saved = localStorage.getItem(STORAGE_KEY) ?? (initialView ? localStorage.getItem('kin_reader_settings') : null);
       return saved ? JSON.parse(saved) : {};
@@ -163,7 +166,19 @@ export function KineticPlayer({
   const activeRhythmPreset = pageMode ? pageRhythmPreset : rhythmPreset;
   const rhythmActive = rhythmMode || pageMode;
   const [targetColor, setTargetColor] = useState(initialSettings.targetColor ?? '#FFD600');
-  const [showControls, setShowControls] = useState(() => !pageMode);
+  const [showControls, setShowControls] = useState(() => !motionDemo && !pageMode);
+  useEffect(() => {
+    if (!motionDemo) return;
+    const receive = (e: MessageEvent) => {
+      if (e.origin !== location.origin || e.source !== window.parent) return;
+      if (e.data === 'kin-demo-play') { setShowControls(false); setIsPlaying(true); }
+      if (e.data === 'kin-demo-page') { setPageMode(true); setShowControls(false); setIsPlaying(true); }
+      if (e.data === 'kin-demo-pause') setIsPlaying(false);
+    };
+    window.addEventListener('message', receive);
+    window.parent.postMessage('kin-demo-ready', location.origin);
+    return () => window.removeEventListener('message', receive);
+  }, [motionDemo]);
   const [isComplete, setIsComplete] = useState(false);
   const [chunkLength, setChunkLength] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
