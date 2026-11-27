@@ -58,8 +58,8 @@ export default defineConfig(({ mode }) => ({
         ],
       },
       workbox: {
-        navigateFallbackDenylist: [/^\/blog(?:\/|$)/],
-        globIgnores: ["blog/**"],
+        navigateFallbackDenylist: [/^\/blog(?:\/|$)/, /^\/motion-studio(?:[-./]|$)/],
+        globIgnores: ["blog/**", "motion-studio*.html"],
         // Cache strategies for different resource types
         runtimeCaching: [
           {
@@ -147,6 +147,7 @@ export default defineConfig(({ mode }) => ({
   build: {
     // Optimize chunk splitting for faster loads
     rollupOptions: {
+      input: { main: path.resolve(__dirname, 'index.html'), motionReader: path.resolve(__dirname, 'motion-reader.html') },
       output: {
         manualChunks: {
           vendor: ["react", "react-dom", "react-router-dom"],
