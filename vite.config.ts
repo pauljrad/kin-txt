@@ -19,6 +19,7 @@ export default defineConfig(({ mode }) => ({
     mode === "development" && componentTagger(),
     VitePWA({
       registerType: "autoUpdate",
+      injectRegister: false,
       includeAssets: ["favicon-v3.ico", "apple-touch-icon-v3.png", "robots.txt"],
       manifest: {
         name: "KiN-TXT",
@@ -58,7 +59,7 @@ export default defineConfig(({ mode }) => ({
         ],
       },
       workbox: {
-        navigateFallbackDenylist: [/^\/blog(?:\/|$)/, /^\/motion-studio(?:[-./]|$)/],
+        navigateFallbackDenylist: [/^\/blog(?:\/|$)/, /^\/motion-(?:studio|reader)(?:[-./]|$)/],
         globIgnores: ["blog/**", "motion-studio*.html"],
         // Cache strategies for different resource types
         runtimeCaching: [
