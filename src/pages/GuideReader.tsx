@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { KineticPlayer } from '@/components/KineticPlayer';
 import { parseTextContent, processTextStyles, type ProcessedTextResult } from '@/lib/textParser';
 
-function ArticlePlayer({ path, view }: { path: string; view: 'word' | 'page' }) {
+function ArticlePlayer({ path, view, demo = false }: { path: string; view: 'word' | 'page'; demo?: boolean }) {
   const [article, setArticle] = useState<ProcessedTextResult | null>(null);
   const [failed, setFailed] = useState(false);
   useEffect(() => {
@@ -16,12 +16,12 @@ function ArticlePlayer({ path, view }: { path: string; view: 'word' | 'page' }) 
       if (!paragraphs.length) throw new Error('Missing article text');
       if (!controller.signal.aborted) {
         document.title = html.title;
-        setArticle(processTextStyles(parseTextContent(paragraphs.join('\n\n'))));
+        setArticle(processTextStyles(parseTextContent((demo ? paragraphs.filter(p => p?.includes('Instead of deciding where to look next')) : paragraphs).join('\n\n'))));
       }
     }
     loadArticle().catch(() => { if (!controller.signal.aborted) setFailed(true); });
     return () => controller.abort();
-  }, [path]);
+  }, [path, demo]);
 
   if (!article) return <main className="mx-auto max-w-lg px-6 py-16">
     <p role="status">{failed ? 'This guide could not be opened in the reader.' : 'Opening this guide…'}</p>
@@ -34,7 +34,7 @@ function ArticlePlayer({ path, view }: { path: string; view: 'word' | 'page' }) 
     else location.replace(path);
   }
   return <div className="fixed inset-0 z-50 bg-background">
-    <KineticPlayer parsedText={article.cleanedText} initialView={view} onBack={returnToGuide}
+    <KineticPlayer parsedText={article.cleanedText} initialView={view} motionDemo={demo} onBack={returnToGuide}
       emphasisWords={article.detectedEmphasis} whisperedWords={article.detectedWhispered} />
   </div>;
 }
@@ -46,5 +46,5 @@ export default function GuideReader() {
   if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug) || (mode !== 'word' && mode !== 'page')) {
     return <main className="mx-auto max-w-lg px-6 py-16"><h1>Choose a guide to read</h1><a className="underline" href="/blog">Browse the guides</a></main>;
   }
-  return <ArticlePlayer key={slug + mode} path={'/blog/' + slug} view={mode} />;
+  return <ArticlePlayer key={slug + mode} path={'/blog/' + slug} view={mode} demo={params.get('motionDemo') === '1' && slug === 'how-to-concentrate-on-reading'} />;
 }
