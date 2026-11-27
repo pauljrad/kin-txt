@@ -16,7 +16,7 @@ function ArticlePlayer({ path, view, demo = false }: { path: string; view: 'word
       if (!paragraphs.length) throw new Error('Missing article text');
       if (!controller.signal.aborted) {
         document.title = html.title;
-        setArticle(processTextStyles(parseTextContent(paragraphs.join('\n\n'))));
+        setArticle(processTextStyles(parseTextContent((demo ? paragraphs.filter(p => p?.startsWith('A paced reading interface changes how words arrive on the screen.')) : paragraphs).join('\n\n'))));
       }
     }
     loadArticle().catch(() => { if (!controller.signal.aborted) setFailed(true); });
