@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { KineticPlayer } from '@/components/KineticPlayer';
 import { parseTextContent, processTextStyles, type ProcessedTextResult } from '@/lib/textParser';
 
-function ArticlePlayer({ slug, view }: { slug: string; view: 'word' | 'page' }) {
+function ArticlePlayer({ slug, view, excerpt }: { slug: string; view: 'word' | 'page'; excerpt: boolean }) {
   const path = '/blog/' + slug;
   const [article, setArticle] = useState<ProcessedTextResult | null>(null);
   const [failed, setFailed] = useState(false);
@@ -13,7 +13,8 @@ function ArticlePlayer({ slug, view }: { slug: string; view: 'word' | 'page' }) 
       const response = await fetch(path, { signal: controller.signal });
       if (!response.ok) throw new Error('Guide unavailable');
       const html = new DOMParser().parseFromString(await response.text(), 'text/html');
-      const paragraphs = Array.from(html.querySelectorAll('article [data-reader]'), node => node.textContent?.trim());
+      const selector = excerpt ? 'article [data-sample]' : 'article [data-reader]';
+      const paragraphs = Array.from(html.querySelectorAll(selector), node => node.textContent?.trim());
       if (!paragraphs.length) throw new Error('Missing article text');
       if (!controller.signal.aborted) {
         document.title = html.title;
@@ -22,7 +23,7 @@ function ArticlePlayer({ slug, view }: { slug: string; view: 'word' | 'page' }) 
     }
     loadArticle().catch(() => { if (!controller.signal.aborted) setFailed(true); });
     return () => controller.abort();
-  }, [path]);
+  }, [path, excerpt]);
 
   if (!article) return <main className="mx-auto max-w-lg px-6 py-16">
     <p role="status">{failed ? 'This guide could not be opened in the reader.' : 'Opening this guide…'}</p>
@@ -47,5 +48,6 @@ export default function GuideReader() {
   if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug) || (mode !== 'word' && mode !== 'page')) {
     return <main className="mx-auto max-w-lg px-6 py-16"><h1>Choose a guide to read</h1><a className="underline" href="/blog">Browse the guides</a></main>;
   }
-  return <ArticlePlayer key={slug + mode} slug={slug} view={mode} />;
+  const excerpt = params.get('excerpt') === '1';
+  return <ArticlePlayer key={`${slug}-${mode}-${excerpt}`} slug={slug} view={mode} excerpt={excerpt} />;
 }

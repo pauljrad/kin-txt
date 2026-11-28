@@ -8,6 +8,9 @@ interface Guide {
   category: string;
   date: string;
   intro: string;
+  modified?: string;
+  sample?: string;
+  showAppBanner?: boolean;
   sections: { heading: string; paragraphs: string[] }[];
   related?: { label: string; url: string }[];
   sources: { label: string; url: string }[];
@@ -23,13 +26,14 @@ const dateLabel = (date: string) => new Intl.DateTimeFormat('en-GB', {
 
 function renderPage(title: string, description: string, path: string, main: string, article?: Guide) {
   const structured = article ? { '@context': 'https://schema.org', '@type': 'BlogPosting',
-    headline: title, description, datePublished: article.date,
+    headline: title, description, datePublished: article.date, dateModified: article.modified ?? article.date,
     mainEntityOfPage: origin + path, author: { '@type': 'Organization', name: 'KiN-TXT', url: origin } } : null;
   return `<!doctype html>
 <html lang="en-GB"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${escape(title)} | KiN-TXT Guides</title><meta name="description" content="${escape(description)}">
 <link rel="canonical" href="${origin + path}"><meta property="og:url" content="${origin + path}"><meta property="og:type" content="${article ? 'article' : 'website'}">
 <meta property="og:title" content="${escape(title)}"><meta property="og:description" content="${escape(description)}"><meta property="og:site_name" content="KiN-TXT">
+${article?.showAppBanner ? '<meta name="apple-itunes-app" content="app-id=6785441989">' : ''}
 <link rel="icon" href="/favicon.svg"><link rel="stylesheet" href="/guide-assets/guides.css">
 ${structured ? '<script type="application/ld+json">' + JSON.stringify(structured).replaceAll('<','\\u003c') + '</script>' : ''}
 <script defer src="/guide-assets/analytics.js"></script></head>
@@ -64,6 +68,11 @@ function renderGuides() {
     }).join('');
     const modes = ['word', 'page'].map(mode =>
       `<a class="button" href="/guide-reader?article=${slug}&amp;mode=${mode}" data-event="guide_reader_open" data-mode="${mode}">View in kinetic ${mode} mode</a>`).join('');
+    const sample = guide.sample ? `<section aria-label="Two-sentence reading exercise">
+      <blockquote data-reader data-sample>${escape(guide.sample)}</blockquote>
+      <div class="actions">${['word', 'page'].map(mode =>
+        `<a class="button" href="/guide-reader?article=${slug}&amp;mode=${mode}&amp;excerpt=1" data-event="guide_sample_open" data-mode="${mode}">Try these lines in ${mode === 'word' ? 'Word' : 'Page'} mode</a>`).join('')}</div>
+      <p data-reader>Look away and tell the scene back to yourself. Which detail changed your picture of it? If the ending sent you back to the first sentence, try Page mode. If you enjoyed finding out one word at a time, try Word mode.</p></section>` : '';
     const cta = `<aside class="invitation"><h2>Read with KiN-TXT</h2>
       <p>Read classics, articles or your own material on the web and iOS.</p>
       <div class="actions"><a class="button filled" href="/home" data-event="reader_entry_click">Use KiN-TXT for free</a>
@@ -71,7 +80,7 @@ function renderGuides() {
       <p class="terms">After the trial, Pro costs £3.99/month or £30/year, depending on the plan you choose. Cancel before the trial ends to avoid being charged.</p></aside>`;
     const main = `<article><div class="meta">${escape(guide.category)} · <time datetime="${guide.date}">${dateLabel(guide.date)}</time> · KiN-TXT</div>
       <h1 data-reader>${escape(guide.title)}</h1><div class="actions modes" aria-label="Read this article in KiN-TXT">${modes}</div>
-      <div class="copy"><p class="intro" data-reader>${escape(guide.intro)}</p>${sections}</div>${relatedSection}
+      <div class="copy"><p class="intro" data-reader>${escape(guide.intro)}</p>${sample}${sections}</div>${relatedSection}
       <section class="sources"><h2>Sources and further reading</h2><ul>${sources}</ul></section></article>${cta}`;
     pages.set(path, renderPage(guide.title, guide.description, path, main, guide));
   }
@@ -81,7 +90,7 @@ function renderGuides() {
   pages.set('/blog', renderPage('Reading and writing guides', 'Practical guides to finding ebooks, reading online and publishing original writing.',
     '/blog', '<h1>Reading and writing guides</h1><ul class="catalogue">' + cards + '</ul>'));
   pages.set('/blog/sitemap.xml', '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' +
-    entries.map(({ path, guide }) => `<url><loc>${origin + path}</loc><lastmod>${guide.date}</lastmod></url>`).join('\n') + '</urlset>');
+    entries.map(({ path, guide }) => `<url><loc>${origin + path}</loc><lastmod>${guide.modified ?? guide.date}</lastmod></url>`).join('\n') + '</urlset>');
   return pages;
 }
 

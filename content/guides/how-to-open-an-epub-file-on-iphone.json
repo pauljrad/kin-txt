@@ -53,5 +53,6 @@
       "label": "iDownloadBlog · Open an EPUB in Books and check offline availability",
       "url": "https://www.idownloadblog.com/2026/04/27/fix-epub-file-issues-ios/"
     }
-  ]
+  ],
+  "showAppBanner": true
 }

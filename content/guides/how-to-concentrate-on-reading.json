@@ -1,9 +1,9 @@
 {
   "title": "How to concentrate on reading when your mind keeps wandering",
-  "description": "Try a practical ten-minute reading routine, learn how to recover your place and experiment with a paced reading interface without sacrificing comprehension.",
+  "description": "Lost your place in a book? Try a two-sentence reading exercise, compare word-by-word and page reading, and use a ten-minute routine to pick up the thread.",
   "category": "Reading",
   "date": "2026-11-25",
-  "intro": "You reach the bottom of a page and realise you cannot remember the last paragraph. Rather than starting the whole chapter again, try changing the conditions under which you read. This guide gives you a short routine to experiment with today.",
+  "intro": "You reach the bottom of a page and realise you couldn’t say what just happened. Start with two sentences. Read the passage below once. When did you realise what the woman on the platform had come to do?",
   "sections": [
     {
       "heading": "Make the next ten minutes easy to begin",
@@ -53,5 +53,7 @@
       "label": "How to read ebooks for free with a library card or a browser",
       "url": "/blog/how-to-read-ebooks-for-free"
     }
-  ]
+  ],
+  "sample": "The guard held the train for a woman running down the platform. She reached his door, handed him a paper bag and stepped back as the whistle blew.",
+  "modified": "2026-11-28"
 }
