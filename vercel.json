@@ -9,6 +9,11 @@
             "source": "/tt",
             "destination": "/?utm_source=tiktok&utm_medium=social&utm_campaign=reader_focus_202611",
             "permanent": false
+        },
+        {
+            "source": "/lines",
+            "destination": "/blog/how-to-concentrate-on-reading?utm_source=kin_txt_social&utm_medium=organic_social&utm_campaign=unfinished_page_20261128",
+            "permanent": false
         }
     ],
     "rewrites": [
